@@ -1,0 +1,9 @@
+version: '3.7'
+
+services:
+  jaypore_ci_runner:
+    image: jaypore_ci_runner:v0.1
+    restart: always
+    environment:
+      GITEA_URL: "https://gitea.example.com"
+      GITEA_TOKEN: "asdlfjwo223fkl"
