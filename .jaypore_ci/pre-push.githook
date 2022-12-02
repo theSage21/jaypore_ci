@@ -1,0 +1,32 @@
+#! /bin/bash
+#
+set -o errexit
+set -o nounset
+set -o pipefail
+
+
+main() {
+    SHA=$(git rev-parse HEAD)
+    REPO_ROOT=$(git rev-parse --show-toplevel)
+    TOKEN=$(echo "url=$(git remote -v|grep push|awk '{print $2}')"|git credential fill|grep password|awk -F= '{print $2}')
+    # We will mount the current dir into /jaypore/repo
+    # Then we will copy things over to /jaypore/run
+    # Then we will run git clean to remove anything that is not in git
+    # Then we call the actual cicd code
+    #
+    # We also pass docker.sock to the run so that jaypore_ci can create docker containers
+    echo '----------------------------------------------'
+    echo "JayporeCi: "
+    JAYPORE_GITEA_TOKEN="${JAYPORE_GITEA_TOKEN:-$TOKEN}" docker run \
+        -d \
+        --name jaypore_ci_$SHA \
+        -e JAYPORE_GITEA_TOKEN \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        -v $REPO_ROOT:/jaypore/repo:ro \
+        -v /tmp/jaypore_$SHA:/jaypore/run \
+        --workdir /jaypore/run \
+        arjoonn/jaypore_ci:latest \
+        bash -c 'cp -r /jaypore/repo/. /jaypore/run && cd /jaypore/run/ && git clean -fdx && python .jaypore_ci/cicd.py'
+    echo '----------------------------------------------'
+}
+(main)
