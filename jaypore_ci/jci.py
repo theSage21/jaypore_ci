@@ -1,4 +1,5 @@
 import time
+import re
 from enum import Enum
 from itertools import product
 from collections import defaultdict, namedtuple
@@ -26,6 +27,13 @@ class Status(Enum):
 
 # All of these statuses are considered "finished" statuses
 FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
+
+ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
+
+
+def clean_logs(logs):
+    logs = logs.replace("<", r"\<").replace(">", r"\>")
+    return ansi_escape.sub("", logs)
 
 
 class Job:  # pylint: disable=too-many-instance-attributes
@@ -171,6 +179,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                 self.status = Status.RUNNING
             else:
                 self.status = Status.PASSED if exit_code == 0 else Status.FAILED
+            logs = clean_logs(logs)
             log_lines = logs.split("\n")
             for line in log_lines[len(self.logs["stdout"]) :]:
                 self.logging().debug(
