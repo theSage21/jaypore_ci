@@ -1,10 +1,15 @@
 # Jaypore CI
 
     A CI system that sounds ancient and powerful. Like the city of Jaypore.
+    
 
 ## Expected usage
 
-- `curl <link> | base` to install this in any project.
+```bash
+curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | base
+```
+
+- Use the script to install this in any project.
 - Configure CI at `.jaypore_ci/cicd.py`
 - Each git-push will trigger a CI job.
 
