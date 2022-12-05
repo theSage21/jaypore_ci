@@ -4,6 +4,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
+from rich import print as rprint
+
 from jaypore_ci.interfaces import Remote
 from jaypore_ci.logging import logger
 
@@ -53,6 +55,7 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         self.branch = branch
         self.sha = sha
         self.timeout = 10
+        self.base_branch = "main"
 
     def logging(self):
         return logger.bind(
@@ -65,7 +68,7 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
             params={"access_token": self.token},
             timeout=self.timeout,
             json={
-                "base": "main",
+                "base": self.base_branch,
                 "body": "Branch auto created by JayporeCI",
                 "head": self.branch,
                 "title": self.branch,
@@ -76,6 +79,17 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
             return r.text.split("issue_id:")[1].split(",")[0].strip()
         if r.status_code == 201:
             return self.get_pr_id()
+        if r.status_code == 404 and r.json()["message"] == "IsBranchExist":
+            self.base_branch = "develop"
+            return self.get_pr_id()
+        rprint(
+            self.api,
+            self.owner,
+            self.repo,
+            self.token,
+            self.branch,
+        )
+        rprint(r.status_code, r.text)
         raise Exception(r)
 
     def publish(self, report: str, status: str):
