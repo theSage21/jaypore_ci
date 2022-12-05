@@ -1,12 +1,13 @@
 # Jaypore CI
 
-    A CI system that sounds ancient and powerful. Like the city of Jaypore.
+    A CI system that sounds ancient and powerful.
+    Like the city of Jaypore.
     
 
 ## Expected usage
 
 ```bash
-curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | base
+curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
 ```
 
 - Use the script to install this in any project.
