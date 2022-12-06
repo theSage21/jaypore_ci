@@ -234,6 +234,8 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.executor = executor if executor is not None else docker.Docker()
         self.graph_direction = graph_direction
         self.executor.set_pipe_id(id(self), self)
+        # ---
+        self.seq_links = set()
 
     def logging(self):
         return logger.bind(
@@ -309,7 +311,9 @@ graph {self.graph_direction}
             }
 
             for a, b in edges:
-                arrow = "-.->"
+                arrow = "-.-"
+                if (a, b) in self.seq_links:
+                    arrow = "==>"
                 mermaid += f"""
         {ref[a]}({a.name}):::{st_map[a.status]} {arrow} {ref[b]}({b.name}):::{st_map[b.status]}"""
             mermaid += """
@@ -466,6 +470,7 @@ graph {self.graph_direction}
             if last_job is not None:
                 last_job.children.append(job)
                 job.parents.append(last_job)
+                self.seq_links.add((last_job, job))
             last_job = job
         # final chain job
         timeout = (

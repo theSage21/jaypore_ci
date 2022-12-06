@@ -30,7 +30,9 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
             .decode()
             .strip()
         )
+        os.environ["JAYPORE_COMMIT_BRANCH"] = branch
         sha = subprocess.check_output("git rev-parse HEAD", shell=True).decode().strip()
+        os.environ["JAYPORE_COMMIT_SHA"] = sha
         owner = Path(remote.path).parts[1]
         repo = Path(remote.path).parts[2].replace(".git", "")
         token = os.environ["JAYPORE_GITEA_TOKEN"]
