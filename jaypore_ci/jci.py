@@ -309,8 +309,9 @@ graph {self.graph_direction}
             }
 
             for a, b in edges:
+                arrow = "-.->"
                 mermaid += f"""
-        {ref[a]}({a.name}):::{st_map[a.status]} --> {ref[b]}({b.name}):::{st_map[b.status]}"""
+        {ref[a]}({a.name}):::{st_map[a.status]} {arrow} {ref[b]}({b.name}):::{st_map[b.status]}"""
             mermaid += """
 
 
