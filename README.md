@@ -117,3 +117,28 @@ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
     - Then we can set jaypore CI to use the remote docker socket by editing `.jaypore_ci/pre-push.githook`
     </summary>
   </details>
+- <details>
+    <summary>With a db service in background</summary>
+ 
+    ```python
+    from jaypore_ci import jci
+
+    # Services immediately return with a PASSED status
+    # If they exit with a Non ZERO code they are marked as FAILED, otherwise
+    # they are assumed to be PASSED
+    with jci.Pipeline(image="arjoonn/jaypore_ci:latest", timeout=15 * 60) as p:
+        p.in_sequence(
+            p.in_parallel(
+                p.job(image='mysql', name='Mysql', is_service=True),
+                p.job(image='redis', name='Redis', is_service=True),
+                p.job("python3 -m src.run_api", name='Myrepo:Api', is_service=True),
+            ),
+            p.in_parallel(
+                p.job("python3 -m pytest -m unit_tests tests", name="Testing:Unit"),
+                p.job("python3 -m pytest -m integration_tests tests", name="Testing:Integration"),
+                p.job("python3 -m pytest -m regression_tests tests", name="Testing:Regression"),
+            )
+        ).should_pass()
+    ```
+    </summary>
+  </details>
