@@ -10,9 +10,11 @@ class Executor:
 
     def __init__(self):
         self.pipe_id = None
+        self.pipeline = None
 
-    def set_pipe_id(self, pipe_id):
-        self.pipe_id = pipe_id
+    def set_pipeline(self, pipeline):
+        self.pipe_id = id(pipeline)
+        self.pipeline = pipeline
 
     def __enter__(self):
         return self

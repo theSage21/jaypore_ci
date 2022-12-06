@@ -150,9 +150,12 @@ class Job:  # pylint: disable=too-many-instance-attributes
                 p_nodes, p_edges = parent.get_graph()
                 nodes |= set(p_nodes)
                 edges |= set(p_edges)
-        return list(sorted(nodes, key=lambda x: x.name)), list(
-            sorted(edges, key=lambda x: (x[0].name, x[1].name))
+        nodes = list(sorted(nodes, key=lambda x: x.name))
+        in_degree = {a: len([None for x, y in edges if y == a]) for a in nodes}
+        edges = list(
+            sorted(edges, key=lambda x: (in_degree[x[1]], x[0].name, x[1].name))
         )
+        return nodes, edges
 
     def trigger(self):
         """
@@ -233,7 +236,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.remote = remote if remote is not None else gitea.Gitea.from_env()
         self.executor = executor if executor is not None else docker.Docker()
         self.graph_direction = graph_direction
-        self.executor.set_pipe_id(id(self), self)
+        self.executor.set_pipeline(self)
         # ---
         self.seq_links = set()
 
@@ -310,10 +313,10 @@ graph {self.graph_direction}
                 Status.SKIPPED: "skipped",
             }
 
-            for a, b in edges:
-                arrow = "-.-"
+            for i, (a, b) in enumerate(edges):
+                arrow = "-.-" if i % 2 == 0 else "-..-"
                 if (a, b) in self.seq_links:
-                    arrow = "==>"
+                    arrow = "====>"
                 mermaid += f"""
         {ref[a]}({a.name}):::{st_map[a.status]} {arrow} {ref[b]}({b.name}):::{st_map[b.status]}"""
             mermaid += """

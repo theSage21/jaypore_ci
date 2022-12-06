@@ -26,11 +26,11 @@ class Docker(Executor):
     def logging(self):
         return logger.bind(pipe_id=self.pipe_id, network_name=self.get_net())
 
-    def set_pipe_id(self, pipe_id, pipeline):
+    def set_pipeline(self, pipeline):
         if self.pipe_id is not None:
             self.delete_network()
             self.delete_all_jobs()
-        self.pipe_id = pipe_id
+        self.pipe_id = id(pipeline)
         self.pipeline = pipeline
         self.create_network()
 
