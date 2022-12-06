@@ -85,16 +85,17 @@ class Docker(Executor):
             "docker run -d",
             "-v /var/run/docker.sock:/var/run/docker.sock",
             f"-v /tmp/jaypore_{job.pipeline.remote.sha}:/jaypore_ci/run",
-            "--workdir /jaypore_ci/run",
+            *["--workdir /jaypore_ci/run" if not job.is_service else None],
             f"--name {self.get_job_name(job)}",
             f"--network {self.get_net()}",
             *env_vars,
             job.image,
-            job.command,
+            job.command if not job.is_service else None,
         ]
-        assert job.command
+        if not job.is_service:
+            assert job.command
         rprint(trigger)
-        return self.check_output(" ".join(trigger))
+        return self.check_output(" ".join(t for t in trigger if t is not None))
 
     def get_status(self, run_id: str) -> (str, str):
         ps_out = self.check_output(f"docker ps -f 'id={run_id}' --no-trunc")

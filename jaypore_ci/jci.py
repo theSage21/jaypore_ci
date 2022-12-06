@@ -54,6 +54,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         env: dict = None,
         children: List["Job"] = None,
         parents: List["Job"] = None,
+        is_service: bool = False,
     ):
         self.name = name
         self.command = command
@@ -64,6 +65,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         self.env = env
         self.children = children if children is not None else []
         self.parents = parents if parents is not None else []
+        self.is_service = is_service
         # --- run information
         self.logs = defaultdict(list)
         self.job_id = id(self)
@@ -110,8 +112,12 @@ class Job:  # pylint: disable=too-many-instance-attributes
         if not is_internal_call:
             self.pipeline.should_pass_called.add(self)
         self.trigger()
-        self.monitor_until_completion()
-        self.logging().info("Ok finished", status=self.status)
+        if self.is_service:
+            self.status = Status.PASSED
+            self.logging().info("Service started successfully", status=self.status)
+        else:
+            self.monitor_until_completion()
+            self.logging().info("Ok finished", status=self.status)
         self.update_report()
         return self.status == Status.PASSED
 
@@ -167,7 +173,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
             self.logging().info("Trigger called but job already running")
         self.check_job()
 
-    def check_job(self):
+    def check_job(self, with_update_report=True):
         self.logging().debug("Checking job run")
         if isinstance(self.command, str):
             is_running, exit_code, logs = self.pipeline.executor.get_status(self.run_id)
@@ -176,7 +182,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                 "Job run status found", is_running=is_running, exit_code=exit_code
             )
             if is_running:
-                self.status = Status.RUNNING
+                self.status = Status.RUNNING if not self.is_service else Status.PASSED
             else:
                 self.status = Status.PASSED if exit_code == 0 else Status.FAILED
             logs = clean_logs(logs)
@@ -188,7 +194,8 @@ class Job:  # pylint: disable=too-many-instance-attributes
                     run_id=self.run_id,
                 )
             self.logs["stdout"] = log_lines
-            self.update_report()
+            if with_update_report:
+                self.update_report()
 
     def is_complete(self):
         return self.status in FIN_STATUSES
@@ -221,6 +228,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.timeout = timeout
         self.env = {} if env is None else env
         self.jobs = []
+        self.services = []
         self.should_pass_called = set()
         self.remote = remote if remote is not None else gitea.Gitea.from_env()
         self.executor = executor if executor is not None else docker.Docker()
@@ -252,6 +260,9 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
             if job.status == Status.RUNNING:
                 pipe_status = Status.RUNNING
                 break
+        for service in self.services:
+            service.check_job(with_update_report=False)
+        service.check_job()
         for job in self.should_pass_called:
             if job.is_complete():
                 pipe_status = job.status
@@ -342,7 +353,10 @@ graph {self.graph_direction}
         image: str = None,
         timeout: int = None,
         env: dict = None,
+        is_service: bool = False,
     ) -> Job:
+        if not is_service:
+            assert commands
         job = Job(
             name=name if name is not None else " ",
             command="\n".join(commands),
@@ -352,8 +366,11 @@ graph {self.graph_direction}
             pipeline=self,
             env=env if env is not None else {},
             children=[],
+            is_service=is_service,
         )
         self.jobs.append(job)
+        if is_service:
+            self.services.append(job)
         return job
 
     def in_parallel(self, *jobs, image=None, timeout=None, env=None):
@@ -376,7 +393,7 @@ graph {self.graph_direction}
                 time.sleep(1)
                 something_is_running = False
                 for job in jobs:
-                    job.check_job()
+                    job.check_job(with_update_report=False)
                     job_self.logs["stdout"].append(
                         f"Checking: {job.job_id} {job.name} is_complete: {job.is_complete()}"
                     )
@@ -391,6 +408,7 @@ graph {self.graph_direction}
                         msg = "Dependent job failed"
                         job_self.logging().error(msg, failed_job_id=job.job_id)
                         job_self.logs["stdout"].append(f"{msg}: {job.job_id}")
+                job.check_job()
             if job_self.status == Status.RUNNING:
                 job_self.status = Status.PASSED
                 job_self.logs["stdout"].append("Ok")
