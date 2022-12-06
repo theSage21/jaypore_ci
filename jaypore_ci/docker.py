@@ -85,6 +85,7 @@ class Docker(Executor):
             "docker run -d",
             "-v /var/run/docker.sock:/var/run/docker.sock",
             f"-v /tmp/jaypore_{job.pipeline.remote.sha}:/jaypore_ci/run",
+            "--workdir /jaypore_ci/run",
             f"--name {self.get_job_name(job)}",
             f"--network {self.get_net()}",
             *env_vars,
