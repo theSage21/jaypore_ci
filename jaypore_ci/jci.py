@@ -233,7 +233,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.remote = remote if remote is not None else gitea.Gitea.from_env()
         self.executor = executor if executor is not None else docker.Docker()
         self.graph_direction = graph_direction
-        self.executor.set_pipe_id(id(self))
+        self.executor.set_pipe_id(id(self), self)
 
     def logging(self):
         return logger.bind(

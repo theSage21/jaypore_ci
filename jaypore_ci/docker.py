@@ -21,18 +21,22 @@ class Docker(Executor):
     def __init__(self):
         super().__init__()
         self.pipe_id = None
+        self.pipeline = None
 
     def logging(self):
         return logger.bind(pipe_id=self.pipe_id, network_name=self.get_net())
 
-    def set_pipe_id(self, pipe_id):
+    def set_pipe_id(self, pipe_id, pipeline):
         if self.pipe_id is not None:
             self.delete_network()
+            self.delete_all_jobs()
         self.pipe_id = pipe_id
+        self.pipeline = pipeline
         self.create_network()
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.delete_network()
+        self.delete_all_jobs()
 
     def get_net(self):
         return f"jaypore_{self.pipe_id}" if self.pipe_id is not None else None
@@ -59,6 +63,17 @@ class Docker(Executor):
                 ),
             )
         raise Exception("Cannot create network")
+
+    def delete_all_jobs(self):
+        assert self.pipe_id is not None, "Cannot delete jobs if pipe is not set"
+        for job in self.pipeline.job:
+            self.logging().info(
+                "Stop job:",
+                subprocess=self.check_output(f"docker stop -t 1 {job.run_id}"),
+            )
+            job.check_job(with_update_report=False)
+        job.check_job()
+        self.logging().info("All jobs stopped")
 
     def delete_network(self):
         assert self.pipe_id is not None, "Cannot delete network if pipe is not set"
