@@ -175,7 +175,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
 
     def check_job(self, with_update_report=True):
         self.logging().debug("Checking job run")
-        if isinstance(self.command, str):
+        if isinstance(self.command, str) and self.run_id is not None:
             is_running, exit_code, logs = self.pipeline.executor.get_status(self.run_id)
             self.last_check = pendulum.now(TZ)
             self.logging().debug(
@@ -260,9 +260,11 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
             if job.status == Status.RUNNING:
                 pipe_status = Status.RUNNING
                 break
+        service = None
         for service in self.services:
             service.check_job(with_update_report=False)
-        service.check_job()
+        if service is not None:
+            service.check_job()
         for job in self.should_pass_called:
             if job.is_complete():
                 pipe_status = job.status
