@@ -66,13 +66,15 @@ class Docker(Executor):
 
     def delete_all_jobs(self):
         assert self.pipe_id is not None, "Cannot delete jobs if pipe is not set"
-        for job in self.pipeline.job:
+        job = None
+        for job in self.pipeline.jobs:
             self.logging().info(
                 "Stop job:",
                 subprocess=self.check_output(f"docker stop -t 1 {job.run_id}"),
             )
             job.check_job(with_update_report=False)
-        job.check_job()
+        if job is not None:
+            job.check_job()
         self.logging().info("All jobs stopped")
 
     def delete_network(self):
