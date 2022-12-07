@@ -26,7 +26,7 @@ main() {
         -v /tmp/jaypore_$SHA:/jaypore/run \
         --workdir /jaypore/run \
         arjoonn/jaypore_ci:latest \
-        bash -c 'cp -r /jaypore/repo/. /jaypore/run && cd /jaypore/run/ && git clean -fdx && python .jaypore_ci/cicd.py'
+        bash -c 'cp -r /jaypore/repo/. /jaypore/run && cd /jaypore/run/ && git clean -fdx && python cicd/cicd.py'
     echo '----------------------------------------------'
 }
 (main)
