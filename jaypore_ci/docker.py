@@ -67,7 +67,7 @@ class Docker(Executor):
     def delete_all_jobs(self):
         assert self.pipe_id is not None, "Cannot delete jobs if pipe is not set"
         job = None
-        for job in self.pipeline.jobs:
+        for job in self.pipeline.jobs.values():
             if job.run_id is not None and not job.run_id.startswith("pyrun_"):
                 self.logging().info(
                     "Stop job:",

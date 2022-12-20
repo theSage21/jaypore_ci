@@ -230,7 +230,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.image = image
         self.timeout = timeout
         self.env = {} if env is None else env
-        self.jobs = []
+        self.jobs = {}
         self.services = []
         self.should_pass_called = set()
         self.remote = remote if remote is not None else gitea.Gitea.from_env()
@@ -297,29 +297,35 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 
     def render_graph(self) -> str:
         mermaid = ""
-        for job in self.should_pass_called:
-            nodes, edges = job.get_graph()
-            mermaid += f"""
+        nodes, edges = set(), set()
+        for job in self.jobs.values():
+            nodes.add(job.name)
+            for parent in job.parents:
+                parent = self.jobs[parent]
+                nodes.add(parent.name)
+                edges.add((parent.name, job.name))
+        mermaid += f"""
 ```mermaid
 graph {self.graph_direction}
 """
-            ref = {n: f"N{i}" for i, n in enumerate(nodes)}
-            st_map = {
-                Status.PENDING: "pending",
-                Status.RUNNING: "running",
-                Status.FAILED: "failed",
-                Status.PASSED: "passed",
-                Status.TIMEOUT: "timeout",
-                Status.SKIPPED: "skipped",
-            }
-
-            for i, (a, b) in enumerate(edges):
-                arrow = "-.-" if i % 2 == 0 else "-..-"
-                if (a, b) in self.seq_links:
-                    arrow = "====>"
-                mermaid += f"""
-        {ref[a]}({a.name}):::{st_map[a.status]} {arrow} {ref[b]}({b.name}):::{st_map[b.status]}"""
-            mermaid += """
+        ref = {n: f"N{i}" for i, n in enumerate(nodes)}
+        st_map = {
+            Status.PENDING: "pending",
+            Status.RUNNING: "running",
+            Status.FAILED: "failed",
+            Status.PASSED: "passed",
+            Status.TIMEOUT: "timeout",
+            Status.SKIPPED: "skipped",
+        }
+        degrees = {n: sum(1 for edge in edges if n in edge) for n in nodes}
+        for (a, b) in edges:
+            arrow = "-.-"
+            if degrees[a] >= 3:
+                arrow = "-...-"
+            a, b = self.jobs[a], self.jobs[b]
+            mermaid += f"""
+        {ref[a.name]}({a.name}):::{st_map[a.status]} {arrow} {ref[b.name]}({b.name}):::{st_map[b.status]}"""
+        mermaid += """
 
 
 
@@ -364,7 +370,9 @@ graph {self.graph_direction}
         timeout: int = None,
         env: dict = None,
         is_service: bool = False,
+        depends_on: List[str] = None,
     ) -> Job:
+        depends_on = [] if depends_on is None else depends_on
         if not is_service:
             assert commands
         job = Job(
@@ -377,8 +385,10 @@ graph {self.graph_direction}
             env=env if env is not None else {},
             children=[],
             is_service=is_service,
+            parents=depends_on,
         )
-        self.jobs.append(job)
+        assert name not in self.jobs, "Name has already been used"
+        self.jobs[name] = job
         if is_service:
             self.services.append(job)
         return job
