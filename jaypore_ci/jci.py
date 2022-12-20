@@ -393,121 +393,6 @@ graph {self.graph_direction}
             self.services.append(job)
         return job
 
-    def in_parallel(self, *jobs, image=None, timeout=None, env=None):
-        jobs = [job for job in jobs if job is not None]
-        timeout = (
-            max(
-                job.timeout if job.timeout is not None else self.timeout for job in jobs
-            )
-            if timeout is None
-            else timeout
-        )
-
-        def run_and_join(job_self):
-            job_self.logs["stdout"].append("Starting parallel run")
-            for job in jobs:
-                job_self.logs["stdout"].append(f"Trigger job: {job.job_id} {job.name}")
-                job.trigger()
-            something_is_running = True
-            while something_is_running:
-                time.sleep(1)
-                something_is_running = False
-                for job in jobs:
-                    job.check_job(with_update_report=False)
-                    job_self.logs["stdout"].append(
-                        f"Checking: {job.job_id} {job.name} is_complete: {job.is_complete()}"
-                    )
-                    if not job.is_complete():
-                        something_is_running = True
-                    if (
-                        job.is_complete()
-                        and job.status != Status.PASSED
-                        and job_self.status == Status.RUNNING
-                    ):
-                        job_self.status = Status.FAILED
-                        msg = "Dependent job failed"
-                        job_self.logging().error(msg, failed_job_id=job.job_id)
-                        job_self.logs["stdout"].append(f"{msg}: {job.job_id}")
-                job.check_job()
-            if job_self.status == Status.RUNNING:
-                job_self.status = Status.PASSED
-                job_self.logs["stdout"].append("Ok")
-
-        join = Job(
-            name="+",
-            command=run_and_join,
-            status=Status.PENDING,
-            image=self.image if image is None else image,
-            pipeline=self,
-            env={} if env is None else env,
-            children=[],
-            timeout=timeout,
-            parents=list(jobs),
-        )
-        self.jobs.append(join)
-        for job in jobs:
-            job.children.append(join)
-        return join
-
-    def in_sequence(self, *jobs, image=None, env=None, timeout=None):
-        jobs = [job for job in jobs if job is not None]
-
-        def run_seq(job_self):
-            job_self.logs["stdout"].append("Starting sequential run")
-            for job in jobs:
-                if job_self.status == Status.RUNNING:
-                    job_self.logs["stdout"].append(
-                        f"Running job: {job.job_id} {job.name}"
-                    )
-                    ok = job.should_pass(is_internal_call=True)
-                    if not ok:
-                        job_self.status = Status.FAILED
-                        job_self.logs["stdout"].append(
-                            f"Failed job: {job.job_id} {job.name}"
-                        )
-                        job_self.logging().error(
-                            "Dependent job failed", failed_job_id=job.job_id
-                        )
-                elif job_self.status == Status.FAILED:
-                    job_self.logs["stdout"].append(
-                        f"Skipping job: {job.job_id} {job.name}"
-                    )
-                    job.status = Status.SKIPPED
-                    continue
-            if job_self.status == Status.RUNNING:
-                job_self.status = Status.PASSED
-                job_self.logs["stdout"].append("Ok")
-
-        last_job = None
-        for job in jobs:
-            if last_job is not None:
-                last_job.children.append(job)
-                job.parents.append(last_job)
-                self.seq_links.add((last_job, job))
-            last_job = job
-        # final chain job
-        timeout = (
-            sum(
-                job.timeout if job.timeout is not None else self.timeout for job in jobs
-            )
-            if timeout is None
-            else timeout
-        )
-        join = Job(
-            name="+",
-            command=run_seq,
-            status=Status.PENDING,
-            image=self.image if image is None else image,
-            pipeline=self,
-            env={} if env is None else env,
-            children=[],
-            timeout=timeout,
-            parents=[last_job],
-        )
-        self.jobs.append(join)
-        last_job.children.append(join)
-        return join
-
     def env_matrix(self, **kwargs):
         """
         Return a cartesian product of all the provided kwargs
@@ -515,3 +400,14 @@ graph {self.graph_direction}
         keys = list(sorted(kwargs.keys()))
         for values in product(*[kwargs[key] for key in keys]):
             yield dict(list(zip(keys, values)))
+
+    def run(self):
+        status = {
+            Status.PENDING: "pending",
+            Status.RUNNING: "pending",
+            Status.FAILED: "failure",
+            Status.PASSED: "success",
+            Status.TIMEOUT: "warning",
+            Status.SKIPPED: "warning",
+        }[self.get_status()]
+        self.remote.publish(self.render_report(), status)
