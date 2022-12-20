@@ -261,7 +261,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 
     def get_status(self):
         pipe_status = Status.PENDING
-        for job in self.jobs:
+        for job in self.jobs.values():
             if job.status == Status.RUNNING:
                 pipe_status = Status.RUNNING
                 break
