@@ -344,7 +344,7 @@ graph {self.graph_direction}
         fake_job = namedtuple("fake_job", "name logs")(
             "JayporeCi", {"stdout": jaypore_logs}
         )
-        for job in [fake_job] + self.jobs.values():
+        for job in [fake_job] + list(self.jobs.values()):
             job_log = []
             for logname, stream in job.logs.items():
                 job_log += [f"============== {logname} ============="]
