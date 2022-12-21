@@ -5,7 +5,7 @@ set -o pipefail
 main (){
     REPO_ROOT=$(git rev-parse --show-toplevel)
     LOCAL_HOOK=$(echo $REPO_ROOT/.git/hooks/pre-push)
-    IMAGE='arjoonn/jaypore_ci:latest'
+    IMAGE='arjoonn/jci:latest'
     echo "Working in repo: $REPO_ROOT"
     mkdir $REPO_ROOT/.jaypore_ci || echo 'Moving on..'
     cat     > $REPO_ROOT/.jaypore_ci/cicd.py << EOF
@@ -36,8 +36,8 @@ main() {
     SHA=\$(git rev-parse HEAD)
     REPO_ROOT=\$(git rev-parse --show-toplevel)
     TOKEN=\$(echo "url=\$(git remote -v|grep push|awk '{print \$2}')"|git credential fill|grep password|awk -F= '{print \$2}')
-    # We will mount the current dir into /jaypore/repo
-    # Then we will copy things over to /jaypore/run
+    # We will mount the current dir into /jaypore_ci/repo
+    # Then we will copy things over to /jaypore_ci/run
     # Then we will run git clean to remove anything that is not in git
     # Then we call the actual cicd code
     #
@@ -49,11 +49,11 @@ main() {
         --name jaypore_ci_\$SHA \\
         -e JAYPORE_GITEA_TOKEN \\
         -v /var/run/docker.sock:/var/run/docker.sock \\
-        -v \$REPO_ROOT:/jaypore/repo:ro \\
-        -v /tmp/jaypore_\$SHA:/jaypore/run \\
-        --workdir /jaypore/run \\
+        -v \$REPO_ROOT:/jaypore_ci/repo:ro \\
+        -v /tmp/jaypore_\$SHA:/jaypore_ci/run \\
+        --workdir /jaypore_ci/run \\
         $IMAGE \\
-        bash -c 'cp -r /jaypore/repo/. /jaypore/run && cd /jaypore/run/ && git clean -fdx && python .jaypore_ci/cicd.py'
+        bash -c 'cp -r /jaypore_ci/repo/. /jaypore_ci/run && cd /jaypore_ci/run/ && git clean -fdx && python .jaypore_ci/cicd.py'
     echo '----------------------------------------------'
 }
 (main)

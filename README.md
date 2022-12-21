@@ -27,12 +27,10 @@ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
     ```python
     from jaypore_ci import jci
 
-    with jci.Pipeline( image="arjoonn/jaypore_ci:latest", timeout=15 * 60) as p:
-        p.in_parallel(
-            p.job("python3 -m black --check .", name="Black"),
-            p.job("python3 -m pylint jaypore_ci/ tests/", name="PyLint"),
-            p.job("python3 -m pytest tests/", name="PyTest"),
-        ).should_pass()
+    with jci.Pipeline() as p:
+        p.job("Black", "python3 -m black --check .")
+        p.job("Pylint", "python3 -m pylint jaypore_ci/ tests/")
+        p.job("PyTest", "python3 -m pytest tests/")
     ```
     </summary>
   </details>
@@ -42,12 +40,10 @@ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
     ```python
     from jaypore_ci import jci
 
-    with jci.Pipeline(image="scratch", timeout=15 * 60) as p:
-        p.image = image = f'myproject_{p.remote.sha}'
-        p.in_sequence(
-            p.job(f"docker build -t {image} .", name="Docker image"),
-            p.job("python3 -m pytest tests/", name="PyTest"),
-        ).should_pass()
+    with jci.Pipeline() as p:
+        image = f"myproject_{p.remote.sha}"
+        p.job("Docker", f"docker build -t {image} .")
+        p.job("PyTest", "python3 -m pytest tests/", depends_on=["PyTest"])
     ```
     </summary>
   </details>
@@ -57,35 +53,33 @@ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
     ```python
     from jaypore_ci import jci
 
-    with jci.Pipeline(image="arjoonn/jaypore_ci:latest", timeout=15 * 60) as p:
-        p.image = image = f"myproject_{p.remote.sha}"
-
-        p.in_sequence(
-            p.job(f"docker build -t {image} .", name="Docker image"),
+    with jci.Pipeline() as p:
+        image = f"myproject_{p.remote.sha}"
+        with p.stage("build"):
+            p.job("DockProd", f"docker build --target ProdEnv -t {image}_prod .")
+            p.job("DockDev", f"docker build --target DevEnv -t {image}_dev .")
+        with p.stage("checking"):
+            p.job("UnitTest", "python3 -m pytest -m unit tests/")
+            p.job("PyLint", "python3 -m pylint src/")
+            p.job("Black", "python3 -m black --check .")
             p.job(
-                f"docker tag -t {image} dockerhubaccount/{image}:{p.remote.sha}",
-                name="Docker tag",
-            ),
+                "IntegrationTest",
+                "python3 -m pytest -m integration tests/",
+                depends_on=["PyLint", "UnitTest"],
+            )
+        with p.stage("publish"):
+            p.job("TagProd", f"docker tag -t {image}_prod hub/{image}_prod:{p.remote.sha}")
+            p.job("TagDev", f"docker tag -t {image}_dev hub/{image}_dev:{p.remote.sha}")
             p.job(
-                f"docker push dockerhubaccount/{image}:{p.remote.sha}", name="Docker push"
-            ),
-            p.in_parallel(
-                p.job("python3 -m pytest tests/", name="PyTest"),
-                p.job("python3 -m pylint src/", name="PyLint"),
-                p.job("python3 -m black --check .", name="Black"),
-            ),
-            p.in_parallel(
-                p.in_sequence(
-                    p.job("poetry build", name="pypi build"),
-                    p.job("poetry publish", name="pypi publish"),
-                ),
-                p.job("python3 -m create_release_notes", name="release notes"),
-                p.job(
-                    "python3 -m send_emails_to_downstream_packagers_and_maintainers",
-                    name="Notify downstream",
-                ),
-            ),
-        ).should_pass()
+                "PushProd",
+                f"docker push hub/{image}_prod:{p.remote.sha}",
+                depends_on=["TagProd"],
+            )
+            p.job(
+                "PushDev",
+                f"docker push hub/{image}_dev:{p.remote.sha}",
+                depends_on=["TagDev"],
+            )
     ```
     </summary>
   </details>
@@ -95,18 +89,15 @@ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
     ```python
     from jaypore_ci import jci
 
-    with jci.Pipeline(image="arjoonn/jaypore_ci:latest", timeout=15 * 60) as p:
-        jobs = [
-            p.job("python3 -m pytest tests", name=f"Tests: {env}", env=env)
-            for env in p.env_matrix(
-                BROWSER=["firefox", "chromium", "webkit"],
-                SCREENSIZE=["phone", "laptop", "extended"],
-                ONLINE=["online", "offline"],
-            )
-        ]
+    with jci.Pipeline() as p:
         # This will have 18 jobs
         # one for each possible combination of BROWSER, SCREENSIZE, ONLINE
-        p.in_parallel(*jobs).should_pass()
+        for env in p.env_matrix(
+            BROWSER=["firefox", "chromium", "webkit"],
+            SCREENSIZE=["phone", "laptop", "extended"],
+            ONLINE=["online", "offline"],
+        ):
+            p.job(f"Test: {env}", "python3 -m pytest tests", env=env)
     ```
     </summary>
   </details>
@@ -126,19 +117,15 @@ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
     # Services immediately return with a PASSED status
     # If they exit with a Non ZERO code they are marked as FAILED, otherwise
     # they are assumed to be PASSED
-    with jci.Pipeline(image="arjoonn/jaypore_ci:latest", timeout=15 * 60) as p:
-        p.in_sequence(
-            p.in_parallel(
-                p.job(image='mysql', name='Mysql', is_service=True),
-                p.job(image='redis', name='Redis', is_service=True),
-                p.job("python3 -m src.run_api", name='Myrepo:Api', is_service=True),
-            ),
-            p.in_parallel(
-                p.job("python3 -m pytest -m unit_tests tests", name="Testing:Unit"),
-                p.job("python3 -m pytest -m integration_tests tests", name="Testing:Integration"),
-                p.job("python3 -m pytest -m regression_tests tests", name="Testing:Regression"),
-            )
-        ).should_pass()
+    with jci.Pipeline() as p:
+        with p.stage("Services", is_service=True):
+            p.job("Mysql", None, image="mysql")
+            p.job("Redis", None, image="redis")
+            p.job("Api", "python3 -m src.run_api", image="python:3.11")
+        with p.stage("Testing"):
+            p.job("UnitTest", "python3 -m pytest -m unit_tests tests")
+            p.job("IntegrationTest", "python3 -m pytest -m integration_tests tests")
+            p.job("RegressionTest", "python3 -m pytest -m regression_tests tests")
     ```
     </summary>
   </details>

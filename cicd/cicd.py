@@ -1,18 +1,12 @@
 from jaypore_ci import jci
 
-with jci.Pipeline(image="Will set later", timeout=15 * 60) as p:
-    p.image = image = f"jaypore_image_{p.remote.sha}"
-    p.in_sequence(
-        p.job(
-            f"docker build -t {image} .",
-            image="arjoonn/jaypore_ci:latest",
-            name="Docker build",
-        ),
-        p.in_parallel(
-            p.job("pwd", name="Pwd"),
-            p.job("tree", name="Tree"),
-            p.job("python3 -m black --check .", name="Black"),
-            p.job("python3 -m pylint jaypore_ci/ tests/", name="PyLint"),
-            p.job("python3 -m pytest tests/", name="PyTest"),
-        ),
-    ).should_pass()
+
+with jci.Pipeline() as p:
+    jcienv = f"jcienv:{p.remote.sha}"
+    with p.stage("Docker"):
+        p.job("JciEnv", f"docker build  --target jcienv -t {jcienv} .")
+        p.job("Jci", f"docker build  --target jci -t jci:{p.remote.sha} .")
+    with p.stage("Checks"):
+        p.job("black", "python3 -m black --check .")
+        p.job("pylint", "python3 -m pylint jaypore_ci/ tests/")
+        p.job("pytest", "python3 -m pytest tests/")
