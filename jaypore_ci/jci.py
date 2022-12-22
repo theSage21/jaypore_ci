@@ -341,9 +341,9 @@ flowchart {self.graph_direction}
         """
         depends_on = [] if depends_on is None else depends_on
         assert name not in self.jobs
-        kwargs = dict(self.pipe_kwargs)
+        kwargs, job_kwargs = dict(self.pipe_kwargs), kwargs
         kwargs.update(self.stage_kwargs if self.stage_kwargs is not None else {})
-        kwargs.update(kwargs)
+        kwargs.update(job_kwargs)
         if not kwargs.get("is_service"):
             assert command
         job = Job(
