@@ -277,6 +277,8 @@ flowchart {self.graph_direction}
             arrow = "-.->"
             for n in nodes:
                 n = self.jobs[n]
+                if n.parents:
+                    continue
                 mermaid += f"""
                 s_{stage}(( )) {arrow} {ref[n.name]}({n.name}):::{st_map[n.status]}"""
             for (a, b) in edges:
