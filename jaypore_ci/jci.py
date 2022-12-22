@@ -10,7 +10,7 @@ import structlog
 import pendulum
 
 from jaypore_ci import gitea, docker
-from jaypore_ci.interfaces import Remote, Executor
+from jaypore_ci.interfaces import Remote, Executor, TriggerFailed
 from jaypore_ci.logging import logger, jaypore_logs
 
 TZ = "UTC"
@@ -112,8 +112,19 @@ class Job:  # pylint: disable=too-many-instance-attributes
             self.logging().info("Trigger called")
             self.status = Status.RUNNING
             if isinstance(self.command, str):
-                self.run_id = self.pipeline.executor.run(self)
-            self.logging().info("Trigger done")
+                try:
+                    self.run_id = self.pipeline.executor.run(self)
+                    self.logging().info("Trigger done")
+                except TriggerFailed as e:
+                    job_run = e.args[0]
+                    self.logging().error(
+                        "Trigger failed",
+                        returncode=job_run.returncode,
+                        job_name=self.name,
+                    )
+                    logs = job_run.stdout.decode()
+                    self.logs["stdout"] = clean_logs(logs).split("\n")
+                    self.status = Status.FAILED
         else:
             self.logging().info("Trigger called but job already running")
         self.check_job()
@@ -263,26 +274,28 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 flowchart {self.graph_direction}
 """
         for stage in self.stages:
-            mermaid += f"""
-            subgraph {stage}
-                direction {self.graph_direction}
-            """
             nodes, edges = set(), set()
             for job in self.jobs.values():
                 if job.stage != stage:
                     continue
                 nodes.add(job.name)
                 edges |= {(p, job.name) for p in job.parents}
+            mermaid += f"""
+            subgraph {stage}
+                direction {self.graph_direction}
+            """
             ref = {n: f"{stage}_{i}" for i, n in enumerate(nodes)}
             arrow = "-.->"
-            for n in nodes:
+            for i, n in enumerate(nodes):
                 n = self.jobs[n]
                 if n.parents:
                     continue
+                arrow = "-.->" if i % 2 == 0 else "-..->"
                 mermaid += f"""
                 s_{stage}(( )) {arrow} {ref[n.name]}({n.name}):::{st_map[n.status]}"""
-            for (a, b) in edges:
+            for i, (a, b) in enumerate(edges):
                 a, b = self.jobs[a], self.jobs[b]
+                arrow = "-.->" if i % 2 == 0 else "-..->"
                 mermaid += f"""
                 {ref[a.name]}({a.name}):::{st_map[a.status]} {arrow} {ref[b.name]}({b.name}):::{st_map[b.status]}"""
             mermaid += """
@@ -342,6 +355,7 @@ flowchart {self.graph_direction}
         Define a job in this pipeline.
         """
         depends_on = [] if depends_on is None else depends_on
+        depends_on = [depends_on] if isinstance(depends_on, str) else depends_on
         assert name not in self.jobs
         kwargs, job_kwargs = dict(self.pipe_kwargs), kwargs
         kwargs.update(self.stage_kwargs if self.stage_kwargs is not None else {})

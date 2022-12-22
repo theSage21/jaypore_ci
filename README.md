@@ -1,8 +1,7 @@
 # Jaypore CI
 
-    A CI system that sounds ancient and powerful.
-    Like the city of Jaypore.
-    
+> A CI system that sounds ancient and powerful.
+> Like the city of Jaypore.
 
 ## Expected usage
 
@@ -11,7 +10,7 @@ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
 ```
 
 - Use the script to install this in any project.
-- Configure CI at `.jaypore_ci/cicd.py`
+- Configure CI at `cicd/cicd.py`
 - Each git-push will trigger a CI job.
 
 ## Screenshot
@@ -105,7 +104,7 @@ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
     <summary>TLDR: Running jobs on cloud</summary>
 
     - We can get the remote machine's docker socket by using [ssh socket forwarding](https://medium.com/@dperny/forwarding-the-docker-socket-over-ssh-e6567cfab160)
-    - Then we can set jaypore CI to use the remote docker socket by editing `.jaypore_ci/pre-push.githook`
+    - Then we can set jaypore CI to use the remote docker socket by editing `cicd/pre-push.githook`
     </summary>
   </details>
 - <details>

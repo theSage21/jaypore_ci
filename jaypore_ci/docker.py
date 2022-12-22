@@ -2,7 +2,7 @@ import subprocess
 
 from rich import print as rprint
 
-from jaypore_ci.interfaces import Executor
+from jaypore_ci.interfaces import Executor, TriggerFailed
 from jaypore_ci.logging import logger
 
 
@@ -113,7 +113,17 @@ class Docker(Executor):
         if not job.is_service:
             assert job.command
         rprint(trigger)
-        return self.check_output(" ".join(t for t in trigger if t is not None))
+        trigger = " ".join(t for t in trigger if t is not None)
+        run_job = subprocess.run(
+            trigger,
+            shell=True,
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        if run_job.returncode == 0:
+            return run_job.stdout.decode().strip()
+        raise TriggerFailed(run_job)
 
     def get_status(self, run_id: str) -> (str, str):
         ps_out = self.check_output(f"docker ps -f 'id={run_id}' --no-trunc")

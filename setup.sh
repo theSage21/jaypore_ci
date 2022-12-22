@@ -7,8 +7,8 @@ main (){
     LOCAL_HOOK=$(echo $REPO_ROOT/.git/hooks/pre-push)
     IMAGE='arjoonn/jci:latest'
     echo "Working in repo: $REPO_ROOT"
-    mkdir $REPO_ROOT/.jaypore_ci || echo 'Moving on..'
-    cat     > $REPO_ROOT/.jaypore_ci/cicd.py << EOF
+    mkdir $REPO_ROOT/cicd || echo 'Moving on..'
+    cat     > $REPO_ROOT/cicd/cicd.py << EOF
 from jaypore_ci import jci
 
 with jci.Pipeline(
@@ -24,7 +24,7 @@ with jci.Pipeline(
     ).should_pass()
 EOF
 
-    cat     > $REPO_ROOT/.jaypore_ci/pre-push.githook << EOF
+    cat     > $REPO_ROOT/cicd/pre-push.githook << EOF
 #! /bin/bash
 #
 set -o errexit
@@ -53,13 +53,13 @@ main() {
         -v /tmp/jaypore_\$SHA:/jaypore_ci/run \\
         --workdir /jaypore_ci/run \\
         $IMAGE \\
-        bash -c 'cp -r /jaypore_ci/repo/. /jaypore_ci/run && cd /jaypore_ci/run/ && git clean -fdx && python .jaypore_ci/cicd.py'
+        bash -c 'cp -r /jaypore_ci/repo/. /jaypore_ci/run && cd /jaypore_ci/run/ && git clean -fdx && python cicd/cicd.py'
     echo '----------------------------------------------'
 }
 (main)
 EOF
     echo "Creating git hook for pre-commit"
-    chmod u+x $REPO_ROOT/.jaypore_ci/pre-push.githook
+    chmod u+x $REPO_ROOT/cicd/pre-push.githook
 
     if test -f "$LOCAL_HOOK"; then
         if test -f "$LOCAL_HOOK.local"; then
@@ -67,7 +67,7 @@ EOF
             echo $LOCAL_HOOK
             echo $LOCAL_HOOK.local
             echo "Please link"
-            echo "  Jaypore hook : $REPO_ROOT/.jaypore_ci/pre-push.githook"
+            echo "  Jaypore hook : $REPO_ROOT/cicd/pre-push.githook"
             echo "with"
             echo "  Existing hook: $LOCAL_HOOK"
             echo "manually by editing the existing hook file"
@@ -80,7 +80,7 @@ EOF
             echo "$REPO_ROOT/.git/hooks/pre-push.local" >> $REPO_ROOT/.git/hooks/pre-push
         fi
     fi
-    echo "$REPO_ROOT/.jaypore_ci/pre-push.githook" >> $REPO_ROOT/.git/hooks/pre-push
+    echo "$REPO_ROOT/cicd/pre-push.githook" >> $REPO_ROOT/.git/hooks/pre-push
     chmod u+x $LOCAL_HOOK
 
 }

@@ -1,3 +1,7 @@
+class TriggerFailed(Exception):
+    ...
+
+
 class Executor:
     """
     It can be docker / podman / shell etc.
