@@ -1,3 +1,8 @@
+"""
+The basic logging module.
+
+All logs are collected and posted along with the report in the remote PR.
+"""
 import logging
 from typing import Any
 

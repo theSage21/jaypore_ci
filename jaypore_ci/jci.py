@@ -1,3 +1,6 @@
+"""
+The code submodule for Jaypore CI.
+"""
 import time
 import re
 from enum import Enum
@@ -15,9 +18,11 @@ from jaypore_ci.logging import logger, jaypore_logs
 
 TZ = "UTC"
 
+__all__ = ["Pipeline", "Job"]
+
 
 class Status(Enum):
-    "Each pipeline can be in these statuses"
+    "Each pipeline can be in any one of these statuses"
     PENDING = 10
     RUNNING = 30
     FAILED = 40
@@ -28,11 +33,22 @@ class Status(Enum):
 
 # All of these statuses are considered "finished" statuses
 FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
-
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
-def clean_logs(logs):
+def __node_mod__(nodes):
+    mod = 1
+    if len(nodes) > 5:
+        mod = 2
+    if len(nodes) > 10:
+        mod = 3
+    return mod
+
+
+def __clean_logs__(logs):
+    """
+    Clean logs so that they don't have HTML/ANSI color codes in them.
+    """
     logs = logs.replace("<", r"\<").replace(">", r"\>")
     return ansi_escape.sub("", logs)
 
@@ -41,6 +57,8 @@ class Job:  # pylint: disable=too-many-instance-attributes
     """
     This is the fundamental building block.
     Each job goes through a lifecycle defined by `Status` class.
+
+    A job is run by an Executor as part of a Pipeline.
     """
 
     def __init__(
@@ -77,6 +95,10 @@ class Job:  # pylint: disable=too-many-instance-attributes
         self.last_check = None
 
     def logging(self):
+        """
+        Returns a logging instance that has job specific information bound to
+        it.
+        """
         return self.pipeline.logging().bind(
             job_id=self.job_id,
             job_name=self.name,
@@ -85,11 +107,11 @@ class Job:  # pylint: disable=too-many-instance-attributes
 
     def update_report(self):
         """
-        Update the report
+        Update the status report.
         Usually called when a job changes some of it's internal state like:
-            - logs
-            - status
-            - last_check
+            - logs are updated
+            - status has changed
+            - last_check is called
         """
         self.logging().debug("Update report")
         status = {
@@ -106,6 +128,9 @@ class Job:  # pylint: disable=too-many-instance-attributes
         """
         Trigger the job via the pipeline's executor.
         This will immediately return and will not wait for the job to finish.
+
+        It is also idempotent. Calling this multiple times will only trigger
+        the job once.
         """
         if self.status == Status.PENDING:
             self.run_start = pendulum.now(TZ)
@@ -123,13 +148,17 @@ class Job:  # pylint: disable=too-many-instance-attributes
                         job_name=self.name,
                     )
                     logs = job_run.stdout.decode()
-                    self.logs["stdout"] = clean_logs(logs).split("\n")
+                    self.logs["stdout"] = __clean_logs__(logs).split("\n")
                     self.status = Status.FAILED
         else:
             self.logging().info("Trigger called but job already running")
         self.check_job()
 
-    def check_job(self, with_update_report=True):
+    def check_job(self, *, with_update_report=True):
+        """
+        This will check the status of the job.
+        If `with_update_report` is False, it will not push an update to the remote.
+        """
         if isinstance(self.command, str) and self.run_id is not None:
             self.logging().debug("Checking job run")
             is_running, exit_code, logs = self.pipeline.executor.get_status(self.run_id)
@@ -141,7 +170,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                 self.status = Status.RUNNING if not self.is_service else Status.PASSED
             else:
                 self.status = Status.PASSED if exit_code == 0 else Status.FAILED
-            logs = clean_logs(logs)
+            logs = __clean_logs__(logs)
             log_lines = logs.split("\n")
             for line in log_lines[len(self.logs["stdout"]) :]:
                 self.logging().debug(
@@ -154,20 +183,28 @@ class Job:  # pylint: disable=too-many-instance-attributes
                 self.update_report()
 
     def is_complete(self):
+        """
+        Is this job complete? It could have passed/ failed etc.
+        We no longer need to check for updates in a complete job.
+        """
         return self.status in FIN_STATUSES
 
     def get_env(self):
+        """
+        Gets the environment variables for a given job by interpolating it with
+        the pipeline's environment.
+        """
         return {**self.pipeline.pipe_kwargs.get("env", {}), **self.env}
 
 
 class Pipeline:  # pylint: disable=too-many-instance-attributes
     """
-    A pipeline acts as a controlling mechanism for multiple jobs.
-    We can use a pipeline to define:
+    A pipeline acts as a controlling/organizing mechanism for multiple jobs.
 
-        - Running order of jobs. If they are to be run in sequence or in parallel.
-        - Common environment / timeout / configuration details.
-        - Where all to publish the CI report.
+    - Each pipeline has stages. A default stage of 'Pipeline' is always available.
+    - Stages are executed in order. Execution proceeds to the next stage ONLY
+      if all jobs in a stage have passed.
+    - Jobs can be defined inside stages.
     """
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -195,6 +232,10 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.stage_kwargs = None
 
     def logging(self):
+        """
+        Return a logger with information about the current pipeline bound to
+        it.
+        """
         return logger.bind(
             **{
                 **structlog.get_context(self.remote.logging()),
@@ -216,7 +257,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 
     def get_status(self):
         """
-        Calculates a pipeline's status
+        Calculates a pipeline's status based on the status of it's jobs.
         """
         for job in self.jobs.values():
             if job.status == Status.RUNNING:
@@ -237,7 +278,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 
     def get_status_dot(self):
         """
-        Get's the status dot for the pipeline
+        Get's the status dot for the pipeline.
         """
         if self.get_status() == Status.PASSED:
             return "🟢"
@@ -248,6 +289,12 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         return "🟡"
 
     def render_report(self):
+        """
+        Returns a markdown report for a given pipeline.
+
+        It will include a mermaid graph and a collapsible list of logs for each
+        job.
+        """
         return f"""
 <details>
     <summary>JayporeCi: {self.get_status_dot()} {self.remote.sha[:10]}</summary>
@@ -285,17 +332,21 @@ flowchart {self.graph_direction}
                 direction {self.graph_direction}
             """
             ref = {n: f"{stage}_{i}" for i, n in enumerate(nodes)}
-            arrow = "-.->"
+            # If there are too many nodes, scatter them with different length arrows
+            mod = __node_mod__([n for n in nodes if not self.jobs[n].parents])
             for i, n in enumerate(nodes):
                 n = self.jobs[n]
                 if n.parents:
                     continue
-                arrow = "-.->" if i % 2 == 0 else "-..->"
+                arrow = "." * ((i % mod) + 1)
+                arrow = f"-{arrow}->"
                 mermaid += f"""
                 s_{stage}(( )) {arrow} {ref[n.name]}({n.name}):::{st_map[n.status]}"""
+            mod = __node_mod__([n for n in nodes if self.jobs[n].parents])
             for i, (a, b) in enumerate(edges):
                 a, b = self.jobs[a], self.jobs[b]
-                arrow = "-.->" if i % 2 == 0 else "-..->"
+                arrow = "." * ((i % mod) + 1)
+                arrow = f"-{arrow}->"
                 mermaid += f"""
                 {ref[a.name]}({a.name}):::{st_map[a.status]} {arrow} {ref[b.name]}({b.name}):::{st_map[b.status]}"""
             mermaid += """
@@ -352,7 +403,12 @@ flowchart {self.graph_direction}
         **kwargs,
     ) -> Job:
         """
-        Define a job in this pipeline.
+        Declare a job in this pipeline.
+
+        Jobs inherit their keyword arguments from the stage they are defined in
+        and the pipeline they are defined in.
+
+        Initially jobs are in a `PENDING` state.
         """
         depends_on = [] if depends_on is None else depends_on
         depends_on = [depends_on] if isinstance(depends_on, str) else depends_on
@@ -384,7 +440,7 @@ flowchart {self.graph_direction}
 
     def env_matrix(self, **kwargs):
         """
-        Return a cartesian product of all the provided kwargs
+        Return a cartesian product of all the provided kwargs.
         """
         keys = list(sorted(kwargs.keys()))
         for values in product(*[kwargs[key] for key in keys]):
@@ -392,7 +448,8 @@ flowchart {self.graph_direction}
 
     def run(self):
         """
-        Run the pipeline.
+        Run the pipeline. This is almost always called automatically when the
+        context of the pipeline declaration finishes.
         """
         # Ensure duplex connection between all nodes
         for name, job in self.jobs.items():
@@ -439,8 +496,10 @@ flowchart {self.graph_direction}
     @contextmanager
     def stage(self, name, **kwargs):
         """
-        Any kwargs passed to this stage are supplied to jobs created while
-        within this stage.
+        A stage in a pipeline.
+
+        Any kwargs passed to this stage are supplied to jobs created within
+        this stage.
         """
         assert name not in self.jobs, "Stage name cannot match a job's name"
         assert name not in self.stages, "Stage names cannot be re-used"

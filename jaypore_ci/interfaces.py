@@ -1,11 +1,23 @@
+"""
+Defines interfaces for remotes and executors.
+
+Currently only gitea and docker are supported as remote and executor
+respectively.
+"""
+
+
 class TriggerFailed(Exception):
+    "Failure to trigger a job"
     ...
 
 
 class Executor:
     """
-    It can be docker / podman / shell etc.
+    It could be docker / podman / shell etc.
     Something that allows us to run a job.
+
+    Must define `__enter__` and `__exit__` so that it can be used as a context
+    manager.
     """
 
     def run(self, job: "Job") -> str:
@@ -17,6 +29,7 @@ class Executor:
         self.pipeline = None
 
     def set_pipeline(self, pipeline):
+        """Set the current pipeline to the given one."""
         self.pipe_id = id(pipeline)
         self.pipeline = pipeline
 
@@ -31,6 +44,9 @@ class Remote:
     """
     It could be gitea / github / gitlab / email system.
     Something that allows us to post the status of the CI.
+
+    Must define `__enter__` and `__exit__` so that it can be used as a context
+    manager.
     """
 
     def publish(self, report: str, status: str):

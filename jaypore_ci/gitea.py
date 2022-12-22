@@ -1,3 +1,8 @@
+"""
+A gitea remote git host.
+
+This is used to report pipeline status to the remote.
+"""
 import os
 import subprocess
 from pathlib import Path
@@ -11,8 +16,21 @@ from jaypore_ci.logging import logger
 
 
 class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
+    """
+    The remote implementation for gitea.
+    """
+
     @classmethod
     def from_env(cls):
+        """
+        Creates a remote instance from the environment.
+        It will:
+
+            - Find the remote location using `git remote`.
+            - Find the current branch
+            - Create a new pull request for that branch
+            - Allow posting updates using the gitea token provided
+        """
         remote = (
             subprocess.check_output(
                 "git remote -v | grep push | awk '{print $2}'", shell=True
@@ -60,11 +78,17 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         self.base_branch = "main"
 
     def logging(self):
+        """
+        Return's a logging instance with information about gitea bound to it.
+        """
         return logger.bind(
             root=self.root, owner=self.owner, repo=self.repo, branch=self.branch
         )
 
     def get_pr_id(self):
+        """
+        Returns the pull request ID for the current branch.
+        """
         r = requests.post(
             f"{self.api}/repos/{self.owner}/{self.repo}/pulls",
             params={"access_token": self.token},
@@ -96,8 +120,11 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
 
     def publish(self, report: str, status: str):
         """
-        report: Report to write to remote.
-        status: One of ["pending", "success", "error", "failure", "warning"]
+        Will publish the report to the remote.
+
+            report: Report to write to remote.
+            status: One of ["pending", "success", "error", "failure", "warning"]
+                    This is the dot next to each commit in gitea.
         """
         assert status in ("pending", "success", "error", "failure", "warning")
         issue_id = self.get_pr_id()
