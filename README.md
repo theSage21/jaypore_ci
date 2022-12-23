@@ -1,8 +1,6 @@
 # Jaypore CI
 
-
-> A CI system that sounds ancient and powerful.
-> Like the city of Jaypore.
+Documentation is at : https://www.jayporeci.in
 
 ## Usage
 
