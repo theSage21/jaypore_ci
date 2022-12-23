@@ -300,7 +300,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         """
         return f"""
 <details>
-    <summary>{__logo__()}: {self.get_status_dot()} {self.remote.sha[:10]}</summary>
+    <summary id='jaypore_ci'>{__logo__()}: {self.get_status_dot()} {self.remote.sha[:10]}</summary>
 
 {self.__render_graph__()}
 {self.__render_logs__()}
