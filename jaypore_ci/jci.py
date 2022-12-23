@@ -49,8 +49,9 @@ def __clean_logs__(logs):
     """
     Clean logs so that they don't have HTML/ANSI color codes in them.
     """
-    logs = logs.replace("<", r"\<").replace(">", r"\>")
-    return ansi_escape.sub("", logs)
+    for old, new in [("<", r"\<"), (">", r"\>"), ("`", '"'), ("\r", "\n")]:
+        logs = logs.replace(old, new)
+    return [line.strip() for line in ansi_escape.sub("", logs).split("\n")]
 
 
 class Job:  # pylint: disable=too-many-instance-attributes
@@ -146,7 +147,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                         job_name=self.name,
                     )
                     logs = job_run.stdout.decode()
-                    self.logs["stdout"] = __clean_logs__(logs).split("\n")
+                    self.logs["stdout"] = __clean_logs__(logs)
                     self.status = Status.FAILED
         else:
             self.logging().info("Trigger called but job already running")
@@ -168,15 +169,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                 self.status = Status.RUNNING if not self.is_service else Status.PASSED
             else:
                 self.status = Status.PASSED if exit_code == 0 else Status.FAILED
-            logs = __clean_logs__(logs)
-            log_lines = logs.split("\n")
-            for line in log_lines[len(self.logs["stdout"]) :]:
-                self.logging().debug(
-                    f">>> {line.strip()}",
-                    job_name=self.name,
-                    run_id=self.run_id,
-                )
-            self.logs["stdout"] = log_lines
+            self.logs["stdout"] = __clean_logs__(logs)
             if with_update_report:
                 self.update_report()
 
@@ -372,7 +365,8 @@ flowchart {self.graph_direction}
         """
         all_logs = []
         fake_job = namedtuple("fake_job", "name logs")(
-            "JayporeCi", {"stdout": jaypore_logs}
+            "JayporeCi",
+            {"stdout": __clean_logs__("\n".join(jaypore_logs))},
         )
         for job in [fake_job] + list(self.jobs.values()):
             job_log = []

@@ -19,9 +19,4 @@ publish() {
 }
 
 (build)
-if [ $1 == "main" ]
-then
-    (publish)
-else
-    echo "Not publishing since branch is: $1"
-fi
+(publish)
