@@ -36,9 +36,8 @@ FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
-def __logo__():
-    b64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABkAAAAaCAYAAABCfffNAAAABHNCSVQICAgIfAhkiAAAAsRJREFUSIntkl1IU3EYxp//OWsfunPO1K3m10ZaoqyjhAkmhVlhKWp4ETGR6iISuimI6M4LCUJIiqibyCKCiPKmoGRGkgkxCGySH2hWZk5T07mzDzdzO12Eczs6k7au6r17nvOe93fe57wEMZZSpSo/33TMwiUpQ97da523BvuGG5a1LFYIABTvNyDNwIT0o9buiOdUPCC/q38EQlFUOk3Txr8GUTNM1cXL5t7d+/KvxwpZ87rUDFPd3HqirbjMKM8vyqjusQ4f8no8lj+FrNqEoqiMs41H7hWXGeUAkMNrSW3dnhYAm+IGKSjKvVRTzyeFezX1O00My5njAiGEpJgb9tbJZCv27LQXjWce33QJzgdxgajVTHlhSXooFlEU0Xql2zbU//EcgKW4QHT6ZJMmRRXSfl8AL5/13okFAEiuS80quXAtOHzwuD2f1xsQDAQWbjR1dCpVMnHZs4/NfokKcbt8QrhmNAokJCQYFrzeqJDFxUW75Yn1IAAxzM4O74mIa+abY8Dp8IW0UiVDaQV/UtonKSIBSHXky26X8ML2xh7KnxCC0xdKi7JyjM1RQBkA7BLPACAiLlrS4Jmb8edVHOV5iiIAgERGjrJKU4nXRSqn7C5KFKFjOe4AX7i9ZeLr9HMA05IZOgCz0lUjiqbprY1X621V5h1suC+KIrzuHxDm/WA1CsgVNE5V377f1zNyPKwtDYADwMJ6m0AUxfl31tFPBbuya/WZbCgiQgjkChoM9wtA0xQMWTq+va2nIxgMjgPQ4Ne/EKQzV0EAwO/z93e1Dw5pN2sPb8vTKgi1amEAQGomR0Y/OPmRwXELgAAkMa0LWQa97nj/0Gad1DMsk5ukVVEK1crFC/N+vO0aW7K+GrFOjs88BfA92qy1P1HaRIie5bjyLanJpkRGyXrcPmFqYm5AcDo7RFGc3MiM/7Xh+gnVZeOL9qKxeAAAAABJRU5ErkJggg=="
-    return f"<img src='{b64}' alt='Jaypore CI'/>"
+def __logo__(color):
+    return f"<img src='https://www.jayporeci.in/_static/colors/{color}.png' alt='Jaypore CI'/>"
 
 
 def __node_mod__(nodes):
@@ -279,17 +278,17 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
                     return Status.FAILED
         return Status.PENDING if has_pending else Status.PASSED
 
-    def get_status_dot(self):
+    def get_status_color(self):
         """
         Get's the status dot for the pipeline.
         """
         if self.get_status() == Status.PASSED:
-            return "🟢"
+            return "green"
         if self.get_status() == Status.FAILED:
-            return "🔴"
+            return "red"
         if self.get_status() == Status.SKIPPED:
-            return "🔵"
-        return "🟡"
+            return "blue"
+        return "yellow"
 
     def render_report(self):
         """
@@ -300,7 +299,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         """
         return f"""
 <details>
-    <summary id='jaypore_ci'>{__logo__()}: {self.get_status_dot()} {self.remote.sha[:10]}</summary>
+    <summary id='jaypore_ci'>{__logo__(self.get_status_color())}:  {self.remote.sha[:10]}</summary>
 
 {self.__render_graph__()}
 {self.__render_logs__()}
