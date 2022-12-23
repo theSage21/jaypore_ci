@@ -1,4 +1,3 @@
-import requests
 from jaypore_ci import jci
 
 
