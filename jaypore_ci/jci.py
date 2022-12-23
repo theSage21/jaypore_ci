@@ -294,7 +294,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         job.
         """
         color = self.get_status_color()
-        logo = f"<img src='https://www.jayporeci.in/_static/colors/{color}.png' alt='Jaypore CI' width='25px;'/>"
+        logo = f"<img src='https://www.jayporeci.in/_static/colors/{color}.png' alt='Jaypore CI' style='width: 25px; vertical-align:middle;'/>"
         return f"""
 <details>
     <summary id='jaypore_ci'>{logo}:  {self.remote.sha[:10]}</summary>
@@ -374,7 +374,7 @@ flowchart {self.graph_direction}
         """
         all_logs = []
         fake_job = namedtuple("fake_job", "name logs")(
-            "JayporeCi", {"stdout": jaypore_logs}
+            "JayporeCi", {"stdout": __clean_logs__("\n".join(jaypore_logs)).split("\n")}
         )
         for job in [fake_job] + list(self.jobs.values()):
             job_log = []
