@@ -107,11 +107,9 @@ class Job:  # pylint: disable=too-many-instance-attributes
 
     def update_report(self):
         """
-        Update the status report.
-        Usually called when a job changes some of it's internal state like:
-            - logs are updated
-            - status has changed
-            - last_check is called
+        Update the status report. Usually called when a job changes some of
+        it's internal state like when logs are updated or when status has
+        changed.
         """
         self.logging().debug("Update report")
         status = {
@@ -304,7 +302,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 
 </details>"""
 
-    def __render_graph__(self) -> str:
+    def __render_graph__(self) -> str:  # pylint: disable=too-many-locals
         """
         Render a mermaid graph given the jobs in the pipeline.
         """

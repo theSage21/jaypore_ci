@@ -6,19 +6,29 @@
 Welcome to Jaypore CI's documentation!
 ======================================
 
-**Jaypore CI** is a Python library for continuous integration / testing / delivery.
+**Jaypore CI** is a small system for continuous integration / testing / delivery.
 
-It is slightly different from things like github actions, gitlab CI, drone CI and so on.
+It is different from the usual suspects like github actions, gitlab CI, drone CI and so on.
 
 - The configuration language is python.
 - CI runs on your local machine by default. 
-- There is no "server". CI reports are added to your pull request / merge request description.
+- There is no "server". You can run offline.
 
 
 For example, here's a CI pipeline for a project.
 
-.. image:: example.png
-  :alt: Example pipeline graph
+.. code-block:: python
+
+    from jaypore_ci import jci
+
+    with jci.Pipeline(image='mydockerhub/env_image') as p:
+        p.job("Black", "black --check .")
+        p.job("Pylint", "pylint mycode/ tests/")
+        p.job("PyTest", "pytest tests/")
+
+
+Go through the :doc:`getting_started` doc to set up your first instance.
+
 
 Contents
 ---------------

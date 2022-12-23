@@ -122,9 +122,9 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         """
         Will publish the report to the remote.
 
-            report: Report to write to remote.
-            status: One of ["pending", "success", "error", "failure", "warning"]
-                    This is the dot next to each commit in gitea.
+        :param report: Report to write to remote.
+        :param status: One of ["pending", "success", "error", "failure",
+            "warning"] This is the dot next to each commit in gitea.
         """
         assert status in ("pending", "success", "error", "failure", "warning")
         issue_id = self.get_pr_id()

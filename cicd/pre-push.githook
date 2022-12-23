@@ -26,7 +26,12 @@ main() {
         -v /tmp/jaypore_$SHA:/jaypore_ci/run \
         --workdir /jaypore_ci/run \
         jcienv \
-        bash -c 'cp -r /jaypore_ci/repo/. /jaypore_ci/run && cd /jaypore_ci/run/ && git clean -fdx && python cicd/cicd.py'
+        bash -c 'cp -r /jaypore_ci/repo/. /jaypore_ci/run \
+              && cd /jaypore_ci/run/ \
+              && git clean -fdx \
+              && rm -r /jaypore_ci/run/secrets \
+              && cp -r /jaypore_ci/repo/secrets/ /jaypore_ci/run \
+              && python cicd/cicd.py'
     echo '----------------------------------------------'
 }
 (main)

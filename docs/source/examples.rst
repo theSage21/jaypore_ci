@@ -24,7 +24,6 @@ You can cache your environment dependencies in docker easily.
 Complex dependencies between jobs
 ---------------------------------
 
-
 - A pipeline can have stages.
 - Stages are executed one after the other.
 - Jobs inside a stage are all run in parallel

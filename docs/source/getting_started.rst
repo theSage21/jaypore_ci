@@ -5,14 +5,16 @@ Installation
 ------------
 
 
-To use Jaypore CI, first install it using the bash script for installation:
+To use **Jaypore CI**, first install it using a bash script.
 
 .. code-block:: console
 
-   $ curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
+   $ curl \
+     https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh \
+     | bash
 
 
-This will
+Doing this will:
     
 1. Create a directory called `cicd` in the root of your repo.
 2. Create a file `cicd/pre-push.githook`
@@ -20,28 +22,24 @@ This will
 4. Update your repo's pre-push git hook so that it runs the `cicd/pre-push.githook` file when you push.
 
 
-How it works
+Basic config
 ------------
 
-1. Every time you run `git push`, the `cicd/pre-push.githook` is run.
-    1. This hook runs your `cicd/cicd.py` file using the `arjoonn/jaypore_ci:latest` docker container.
-    2. The run has access to your local docker instance and so can launch other containers.
-
-
-A Basic Config
---------------
-
-Your entire config is inside `cicd/cicd.py`. Edit it to whatever you like! A simple config would look like this:
+Your entire config is inside `cicd/cicd.py`. Edit it to whatever you like! A basic config would look like this:
 
 .. code-block:: python
 
     from jaypore_ci import jci
 
     with jci.Pipeline(image='mydocker/image') as p:
-        p.job("Black", "python3 -m black --check .")
-        p.job("Pylint", "python3 -m pylint mycode/ tests/")
-        p.job("PyTest", "python3 -m pytest tests/")
+        p.job("Black", "black --check .")
+        p.job("Pylint", "pylint mycode/ tests/")
+        p.job("PyTest", "pytest tests/")
 
+
+After you make these changes you can `git add -Av` and `git commit -m 'added Jaypore CI'`.
+
+When you do a `git push origin`, that's when the CI system will get triggered and will run the CI.
 
 This config will run three jobs in parallel, using the `mydocker/image` docker image.
 

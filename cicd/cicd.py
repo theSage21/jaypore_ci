@@ -1,3 +1,4 @@
+import requests
 from jaypore_ci import jci
 
 
@@ -11,29 +12,6 @@ with jci.Pipeline() as p:
         p.job("pylint", "python3 -m pylint jaypore_ci/ tests/")
         p.job("pytest", "python3 -m pytest tests/")
     with p.stage("Publish", image=jcienv):
-        # docs
-        p.job("BuildDocs", "sphinx-build -b html docs/source/ docs/build/html")
-        p.job("PublishDocs", "bash -c 'echo hi'", depends_on=["BuildDocs"])
-        # pypi
-        p.job("PoetryBuild", "poetry build")
-        p.job("PoetryPublish", "poetry publish", depends_on=["PoetryBuild"])
-        # jcienv
-        p.job(
-            "DockerTagJcienv",
-            "docker tag -t jcienv:{p.remote.sha} arjoonn/jcienv:{p.remote.sha}",
-        )
-        p.job(
-            "DockerPublishJcienv",
-            "docker push arjoonn/jcienv:{p.remote.sha}",
-            depends_on=["DockerTagJcienv"],
-        )
-        # jci
-        p.job(
-            "DockerTagJci",
-            "docker tag -t jci:{p.remote.sha} arjoonn/jci:{p.remote.sha}",
-        )
-        p.job(
-            "DockerPublishJci",
-            "docker push arjoonn/jci:{p.remote.sha}",
-            depends_on=["DockerTagJci"],
-        )
+        p.job("PublishDocs", f"bash cicd/build_and_publish_docs.sh {p.remote.branch}")
+        p.job("DockerHubJcienv", "bash cicd/build_and_push_docker.sh jcienv")
+        p.job("DockerHubJci", "bash cicd/build_and_push_docker.sh jci")

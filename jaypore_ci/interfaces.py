@@ -8,7 +8,6 @@ respectively.
 
 class TriggerFailed(Exception):
     "Failure to trigger a job"
-    ...
 
 
 class Executor:
