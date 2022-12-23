@@ -294,7 +294,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         job.
         """
         color = self.get_status_color()
-        logo = f"<img src='https://www.jayporeci.in/_static/colors/{color}.png' alt='Jaypore CI' style='width: 25px; vertical-align:middle;'/>"
+        logo = f"<img src='https://www.jayporeci.in/_static/colors/{color}.png' alt='Jaypore CI' width='25px' style='vertical-align:middle;' />"
         return f"""
 <details>
     <summary id='jaypore_ci'>{logo}:  {self.remote.sha[:10]}</summary>
