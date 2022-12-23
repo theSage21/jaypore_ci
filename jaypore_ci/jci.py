@@ -36,10 +36,6 @@ FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
 
 
-def __logo__(color):
-    return f"<img src='https://www.jayporeci.in/_static/colors/{color}.png' alt='Jaypore CI'/>"
-
-
 def __node_mod__(nodes):
     mod = 1
     if len(nodes) > 5:
@@ -297,9 +293,11 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         It will include a mermaid graph and a collapsible list of logs for each
         job.
         """
+        color = self.get_status_color()
+        logo = f"<img src='https://www.jayporeci.in/_static/colors/{color}.png' alt='Jaypore CI' width='25px;'/>"
         return f"""
 <details>
-    <summary id='jaypore_ci'>{__logo__(self.get_status_color())}:  {self.remote.sha[:10]}</summary>
+    <summary id='jaypore_ci'>{logo}:  {self.remote.sha[:10]}</summary>
 
 {self.__render_graph__()}
 {self.__render_logs__()}
