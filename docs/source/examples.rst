@@ -111,7 +111,7 @@ Running on cloud/remote machine
 
 - Since the executor is docker:
     - We can get the remote machine's docker socket by using [ssh socket forwarding](https://medium.com/@dperny/forwarding-the-docker-socket-over-ssh-e6567cfab160)
-    - Then we can set Jaypore CI to use the remote docker socket by editing `cicd/pre-push.githook`
+    - Then we can set Jaypore CI to use the remote docker socket by editing `cicd/pre-push.sh`
 - Now all jobs will run on the remote machine.
 
 

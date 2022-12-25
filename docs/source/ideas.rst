@@ -28,3 +28,7 @@ Concepts used
 - Jobs are run on the machine that pushed the job by default. If you write bad code, your machine suffers first.
 - CI run status is posted directly in the PR description. You don't have to click and reach another website to see what your job is doing.
 - All jobs run inside docker containers.
+- Use `SOPS <https://github.com/mozilla/sops>`_ to manage secrets during CI.
+    - `.gitignore` your encryption key files.
+    - Commit your secrets in an encrypted form.
+    - Update your `pre-push.sh` file to inject the secrets into your CI environment.

@@ -11,7 +11,6 @@ build() {
 }
 publish() {
     echo "Publishing docs"
-    source cicd/set_env.sh
     curl -H "Content-Type: application/zip" \
          -H "Authorization: Bearer $NETLIFY_TOKEN" \
          --data-binary "@website.zip" \

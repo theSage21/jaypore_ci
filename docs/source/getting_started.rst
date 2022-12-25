@@ -9,17 +9,15 @@ To use **Jaypore CI**, first install it using a bash script.
 
 .. code-block:: console
 
-   $ curl \
-     https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh \
-     | bash
+   $ curl https://get.jayporeci.in | bash
 
 
 Doing this will:
     
 1. Create a directory called `cicd` in the root of your repo.
-2. Create a file `cicd/pre-push.githook`
+2. Create a file `cicd/pre-push.sh`
 3. Create a file `cicd/cicd.py`
-4. Update your repo's pre-push git hook so that it runs the `cicd/pre-push.githook` file when you push.
+4. Update your repo's pre-push git hook so that it runs the `cicd/pre-push.sh` file when you push.
 
 
 Basic config

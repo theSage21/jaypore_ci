@@ -2,6 +2,7 @@
 The code submodule for Jaypore CI.
 """
 import time
+import os
 import re
 from enum import Enum
 from itertools import product
@@ -185,7 +186,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         Gets the environment variables for a given job by interpolating it with
         the pipeline's environment.
         """
-        return {**self.pipeline.pipe_kwargs.get("env", {}), **self.env}
+        return {**os.environ, **self.pipeline.pipe_kwargs.get("env", {}), **self.env}
 
 
 class Pipeline:  # pylint: disable=too-many-instance-attributes
