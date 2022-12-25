@@ -29,6 +29,14 @@ set -o nounset
 set -o pipefail
 
 
+editenv() {
+    NAME=\$1
+    SOPS_AGE_KEY_FILE=secrets/\$NAME.age sops --decrypt --input-type dotenv --output-type dotenv secrets/\$NAME.enc > secrets/\$NAME.env
+    vim secrets/\$NAME.env
+    sops --encrypt --age \$(age-keygen -y secrets/\$NAME.age) secrets/\$NAME.env > secrets/\$NAME.enc
+    rm secrets/\$NAME.env
+}
+
 run() {
     export SECRETS_PATH=secrets
     export SECRETS_FILENAME=jaypore_ci
