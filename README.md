@@ -7,7 +7,7 @@ Documentation is at : https://www.jayporeci.in
 
 ```bash
 # Install once
-curl https://raw.githubusercontent.com/theSage21/jaypore_ci/main/setup.sh | bash
+curl https://get.jayporeci.in | bash
 git add -Av
 git commit -m 'Add Jaypore CI'
 git push origin

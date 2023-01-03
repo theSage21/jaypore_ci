@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jaypore_ci"
-version = "0.1.0"
+version = "0.1.1"
 description = ""
 authors = ["arjoonn sharma <arjoonn.94@gmail.com>"]
 

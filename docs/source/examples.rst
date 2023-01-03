@@ -111,11 +111,17 @@ The above config generates 3 x 3 x 2 = 18 jobs and sets the environment for each
 Running on cloud/remote machine
 -------------------------------
 
-- Since the executor is docker:
-    - We can get the remote machine's docker socket by using [ssh socket forwarding](https://medium.com/@dperny/forwarding-the-docker-socket-over-ssh-e6567cfab160)
-    - Then we can set Jaypore CI to use the remote docker socket by editing `cicd/pre-push.sh`
-- Now all jobs will run on the remote machine.
+- Make sure docker is installed on the remote machine.
+- Make sure you have ssh access to remote machine and the user you are logging in as can run docker commands.
+- Add to your local `~.ssh/config` an entry for your remote machine. Something like:
 
+  .. code-block:: config
+
+    Host my.aws.machine
+        HostName some.aws.machine
+        IdentityFile ~/.ssh/id_rsa
+- Now in your `cicd/pre-push.sh` file, where the `docker run` command is mentioned, simply add `DOCKER_HOST=ssh://my.aws.machine`
+- JayporeCi will then run on the remote machine.
 
 Having database / other services during CICD
 --------------------------------------------

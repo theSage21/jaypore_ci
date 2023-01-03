@@ -133,7 +133,7 @@ class Docker(Executor):
         name = "".join(
             l
             for l in job.name.lower().replace(" ", "_")
-            if l in "abcdefghijklmnopqrstuvwxyz_"
+            if l in "abcdefghijklmnopqrstuvwxyz_1234567890"
         )
         return f"{self.get_net()}_{name}"
 
