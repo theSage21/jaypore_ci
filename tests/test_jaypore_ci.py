@@ -11,9 +11,8 @@ def test_simple_linear_jobs(pipeline):
     with pipeline as p:
         p.job("lint", "x")
         p.job("test", "x", depends_on=["lint"])
-    lint_i = [i for i, *_ in pipeline.executor.get_log("lint")]
-    test_i = [i for i, *_ in pipeline.executor.get_log("test")]
-    assert all(lint < test for lint in lint_i for test in test_i)
+    order = pipeline.executor.get_execution_order()
+    assert order["lint"] < order["test"]
 
 
 def test_no_duplicate_names(pipeline):
@@ -28,3 +27,17 @@ def test_dependency_has_to_be_defined_before_child(pipeline):
         with pipeline as p:
             p.job("x", "x", depends_on=["y"])
             p.job("y", "y")
+
+
+def test_call_chain_is_followed(pipeline):
+    with pipeline as p:
+        for name in "pq":
+            p.job(name, name)
+        p.job("x", "x")
+        p.job("y", "y", depends_on=["x"])
+        p.job("z", "z", depends_on=["y"])
+        for name in "ab":
+            p.job(name, name)
+    order = pipeline.executor.get_execution_order()
+    # assert order == {}
+    assert order["x"] < order["y"] < order["z"]

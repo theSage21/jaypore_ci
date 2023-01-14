@@ -97,7 +97,7 @@ class Mock(Executor):
             for l in job.name.lower().replace(" ", "_")
             if l in "abcdefghijklmnopqrstuvwxyz_1234567890"
         )
-        return f"{self.get_net()}_{name}"
+        return name
 
     def run(self, job: "Job") -> str:
         """
@@ -111,8 +111,7 @@ class Mock(Executor):
         if name in self.__status__:
             return None
         run_id = uuid.uuid4().hex
-        self.__log__.append((name, run_id, "Start"))
-        self.__log__.append((name, run_id, "Complete"))
+        self.__log__.append((name, run_id, "Run"))
         self.__status__[name] = self.__status__[run_id] = True
         self.logging().info(
             "Run job",
@@ -135,9 +134,5 @@ class Mock(Executor):
             is_running, exit_code, logs = False, 0, ""
         return is_running, exit_code, logs
 
-    def get_log(self, query):
-        return [
-            (i, name, *log)
-            for i, (name, *log) in enumerate(self.__log__)
-            if name == query
-        ]
+    def get_execution_order(self):
+        return {name: i for i, (name, *log) in enumerate(self.__log__)}

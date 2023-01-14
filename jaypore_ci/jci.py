@@ -458,9 +458,7 @@ flowchart {self.graph_direction}
         for stage in self.stages:
             # --- Trigger starting jobs
             jobs = {name: job for name, job in self.jobs.items() if job.stage == stage}
-            for name in {
-                job.name for job in jobs.values() if job.parents and not job.children
-            }:
+            for name in {job.name for job in jobs.values() if not job.parents}:
                 jobs[name].trigger()
             # --- monitor and ensure all jobs run
             while not all(job.is_complete() for job in jobs.values()):
