@@ -48,6 +48,10 @@ class Remote:
     manager.
     """
 
+    def __init__(self, *, sha, branch):
+        self.sha = sha
+        self.branch = branch
+
     def publish(self, report: str, status: str):
         """
         Publish this report somewhere.
@@ -59,3 +63,7 @@ class Remote:
 
     def __exit__(self, exc_type, exc_value, traceback):
         pass
+
+    @classmethod
+    def from_env(cls):
+        raise NotImplementedError()

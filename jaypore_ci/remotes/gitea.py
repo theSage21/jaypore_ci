@@ -64,16 +64,15 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         )
 
     def __init__(
-        self, root, owner, repo, token, branch, sha
+        self, *, root, owner, repo, token, **kwargs
     ):  # pylint: disable=too-many-arguments
-
+        super().__init__(**kwargs)
+        # --- customer
         self.root = root
         self.api = f"{root}/api/v1"
         self.owner = owner
         self.repo = repo
         self.token = token
-        self.branch = branch
-        self.sha = sha
         self.timeout = 10
         self.base_branch = "main"
 

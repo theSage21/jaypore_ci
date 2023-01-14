@@ -13,7 +13,7 @@ from contextlib import contextmanager
 import structlog
 import pendulum
 
-from jaypore_ci import gitea, docker
+from jaypore_ci import remotes, executors
 from jaypore_ci.interfaces import Remote, Executor, TriggerFailed
 from jaypore_ci.logging import logger, jaypore_logs
 
@@ -205,14 +205,16 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         executor: Executor = None,
         *,
         graph_direction: str = "TB",
+        poll_interval: int = 1,
         **kwargs,
     ) -> "Pipeline":
         self.jobs = {}
         self.services = []
         self.should_pass_called = set()
-        self.remote = remote if remote is not None else gitea.Gitea.from_env()
-        self.executor = executor if executor is not None else docker.Docker()
+        self.remote = remote if remote is not None else remotes.gitea.Gitea.from_env()
+        self.executor = executor if executor is not None else executors.docker.Docker()
         self.graph_direction = graph_direction
+        self.poll_interval = poll_interval
         self.executor.set_pipeline(self)
         self.stages = ["Pipeline"]
         # ---
@@ -405,12 +407,12 @@ flowchart {self.graph_direction}
         """
         depends_on = [] if depends_on is None else depends_on
         depends_on = [depends_on] if isinstance(depends_on, str) else depends_on
-        assert name not in self.jobs
+        assert name not in self.jobs, f"{name} already defined"
         kwargs, job_kwargs = dict(self.pipe_kwargs), kwargs
         kwargs.update(self.stage_kwargs if self.stage_kwargs is not None else {})
         kwargs.update(job_kwargs)
         if not kwargs.get("is_service"):
-            assert command
+            assert command, f"Command: {command}"
         job = Job(
             name=name if name is not None else " ",
             command=command,
@@ -439,21 +441,26 @@ flowchart {self.graph_direction}
         for values in product(*[kwargs[key] for key in keys]):
             yield dict(list(zip(keys, values)))
 
+    def __ensure_duplex__(self):
+        for name, job in self.jobs.items():
+            for parent_name in job.parents:
+                parent = self.jobs[parent_name]
+                parent.children = list(sorted(set(parent.children).union(set([name]))))
+
     def run(self):
         """
         Run the pipeline. This is almost always called automatically when the
         context of the pipeline declaration finishes.
         """
-        # Ensure duplex connection between all nodes
-        for name, job in self.jobs.items():
-            for parent_name in job.parents:
-                parent = self.jobs[parent_name]
-                parent.children = list(sorted(set(parent.children).union(set([name]))))
+        self.__ensure_duplex__()
         # Run stages one by one
+        job = None
         for stage in self.stages:
             # --- Trigger starting jobs
             jobs = {name: job for name, job in self.jobs.items() if job.stage == stage}
-            for name in {job.name for job in jobs.values() if job.parents}:
+            for name in {
+                job.name for job in jobs.values() if job.parents and not job.children
+            }:
                 jobs[name].trigger()
             # --- monitor and ensure all jobs run
             while not all(job.is_complete() for job in jobs.values()):
@@ -474,7 +481,7 @@ flowchart {self.graph_direction}
                         ):
                             job.status = Status.SKIPPED
                 job.check_job()
-                time.sleep(1)
+                time.sleep(self.poll_interval)
             # --- has this stage passed?
             if not all(
                 job.is_complete() and job.status == Status.PASSED
@@ -484,7 +491,8 @@ flowchart {self.graph_direction}
                 job.update_report()
                 break
         self.logging().error("Pipeline passed")
-        job.update_report()
+        if job is not None:
+            job.update_report()
 
     @contextmanager
     def stage(self, name, **kwargs):
