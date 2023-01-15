@@ -1,7 +1,7 @@
-from jaypore_ci import jci
+from jaypore_ci import jci, reporters
 
 
-with jci.Pipeline() as p:
+with jci.Pipeline(reporter=reporters.Text()) as p:
     jcienv = f"jcienv:{p.remote.sha}"
     with p.stage("Docker"):
         p.job("JciEnv", f"docker build  --target jcienv -t jcienv:{p.remote.sha} .")

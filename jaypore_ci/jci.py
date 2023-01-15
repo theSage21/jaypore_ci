@@ -3,56 +3,25 @@ The code submodule for Jaypore CI.
 """
 import time
 import os
-import re
-from enum import Enum
 from itertools import product
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from typing import List, Union, Callable
 from contextlib import contextmanager
 
 import structlog
 import pendulum
 
-from jaypore_ci import remotes, executors
-from jaypore_ci.interfaces import Remote, Executor, TriggerFailed
-from jaypore_ci.logging import logger, jaypore_logs
+from jaypore_ci import remotes, executors, reporters
+from jaypore_ci.interfaces import Remote, Executor, Reporter, TriggerFailed, Status
+from jaypore_ci.logging import logger
 
 TZ = "UTC"
 
 __all__ = ["Pipeline", "Job"]
 
 
-class Status(Enum):
-    "Each pipeline can be in any one of these statuses"
-    PENDING = 10
-    RUNNING = 30
-    FAILED = 40
-    PASSED = 50
-    TIMEOUT = 60
-    SKIPPED = 70
-
-
 # All of these statuses are considered "finished" statuses
 FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
-ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-
-
-def __node_mod__(nodes):
-    mod = 1
-    if len(nodes) > 5:
-        mod = 2
-    if len(nodes) > 10:
-        mod = 3
-    return mod
-
-
-def __clean_logs__(logs):
-    """
-    Clean logs so that they don't have HTML/ANSI color codes in them.
-    """
-    for old, new in [("<", r"\<"), (">", r"\>"), ("`", '"'), ("\r", "\n")]:
-        logs = logs.replace(old, new)
-    return [line.strip() for line in ansi_escape.sub("", logs).split("\n")]
 
 
 class Job:  # pylint: disable=too-many-instance-attributes
@@ -122,7 +91,9 @@ class Job:  # pylint: disable=too-many-instance-attributes
             Status.TIMEOUT: "warning",
             Status.SKIPPED: "warning",
         }[self.pipeline.get_status()]
-        self.pipeline.remote.publish(self.pipeline.render_report(), status)
+        self.pipeline.remote.publish(
+            self.pipeline.reporter.render(self.pipeline), status
+        )
 
     def trigger(self):
         """
@@ -148,7 +119,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                         job_name=self.name,
                     )
                     logs = job_run.stdout.decode()
-                    self.logs["stdout"] = __clean_logs__(logs)
+                    self.logs["stdout"] = reporters.gitea.clean_logs(logs)
                     self.status = Status.FAILED
         else:
             self.logging().info("Trigger called but job already running")
@@ -170,7 +141,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                 self.status = Status.RUNNING if not self.is_service else Status.PASSED
             else:
                 self.status = Status.PASSED if exit_code == 0 else Status.FAILED
-            self.logs["stdout"] = __clean_logs__(logs)
+            self.logs["stdout"] = reporters.gitea.clean_logs(logs)
             if with_update_report:
                 self.update_report()
 
@@ -203,6 +174,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self,
         remote: Remote = None,
         executor: Executor = None,
+        reporter: Reporter = None,
         *,
         graph_direction: str = "TB",
         poll_interval: int = 1,
@@ -213,6 +185,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.should_pass_called = set()
         self.remote = remote if remote is not None else remotes.gitea.Gitea.from_env()
         self.executor = executor if executor is not None else executors.docker.Docker()
+        self.reporter = reporter if reporter is not None else reporters.gitea.Gitea()
         self.graph_direction = graph_direction
         self.poll_interval = poll_interval
         self.executor.set_pipeline(self)
@@ -260,12 +233,13 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         for service in self.services:
             service.check_job(with_update_report=False)
         if service is not None:
-            service.check_job()
-        has_pending = True
+            service.check_job(with_update_report=False)
+        has_pending = False
         for job in self.jobs.values():
             job.check_job(with_update_report=False)
-            if job.is_complete():
-                has_pending = False
+            if not job.is_complete():
+                has_pending = True
+            else:
                 if job.status != Status.PASSED:
                     return Status.FAILED
         return Status.PENDING if has_pending else Status.PASSED
@@ -281,113 +255,6 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         if self.get_status() == Status.SKIPPED:
             return "🔵"
         return "🟡"
-
-    def render_report(self):
-        """
-        Returns a markdown report for a given pipeline.
-
-        It will include a mermaid graph and a collapsible list of logs for each
-        job.
-        """
-        return f"""
-<details>
-    <summary>JayporeCi: {self.get_status_dot()} {self.remote.sha[:10]}</summary>
-
-{self.__render_graph__()}
-{self.__render_logs__()}
-
-</details>"""
-
-    def __render_graph__(self) -> str:  # pylint: disable=too-many-locals
-        """
-        Render a mermaid graph given the jobs in the pipeline.
-        """
-        st_map = {
-            Status.PENDING: "pending",
-            Status.RUNNING: "running",
-            Status.FAILED: "failed",
-            Status.PASSED: "passed",
-            Status.TIMEOUT: "timeout",
-            Status.SKIPPED: "skipped",
-        }
-        mermaid = f"""
-```mermaid
-flowchart {self.graph_direction}
-"""
-        for stage in self.stages:
-            nodes, edges = set(), set()
-            for job in self.jobs.values():
-                if job.stage != stage:
-                    continue
-                nodes.add(job.name)
-                edges |= {(p, job.name) for p in job.parents}
-            mermaid += f"""
-            subgraph {stage}
-                direction {self.graph_direction}
-            """
-            ref = {n: f"{stage}_{i}" for i, n in enumerate(nodes)}
-            # If there are too many nodes, scatter them with different length arrows
-            mod = __node_mod__([n for n in nodes if not self.jobs[n].parents])
-            for i, n in enumerate(nodes):
-                n = self.jobs[n]
-                if n.parents:
-                    continue
-                arrow = "." * ((i % mod) + 1)
-                arrow = f"-{arrow}->"
-                mermaid += f"""
-                s_{stage}(( )) {arrow} {ref[n.name]}({n.name}):::{st_map[n.status]}"""
-            mod = __node_mod__([n for n in nodes if self.jobs[n].parents])
-            for i, (a, b) in enumerate(edges):
-                a, b = self.jobs[a], self.jobs[b]
-                arrow = "." * ((i % mod) + 1)
-                arrow = f"-{arrow}->"
-                mermaid += f"""
-                {ref[a.name]}({a.name}):::{st_map[a.status]} {arrow} {ref[b.name]}({b.name}):::{st_map[b.status]}"""
-            mermaid += """
-            end
-            """
-        for s1, s2 in zip(self.stages, self.stages[1:]):
-            mermaid += f"""
-            {s1} ---> {s2}
-            """
-        mermaid += """
-
-            classDef pending fill:#aaa, color:black, stroke:black,stroke-width:2px,stroke-dasharray: 5 5;
-            classDef skipped fill:#aaa, color:black, stroke:black,stroke-width:2px;
-            classDef assigned fill:#ddd, color:black, stroke:black,stroke-width:2px;
-            classDef running fill:#bae1ff,color:black,stroke:black,stroke-width:2px,stroke-dasharray: 5 5;
-            classDef passed fill:#88d8b0, color:black, stroke:black;
-            classDef failed fill:#ff6f69, color:black, stroke:black;
-            classDef timeout fill:#ffda9e, color:black, stroke:black;
-``` """
-        return mermaid
-
-    def __render_logs__(self):
-        """
-        Collect all pipeline logs and render into a single collapsible text.
-        """
-        all_logs = []
-        fake_job = namedtuple("fake_job", "name logs")(
-            "JayporeCi",
-            {"stdout": __clean_logs__("\n".join(jaypore_logs))},
-        )
-        for job in [fake_job] + list(self.jobs.values()):
-            job_log = []
-            for logname, stream in job.logs.items():
-                job_log += [f"============== {logname} ============="]
-                job_log += [line.strip() for line in stream]
-            if job_log:
-                all_logs += [
-                    "- <details>",
-                    f"    <summary>Logs: {job.name}</summary>",
-                    "",
-                    "    ```",
-                    *[f"    {line}" for line in job_log],
-                    "    ```",
-                    "",
-                    "  </details>",
-                ]
-        return "\n".join(all_logs)
 
     def job(
         self,

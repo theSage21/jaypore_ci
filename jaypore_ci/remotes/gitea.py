@@ -139,7 +139,7 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         body = (line for line in body.split("\n"))
         prefix = []
         for line in body:
-            if "<summary>JayporeCi" in line:
+            if "```jayporeci" in line:
                 prefix = prefix[:-1]
                 break
             prefix.append(line)

@@ -4,10 +4,21 @@ Defines interfaces for remotes and executors.
 Currently only gitea and docker are supported as remote and executor
 respectively.
 """
+from enum import Enum
 
 
 class TriggerFailed(Exception):
     "Failure to trigger a job"
+
+
+class Status(Enum):
+    "Each pipeline can be in any one of these statuses"
+    PENDING = 10
+    RUNNING = 30
+    FAILED = 40
+    PASSED = 50
+    TIMEOUT = 60
+    SKIPPED = 70
 
 
 class Executor:
@@ -66,4 +77,16 @@ class Remote:
 
     @classmethod
     def from_env(cls):
+        raise NotImplementedError()
+
+
+class Reporter:
+    """
+    Something that allows us to report the status of a pipeline
+    """
+
+    def render(self, pipeline):
+        """
+        Render a report for the pipeline.
+        """
         raise NotImplementedError()
