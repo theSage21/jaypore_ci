@@ -1,7 +1,5 @@
 """
 The basic logging module.
-
-All logs are collected and posted along with the report in the remote PR.
 """
 import logging
 from typing import Any
@@ -14,6 +12,12 @@ jaypore_logs = []
 
 
 class JayporeLogger:
+    """
+    This is mainly used to collect logs into a single global variable so that
+    the logs of the CI runner itself can also be posted as part of the CI
+    report.
+    """
+
     def __getstate__(self) -> str:
         return "stdout"
 

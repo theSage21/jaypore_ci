@@ -12,7 +12,7 @@ class TriggerFailed(Exception):
 
 
 class Status(Enum):
-    "Each pipeline can be in any one of these statuses"
+    "Each pipeline can ONLY be in any one of these statuses"
     PENDING = 10
     RUNNING = 30
     FAILED = 40
@@ -23,11 +23,11 @@ class Status(Enum):
 
 class Executor:
     """
+    An executor is something used to run a job.
     It could be docker / podman / shell etc.
-    Something that allows us to run a job.
 
-    Must define `__enter__` and `__exit__` so that it can be used as a context
-    manager.
+    It must define `__enter__` and `__exit__` so that it can be used as a context manager.
+
     """
 
     def run(self, job: "Job") -> str:
@@ -38,7 +38,7 @@ class Executor:
         self.pipe_id = None
         self.pipeline = None
 
-    def set_pipeline(self, pipeline):
+    def set_pipeline(self, pipeline: "Pipeline") -> None:
         """Set the current pipeline to the given one."""
         self.pipe_id = id(pipeline)
         self.pipeline = pipeline
@@ -47,13 +47,15 @@ class Executor:
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        pass
+        """
+        On exit the executor must clean up any pending / stuck / zombie jobs that are still there.
+        """
 
 
 class Remote:
     """
+    Something that allows us to show other people the status of the CI job.
     It could be gitea / github / gitlab / email system.
-    Something that allows us to post the status of the CI.
 
     Must define `__enter__` and `__exit__` so that it can be used as a context
     manager.
@@ -77,15 +79,21 @@ class Remote:
 
     @classmethod
     def from_env(cls):
+        """
+        This function should create a Remote instance from the given environment.
+        It can read git information / look at environment variables etc.
+        """
         raise NotImplementedError()
 
 
 class Reporter:
     """
-    Something that allows us to report the status of a pipeline
+    Something that generates the status of a pipeline.
+
+    It can be used to generate reports in markdown, plaintext, html, pdf etc.
     """
 
-    def render(self, pipeline):
+    def render(self, pipeline: "Pipeline") -> str:
         """
         Render a report for the pipeline.
         """

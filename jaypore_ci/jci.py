@@ -22,6 +22,7 @@ __all__ = ["Pipeline", "Job"]
 
 # All of these statuses are considered "finished" statuses
 FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
+PREFIX = "JAYPORE_"
 
 
 class Job:  # pylint: disable=too-many-instance-attributes
@@ -157,7 +158,15 @@ class Job:  # pylint: disable=too-many-instance-attributes
         Gets the environment variables for a given job by interpolating it with
         the pipeline's environment.
         """
-        return {**os.environ, **self.pipeline.pipe_kwargs.get("env", {}), **self.env}
+        return {
+            **{
+                k[len(PREFIX) :]: v
+                for k, v in os.environ.items()
+                if k.startswith(PREFIX)
+            },
+            **self.pipeline.pipe_kwargs.get("env", {}),
+            **self.env,
+        }
 
 
 class Pipeline:  # pylint: disable=too-many-instance-attributes

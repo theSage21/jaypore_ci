@@ -9,6 +9,18 @@ from jaypore_ci.interfaces import Executor, TriggerFailed
 from jaypore_ci.logging import logger
 
 
+def __check_output__(cmd):
+    """
+    Common arguments that need to be provided while
+    calling subprocess.check_output
+    """
+    return (
+        subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+        .decode()
+        .strip()
+    )
+
+
 class Docker(Executor):
     """
     Run jobs via docker.
@@ -18,17 +30,6 @@ class Docker(Executor):
         - Run jobs as part of the network
         - Clean up all jobs when the pipeline exits.
     """
-
-    def __check_output__(self, cmd):
-        """
-        Common arguments that need to be provided while
-        calling subprocess.check_output
-        """
-        return (
-            subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-            .decode()
-            .strip()
-        )
 
     def __init__(self):
         super().__init__()
@@ -88,7 +89,7 @@ class Docker(Executor):
                 return net_ls
             self.logging().info(
                 "Create network",
-                subprocess=self.__check_output__(
+                subprocess=__check_output__(
                     f"docker network create -d bridge {self.get_net()}"
                 ),
             )
@@ -107,7 +108,7 @@ class Docker(Executor):
             if job.run_id is not None and not job.run_id.startswith("pyrun_"):
                 self.logging().info(
                     "Stop job:",
-                    subprocess=self.__check_output__(f"docker stop -t 1 {job.run_id}"),
+                    subprocess=__check_output__(f"docker stop -t 1 {job.run_id}"),
                 )
                 job.check_job(with_update_report=False)
         if job is not None:
@@ -121,7 +122,7 @@ class Docker(Executor):
         assert self.pipe_id is not None, "Cannot delete network if pipe is not set"
         self.logging().info(
             "Delete network",
-            subprocess=self.__check_output__(
+            subprocess=__check_output__(
                 f"docker network rm {self.get_net()} || echo 'No such net'"
             ),
         )
@@ -175,15 +176,15 @@ class Docker(Executor):
         """
         Given a run_id, it will get the status for that run.
         """
-        ps_out = self.__check_output__(f"docker ps -f 'id={run_id}' --no-trunc")
+        ps_out = __check_output__(f"docker ps -f 'id={run_id}' --no-trunc")
         is_running = run_id in ps_out
         # --- exit code
-        exit_code = self.__check_output__(
+        exit_code = __check_output__(
             f"docker inspect {run_id}" " --format='{{.State.ExitCode}}'"
         )
         exit_code = int(exit_code)
         # --- logs
-        logs = self.__check_output__(f"docker logs {run_id}")
+        logs = __check_output__(f"docker logs {run_id}")
         self.logging().debug(
             "Check status",
             run_id=run_id,
