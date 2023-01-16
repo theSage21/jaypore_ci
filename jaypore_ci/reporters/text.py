@@ -17,8 +17,9 @@ class Text(Reporter):
         graph = [
             "",
             "```jayporeci",
-            f"╔ {pipeline.get_status_dot()} : {name} [{pipeline.remote.sha[:10]}]",
+            f"╔ {pipeline.get_status_dot()} : {name} [sha {pipeline.remote.sha[:10]}]",
         ]
+        closer = "┗" + ("━" * (len(" O : ") + max_name + 1 + 1 + 8 + 1)) + "┛"
         for stage in pipeline.stages:
             nodes, edges = set(), set()
             for job in pipeline.jobs.values():
@@ -37,10 +38,10 @@ class Text(Reporter):
                 status = st_map.get(n.status, "🟡")
                 run_id = f"{n.run_id}"[:8] if n.run_id is not None else ""
                 if n.parents:
-                    graph += [f"┃ {status} : {name} [{run_id:<8}] ← {n.parents}"]
+                    graph += [f"┃ {status} : {name} [{run_id:<8}] ❮-- {n.parents}"]
                 else:
                     graph += [f"┃ {status} : {name} [{run_id:<8}]"]
-            graph += ["┗━━━━━━━━━━━━━━━"]
+            graph += [closer]
         graph += ["```"]
         graph = "\n".join(graph)
         return f"\n{graph}"
