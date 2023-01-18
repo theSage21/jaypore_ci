@@ -47,7 +47,7 @@ class Text(Reporter):
                 continue
             graph += [f"┏━ {stage}", "┃"]
             for n in sorted(
-                nodes, key=lambda x: len(pipeline.jobs[x].parents)
+                nodes, key=lambda x: (len(pipeline.jobs[x].parents), x)
             ):  # Fewer parents first
                 n = pipeline.jobs[n]
                 name = (n.name + " " * max_name)[:max_name]

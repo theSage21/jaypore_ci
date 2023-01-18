@@ -35,7 +35,11 @@ html_theme = "alabaster"
 html_static_path = ["_static"]
 html_theme_options = {
     "logo": "logo.png",
+    "logo_name": "Jaypore CI",
+    "touch_icon": "logo.png",
     "github_user": "theSage21",
     "github_repo": "jaypore_ci",
     "github_banner": True,
+    "github_button": True,
+    "description": "Simple, flexible, powerful; Like the city of Jaypore.",
 }
