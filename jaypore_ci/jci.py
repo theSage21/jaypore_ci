@@ -133,16 +133,18 @@ class Job:  # pylint: disable=too-many-instance-attributes
         """
         if isinstance(self.command, str) and self.run_id is not None:
             self.logging().debug("Checking job run")
-            is_running, exit_code, logs = self.pipeline.executor.get_status(self.run_id)
+            status = self.pipeline.executor.get_status(self.run_id)
             self.last_check = pendulum.now(TZ)
             self.logging().debug(
-                "Job run status found", is_running=is_running, exit_code=exit_code
+                "Job run status found",
+                is_running=status.is_running,
+                exit_code=status.exit_code,
             )
-            if is_running:
+            if status.is_running:
                 self.status = Status.RUNNING if not self.is_service else Status.PASSED
             else:
-                self.status = Status.PASSED if exit_code == 0 else Status.FAILED
-            self.logs["stdout"] = reporters.gitea.clean_logs(logs)
+                self.status = Status.PASSED if status.exit_code == 0 else Status.FAILED
+            self.logs["stdout"] = reporters.gitea.clean_logs(status.logs)
             if with_update_report:
                 self.update_report()
 

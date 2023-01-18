@@ -5,10 +5,19 @@ Currently only gitea and docker are supported as remote and executor
 respectively.
 """
 from enum import Enum
+from typing import NamedTuple
 
 
 class TriggerFailed(Exception):
     "Failure to trigger a job"
+
+
+class JobStatus(NamedTuple):
+    is_running: bool
+    exit_code: int
+    logs: str
+    started_at: str
+    finished_at: str
 
 
 class Status(Enum):
@@ -50,6 +59,12 @@ class Executor:
         """
         On exit the executor must clean up any pending / stuck / zombie jobs that are still there.
         """
+
+    def get_status(self, run_id: str) -> JobStatus:
+        """
+        Returns the status of a given run.
+        """
+        raise NotImplementedError()
 
 
 class Remote:

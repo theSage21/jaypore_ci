@@ -3,7 +3,7 @@ A mock executor that actually does not run anything.
 """
 import uuid
 
-from jaypore_ci.interfaces import Executor
+from jaypore_ci.interfaces import Executor, JobStatus
 from jaypore_ci.logging import logger
 
 
@@ -125,14 +125,14 @@ class Mock(Executor):
         )
         return run_id
 
-    def get_status(self, run_id: str) -> (str, str):
+    def get_status(self, run_id: str) -> JobStatus:
         """
         Given a run_id, it will get the status for that run.
         """
-        is_running, exit_code, logs = True, None, ""
+        status = JobStatus(True, None, "", "", "")
         if run_id in self.__status__:
-            is_running, exit_code, logs = False, 0, ""
-        return is_running, exit_code, logs
+            status = JobStatus(False, 0, "fake logs", "", "")
+        return status
 
     def get_execution_order(self):
         return {name: i for i, (name, *log) in enumerate(self.__log__)}

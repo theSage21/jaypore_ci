@@ -1,11 +1,12 @@
 """
 A docker executor for Jaypore CI.
 """
+import json
 import subprocess
 
 from rich import print as rprint
 
-from jaypore_ci.interfaces import Executor, TriggerFailed
+from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
 from jaypore_ci.logging import logger
 
 
@@ -172,23 +173,19 @@ class Docker(Executor):
             return run_job.stdout.decode().strip()
         raise TriggerFailed(run_job)
 
-    def get_status(self, run_id: str) -> (str, str):
+    def get_status(self, run_id: str) -> JobStatus:
         """
         Given a run_id, it will get the status for that run.
         """
-        ps_out = __check_output__(f"docker ps -f 'id={run_id}' --no-trunc")
-        is_running = run_id in ps_out
-        # --- exit code
-        exit_code = __check_output__(
-            f"docker inspect {run_id}" " --format='{{.State.ExitCode}}'"
+        inspect = json.loads(__check_output__(f"docker inspect {run_id}"))[0]
+        status = JobStatus(
+            is_running=inspect["State"]["Running"],
+            exit_code=int(inspect["State"]["ExitCode"]),
+            logs="",
+            started_at=inspect["State"]["StartedAt"],
+            finished_at=inspect["State"]["FinishedAt"],
         )
-        exit_code = int(exit_code)
         # --- logs
+        self.logging().debug("Check status", status=status)
         logs = __check_output__(f"docker logs {run_id}")
-        self.logging().debug(
-            "Check status",
-            run_id=run_id,
-            is_running=is_running,
-            exit_code=exit_code,
-        )
-        return is_running, exit_code, logs
+        return status._replace(logs=logs)
