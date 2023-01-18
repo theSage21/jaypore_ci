@@ -35,4 +35,7 @@ html_theme = "alabaster"
 html_static_path = ["_static"]
 html_theme_options = {
     "logo": "logo.png",
+    "github_user": "theSage21",
+    "github_repo": "jaypore_ci",
+    "github_banner": True,
 }
