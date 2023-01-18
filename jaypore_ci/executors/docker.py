@@ -4,6 +4,7 @@ A docker executor for Jaypore CI.
 import json
 import subprocess
 
+import pendulum
 from rich import print as rprint
 
 from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
@@ -182,8 +183,10 @@ class Docker(Executor):
             is_running=inspect["State"]["Running"],
             exit_code=int(inspect["State"]["ExitCode"]),
             logs="",
-            started_at=inspect["State"]["StartedAt"],
-            finished_at=inspect["State"]["FinishedAt"],
+            started_at=pendulum.parse(inspect["State"]["StartedAt"]),
+            finished_at=pendulum.parse(inspect["State"]["FinishedAt"])
+            if inspect["State"]["FinishedAt"] != "0001-01-01T00:00:00Z"
+            else None,
         )
         # --- logs
         self.logging().debug("Check status", status=status)

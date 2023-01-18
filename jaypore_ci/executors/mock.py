@@ -129,9 +129,9 @@ class Mock(Executor):
         """
         Given a run_id, it will get the status for that run.
         """
-        status = JobStatus(True, None, "", "", "")
+        status = JobStatus(True, None, "", None, None)
         if run_id in self.__status__:
-            status = JobStatus(False, 0, "fake logs", "", "")
+            status = JobStatus(False, 0, "fake logs", None, None)
         return status
 
     def get_execution_order(self):

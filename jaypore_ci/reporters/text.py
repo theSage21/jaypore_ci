@@ -1,4 +1,25 @@
+import pendulum
 from jaypore_ci.interfaces import Reporter, Status
+
+
+def __get_time_format__(job):
+    time = " --:--"
+    if job.run_state is not None:
+        s = (
+            (pendulum.now() - job.run_state.started_at)
+            if job.run_state.finished_at is None
+            else (job.run_state.finished_at - job.run_state.started_at)
+        ).in_seconds()
+        m = s // 60
+        time = f"{m:>3}:{s % 60:>2}"
+    return time
+
+
+__ST_MAP__ = {
+    Status.RUNNING: "🔵",
+    Status.FAILED: "🔴",
+    Status.PASSED: "🟢",
+}
 
 
 class Text(Reporter):
@@ -6,11 +27,6 @@ class Text(Reporter):
         """
         Returns a human readable report for a given pipeline.
         """
-        st_map = {
-            Status.RUNNING: "🔵",
-            Status.FAILED: "🔴",
-            Status.PASSED: "🟢",
-        }
         max_name = max(len(job.name) for job in pipeline.jobs.values())
         max_name = max(max_name, len("jayporeci"))
         name = ("JayporeCI" + " " * max_name)[:max_name]
@@ -35,12 +51,11 @@ class Text(Reporter):
             ):  # Fewer parents first
                 n = pipeline.jobs[n]
                 name = (n.name + " " * max_name)[:max_name]
-                status = st_map.get(n.status, "🟡")
+                status = __ST_MAP__.get(n.status, "🟡")
                 run_id = f"{n.run_id}"[:8] if n.run_id is not None else ""
+                graph += [f"┃ {status} : {name} [{run_id:<8}] {__get_time_format__(n)}"]
                 if n.parents:
-                    graph += [f"┃ {status} : {name} [{run_id:<8}] ❮-- {n.parents}"]
-                else:
-                    graph += [f"┃ {status} : {name} [{run_id:<8}]"]
+                    graph[-1] += f" ❮-- {n.parents}"
             graph += [closer]
         graph += ["```"]
         graph = "\n".join(graph)
