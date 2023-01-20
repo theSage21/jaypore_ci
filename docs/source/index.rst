@@ -67,9 +67,32 @@ Your entire config is inside `cicd/cicd.py`. Edit it to whatever you like! A bas
         p.job("Pylint", "pylint mycode/ tests/")
         p.job("PyTest", "pytest tests/")
 
+This would produce a CI report like::
+
+    ╔ 🟢 : JayporeCI       [sha edcb193bae]
+    ┏━ Pipeline
+    ┃
+    ┃ 🟢 : Black           [ffcda0a9]   0: 3
+    ┃ 🟢 : Pylint          [2417ad58]   0: 9
+    ┃ 🟢 : PyTest          [28d4985f]   0:15
+    ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+
+- `edcb193bae` is the SHA that the report is for.
+- `Pipeline` is the default pipeline stage.
+- 🟢 indicates that the job has passed
+- `Black`, `Pylint`, and `PyTest` are the job names.
+- `[ffcda0a9]` is the docker container ID for that job.
+- `1: 3` is the time taken by the job.
+
+
 Examples
 ========
 
+Job logs / debugging
+--------------------
+
+- To see logs you can do `docker logs <container ID>`
+- To debug you can `docker exec <container ID>` while the job is running.
 
 Dependencies in docker
 ----------------------
