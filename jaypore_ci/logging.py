@@ -28,7 +28,10 @@ class JayporeLogger:
         return self.__class__()
 
     def msg(self, message: str) -> None:
+        global jaypore_logs  # pylint: disable=global-statement
         jaypore_logs.append(message)
+        if len(jaypore_logs) > 1500:
+            jaypore_logs = jaypore_logs[-1000:]
         print(message)
 
     log = debug = info = warn = warning = msg

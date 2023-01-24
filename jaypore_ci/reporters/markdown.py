@@ -1,7 +1,4 @@
-import re
-from collections import namedtuple
 from jaypore_ci.interfaces import Reporter, Status
-from jaypore_ci.logging import jaypore_logs
 
 
 def __node_mod__(nodes):
@@ -13,19 +10,7 @@ def __node_mod__(nodes):
     return mod
 
 
-ansi_escape = re.compile(r"\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])")
-
-
-def clean_logs(logs):
-    """
-    Clean logs so that they don't have HTML/ANSI color codes in them.
-    """
-    for old, new in [("<", r"\<"), (">", r"\>"), ("`", '"'), ("\r", "\n")]:
-        logs = logs.replace(old, new)
-    return [line.strip() for line in ansi_escape.sub("", logs).split("\n")]
-
-
-class Gitea(Reporter):
+class Markdown(Reporter):
     def render(self, pipeline):
         """
         Returns a markdown report for a given pipeline.
@@ -38,7 +23,6 @@ class Gitea(Reporter):
     <summary>JayporeCi: {pipeline.get_status_dot()} {pipeline.remote.sha[:10]}</summary>
 
 {self.__render_graph__(pipeline)}
-{self.__render_logs__(pipeline)}
 
 </details>"""
 
@@ -105,30 +89,3 @@ flowchart {pipeline.graph_direction}
             classDef timeout fill:#ffda9e, color:black, stroke:black;
 ``` """
         return mermaid
-
-    def __render_logs__(self, pipeline):
-        """
-        Collect all pipeline logs and render into a single collapsible text.
-        """
-        all_logs = []
-        fake_job = namedtuple("fake_job", "name logs")(
-            "JayporeCi",
-            {"stdout": clean_logs("\n".join(jaypore_logs))},
-        )
-        for job in [fake_job] + list(pipeline.jobs.values()):
-            job_log = []
-            for logname, stream in job.logs.items():
-                job_log += [f"============== {logname} ============="]
-                job_log += [line.strip() for line in stream]
-            if job_log:
-                all_logs += [
-                    "- <details>",
-                    f"    <summary>Logs: {job.name}</summary>",
-                    "",
-                    "    ```",
-                    *[f"    {line}" for line in job_log],
-                    "    ```",
-                    "",
-                    "  </details>",
-                ]
-        return "\n".join(all_logs)

@@ -5,11 +5,16 @@ from jaypore_ci.interfaces import Reporter, Status
 def __get_time_format__(job):
     time = " --:--"
     if job.run_state is not None:
-        s = (
-            (pendulum.now() - job.run_state.started_at)
-            if job.run_state.finished_at is None
-            else (job.run_state.finished_at - job.run_state.started_at)
-        ).in_seconds()
+        if (
+            job.run_state.finished_at is not None
+            and job.run_state.started_at is not None
+        ):
+            s = job.run_state.finished_at - job.run_state.started_at
+        elif job.run_state.started_at is not None:
+            s = pendulum.now() - job.run_state.started_at
+        else:
+            s = None
+        s = s.in_seconds() if s is not None else 0
         m = s // 60
         time = f"{m:>3}:{s % 60:>2}"
     return time

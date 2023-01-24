@@ -121,7 +121,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                         job_name=self.name,
                     )
                     logs = job_run.stdout.decode()
-                    self.logs["stdout"] = reporters.gitea.clean_logs(logs)
+                    self.logs["stdout"] = reporters.clean_logs(logs)
                     self.status = Status.FAILED
         else:
             self.logging().info("Trigger called but job already running")
@@ -147,7 +147,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
                 self.status = (
                     Status.PASSED if self.run_state.exit_code == 0 else Status.FAILED
                 )
-            self.logs["stdout"] = reporters.gitea.clean_logs(self.run_state.logs)
+            self.logs["stdout"] = reporters.clean_logs(self.run_state.logs)
             if with_update_report:
                 self.update_report()
 
@@ -199,7 +199,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.should_pass_called = set()
         self.remote = remote if remote is not None else remotes.gitea.Gitea.from_env()
         self.executor = executor if executor is not None else executors.docker.Docker()
-        self.reporter = reporter if reporter is not None else reporters.gitea.Gitea()
+        self.reporter = reporter if reporter is not None else reporters.text.Text()
         self.graph_direction = graph_direction
         self.poll_interval = poll_interval
         self.executor.set_pipeline(self)
@@ -289,6 +289,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         depends_on = [] if depends_on is None else depends_on
         depends_on = [depends_on] if isinstance(depends_on, str) else depends_on
         assert name not in self.jobs, f"{name} already defined"
+        assert name not in self.stages, "Stage name cannot match a job's name"
         kwargs, job_kwargs = dict(self.pipe_kwargs), kwargs
         kwargs.update(self.stage_kwargs if self.stage_kwargs is not None else {})
         kwargs.update(job_kwargs)

@@ -1,7 +1,7 @@
-from jaypore_ci import jci, reporters
+from jaypore_ci import jci
 
 
-with jci.Pipeline(reporter=reporters.Text()) as p:
+with jci.Pipeline() as p:
     jcienv = f"jcienv:{p.remote.sha}"
     with p.stage("Docker"):
         p.job("JciEnv", f"docker build  --target jcienv -t jcienv:{p.remote.sha} .")
@@ -9,7 +9,7 @@ with jci.Pipeline(reporter=reporters.Text()) as p:
     with p.stage("Jobs", image=jcienv):
         p.job("black", "python3 -m black --check .")
         p.job("pylint", "python3 -m pylint jaypore_ci/ tests/")
-        p.job("pytest", "python3 -m pytest tests/")
+        p.job("pytest", "bash cicd/run_tests.sh")
     with p.stage("Publish", image=jcienv):
         p.job("DockerHubJcienv", "bash cicd/build_and_push_docker.sh jcienv")
         p.job("DockerHubJci", "bash cicd/build_and_push_docker.sh jci")
