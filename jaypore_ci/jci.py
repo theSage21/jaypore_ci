@@ -93,9 +93,12 @@ class Job:  # pylint: disable=too-many-instance-attributes
             Status.TIMEOUT: "warning",
             Status.SKIPPED: "warning",
         }[self.pipeline.get_status()]
-        self.pipeline.remote.publish(
-            self.pipeline.reporter.render(self.pipeline), status
-        )
+        report = self.pipeline.reporter.render(self.pipeline)
+        try:
+            self.pipeline.remote.publish(report, status)
+        except Exception as e:  # pylint: disable=broad-except
+            self.logging().exeception(e)
+        return report
 
     def trigger(self):
         """
@@ -372,7 +375,8 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
                 break
         self.logging().error("Pipeline passed")
         if job is not None:
-            job.update_report()
+            report = job.update_report()
+            self.logging().info("Report:", report=report)
 
     @contextmanager
     def stage(self, name, **kwargs):
