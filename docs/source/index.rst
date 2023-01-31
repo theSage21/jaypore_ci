@@ -85,6 +85,20 @@ This would produce a CI report like::
 - `1: 3` is the time taken by the job.
 
 
+To see your pipelines on your machine you can run:
+
+.. code-blcok:: bash
+
+    docker run \
+        --rm -it \
+        -v /var/run/docker.sock:/var/run/docker.sock \
+        --workdir /app \
+        bash -c 'python3 -m jaypore_ci'
+
+
+This will open up a console where you can interact and explore the job logs.
+
+
 Examples
 ========
 

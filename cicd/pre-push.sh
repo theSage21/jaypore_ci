@@ -31,7 +31,7 @@ hook() {
     echo "JayporeCi: "
     JAYPORE_GITEA_TOKEN="${JAYPORE_GITEA_TOKEN:-$TOKEN}" docker run \
         -d \
-        --name jaypore_ci_$SHA \
+        --name jayporeci__pipe__$SHA \
         -e JAYPORE_GITEA_TOKEN \
         -e JAYPORE_CODE_DIR=$JAYPORE_CODE_DIR \
         -v /var/run/docker.sock:/var/run/docker.sock \

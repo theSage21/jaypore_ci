@@ -1,0 +1,22 @@
+Screen {
+    background: $surface-darken-1;
+}
+
+#tree-view {
+    display: block;
+    scrollbar-gutter: stable;
+    overflow: auto;
+    width: auto;
+    height: 100%;
+    dock: left;
+}
+
+
+
+#code-view {
+    overflow: auto scroll;
+    min-width: 100%;
+}
+#code {
+    width: auto;
+}

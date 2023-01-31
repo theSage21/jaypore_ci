@@ -54,7 +54,9 @@ class Docker(Executor):
         if self.pipe_id is not None:
             self.delete_network()
             self.delete_all_jobs()
-        self.pipe_id = id(pipeline)
+        self.pipe_id = __check_output__(
+            "cat /proc/self/cgroup | grep name= | awk -F/ '{print $3}'"
+        )
         self.pipeline = pipeline
         self.create_network()
 
@@ -66,7 +68,7 @@ class Docker(Executor):
         """
         Return a network name based on what the curent pipeline is.
         """
-        return f"jaypore_{self.pipe_id}" if self.pipe_id is not None else None
+        return f"jayporeci__net__{self.pipe_id}" if self.pipe_id is not None else None
 
     def create_network(self):
         """
@@ -138,7 +140,7 @@ class Docker(Executor):
             for l in job.name.lower().replace(" ", "_")
             if l in "abcdefghijklmnopqrstuvwxyz_1234567890"
         )
-        return f"{self.get_net()}_{name}"
+        return f"jayporeci__job__{self.pipe_id}__{name}"
 
     def run(self, job: "Job") -> str:
         """
@@ -146,7 +148,6 @@ class Docker(Executor):
         In case something goes wrong it will raise TriggerFailed
         """
         assert self.pipe_id is not None, "Cannot run job if pipe id is not set"
-        self.pipe_id = id(job.pipeline) if self.pipe_id is None else self.pipe_id
         env_vars = [f"--env {key}={val}" for key, val in job.get_env().items()]
         trigger = [
             "docker run -d",
