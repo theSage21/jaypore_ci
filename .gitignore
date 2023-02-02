@@ -3,3 +3,4 @@
 *.age
 dist/
 .hypothesis/
+.coverage

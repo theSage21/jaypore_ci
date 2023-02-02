@@ -74,7 +74,7 @@ This would produce a CI report like::
     ┃
     ┃ 🟢 : Black           [ffcda0a9]   0: 3
     ┃ 🟢 : Pylint          [2417ad58]   0: 9
-    ┃ 🟢 : PyTest          [28d4985f]   0:15
+    ┃ 🟢 : PyTest          [28d4985f]   0:15 [Cov: 65%  ]
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
 - `edcb193bae` is the SHA that the report is for.
@@ -83,6 +83,12 @@ This would produce a CI report like::
 - `Black`, `Pylint`, and `PyTest` are the job names.
 - `[ffcda0a9]` is the docker container ID for that job.
 - `1: 3` is the time taken by the job.
+- `[Cov: 65%  ]` is custom reporting done by the job. Any job can create a file
+  `/jaypore_ci/run/<job name>.txt` and the first 10 characters from that file
+  will be displayed in the report.
+  - Although this is used for coverage reports you could potentially use this for anything you want. A few ideas:
+    - You could report error codes here to indicate WHY a job failed.
+    - Report information about artifacts created.
 
 
 To see the pipelines on your machine you can run:

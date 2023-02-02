@@ -20,6 +20,11 @@ def __get_time_format__(job):
     return time
 
 
+def get_job_report(jobname):
+    with open(f"/jaypore_ci/run/{jobname}.txt", "r", encoding="utf-8") as fl:
+        return fl.read()
+
+
 __ST_MAP__ = {
     Status.RUNNING: "🔵",
     Status.FAILED: "🔴",
@@ -34,6 +39,7 @@ class Text(Reporter):
         """
         max_name = max(len(job.name) for job in pipeline.jobs.values())
         max_name = max(max_name, len("jayporeci"))
+        max_report = 10
         name = ("JayporeCI" + " " * max_name)[:max_name]
         graph = [
             "",
@@ -59,6 +65,13 @@ class Text(Reporter):
                 status = __ST_MAP__.get(n.status, "🟡")
                 run_id = f"{n.run_id}"[:8] if n.run_id is not None else ""
                 graph += [f"┃ {status} : {name} [{run_id:<8}] {__get_time_format__(n)}"]
+                try:
+                    report = get_job_report(n.name)
+                    report = " ".join(report.strip().split())
+                    report = (report + " " * max_report)[:max_report]
+                    graph[-1] += f" [{report}]"
+                except FileNotFoundError:
+                    pass
                 if n.parents:
                     graph[-1] += f" ❮-- {n.parents}"
             graph += [closer]
