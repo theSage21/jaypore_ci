@@ -12,6 +12,10 @@ class TriggerFailed(Exception):
     "Failure to trigger a job"
 
 
+class RemoteApiFailed(Exception):
+    "Failure while working with a remote"
+
+
 class JobStatus(NamedTuple):
     is_running: bool
     exit_code: int

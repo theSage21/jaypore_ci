@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 import requests
 
-from jaypore_ci.interfaces import Remote
+from jaypore_ci.interfaces import Remote, RemoteApiFailed
 from jaypore_ci.logging import logger
 
 
@@ -128,7 +128,7 @@ class Github(Remote):  # pylint: disable=too-many-instance-attributes
             status=r.status_code,
             response=r.text,
         )
-        raise Exception(r)
+        raise RemoteApiFailed(r)
 
     def publish(self, report: str, status: str):
         """

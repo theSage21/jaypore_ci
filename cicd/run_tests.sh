@@ -9,7 +9,7 @@ main() {
     python -m coverage run --source=. -m pytest -vv
     coverage html
     coverage report
-    echo "Cov: $(coverage report --format=total)%" > "/jaypore_ci/run/pytest.txt"
+    echo "$(coverage report --format=total)%" > "/jaypore_ci/run/pytest.txt"
 }
 
 (main)

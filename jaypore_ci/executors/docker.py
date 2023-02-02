@@ -95,7 +95,7 @@ class Docker(Executor):
                     f"docker network create -d bridge {self.get_net()}"
                 ),
             )
-        raise Exception("Cannot create network")
+        raise TriggerFailed("Cannot create network")
 
     def delete_all_jobs(self):
         """

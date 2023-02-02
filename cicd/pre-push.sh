@@ -18,7 +18,6 @@ run() {
 hook() {
     SHA=$(git rev-parse HEAD)
     REPO_ROOT=$(git rev-parse --show-toplevel)
-    TOKEN=$(echo "url=$(git remote -v|grep push|awk '{print $2}')"|git credential fill|grep password|awk -F= '{print $2}')
     JAYPORE_CODE_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     JAYPORE_CODE_DIR=$(basename $JAYPORE_CODE_DIR)
     # We will mount the current dir into /jaypore_ci/repo
@@ -29,10 +28,9 @@ hook() {
     # We also pass docker.sock to the run so that jaypore_ci can create docker containers
     echo '----------------------------------------------'
     echo "JayporeCi: "
-    JAYPORE_GITEA_TOKEN="${JAYPORE_GITEA_TOKEN:-$TOKEN}" docker run \
+    docker run \
         -d \
         --name jayporeci__pipe__$SHA \
-        -e JAYPORE_GITEA_TOKEN \
         -e JAYPORE_CODE_DIR=$JAYPORE_CODE_DIR \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v $REPO_ROOT:/jaypore_ci/repo:ro \

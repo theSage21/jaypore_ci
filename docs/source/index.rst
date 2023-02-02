@@ -84,7 +84,7 @@ This would produce a CI report like::
 - `[ffcda0a9]` is the docker container ID for that job.
 - `1: 3` is the time taken by the job.
 - `[Cov: 65%  ]` is custom reporting done by the job. Any job can create a file
-  `/jaypore_ci/run/<job name>.txt` and the first 10 characters from that file
+  `/jaypore_ci/run/<job name>.txt` and the first 5 characters from that file
   will be displayed in the report.
   - Although this is used for coverage reports you could potentially use this for anything you want. A few ideas:
     - You could report error codes here to indicate WHY a job failed.

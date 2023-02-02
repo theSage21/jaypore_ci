@@ -9,9 +9,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
-from rich import print as rprint
 
-from jaypore_ci.interfaces import Remote
+from jaypore_ci.interfaces import Remote, RemoteApiFailed
 from jaypore_ci.logging import logger
 
 
@@ -107,15 +106,17 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         if r.status_code == 404 and r.json()["message"] == "IsBranchExist":
             self.base_branch = "develop"
             return self.get_pr_id()
-        rprint(
-            self.api,
-            self.owner,
-            self.repo,
-            self.token,
-            self.branch,
+        self.logging().debug()(
+            "Failed gitea api",
+            api=self.api,
+            owner=self.owner,
+            repo=self.repo,
+            token=self.token,
+            branch=self.branch,
+            status=r.status_code,
+            response=r.text,
         )
-        rprint(r.status_code, r.text)
-        raise Exception(r)
+        raise RemoteApiFailed(r)
 
     def publish(self, report: str, status: str):
         """

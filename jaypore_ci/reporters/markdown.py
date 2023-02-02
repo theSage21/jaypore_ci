@@ -69,8 +69,13 @@ flowchart {pipeline.graph_direction}
                 a, b = pipeline.jobs[a], pipeline.jobs[b]
                 arrow = "." * ((i % mod) + 1)
                 arrow = f"-{arrow}->"
-                mermaid += f"""
-                {ref[a.name]}({a.name}):::{st_map[a.status]} {arrow} {ref[b.name]}({b.name}):::{st_map[b.status]}"""
+                mermaid += "\n"
+                mermaid += (
+                    "                "
+                    "{ref[a.name]}({a.name}):::{st_map[a.status]}"
+                    "{arrow}"
+                    "{ref[b.name]}({b.name}):::{st_map[b.status]}"
+                )
             mermaid += """
             end
             """

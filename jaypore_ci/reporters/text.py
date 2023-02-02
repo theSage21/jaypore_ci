@@ -39,7 +39,7 @@ class Text(Reporter):
         """
         max_name = max(len(job.name) for job in pipeline.jobs.values())
         max_name = max(max_name, len("jayporeci"))
-        max_report = 10
+        max_report = 5
         name = ("JayporeCI" + " " * max_name)[:max_name]
         graph = [
             "",
@@ -69,9 +69,9 @@ class Text(Reporter):
                     report = get_job_report(n.name)
                     report = " ".join(report.strip().split())
                     report = (report + " " * max_report)[:max_report]
-                    graph[-1] += f" [{report}]"
                 except FileNotFoundError:
-                    pass
+                    report = " " * max_report
+                graph[-1] += f" {report}"
                 if n.parents:
                     graph[-1] += f" ❮-- {n.parents}"
             graph += [closer]
