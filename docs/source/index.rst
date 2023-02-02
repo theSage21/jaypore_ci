@@ -85,9 +85,9 @@ This would produce a CI report like::
 - `1: 3` is the time taken by the job.
 
 
-To see your pipelines on your machine you can run:
+To see the pipelines on your machine you can run:
 
-.. code-blcok:: bash
+.. code-block:: bash
 
     docker run \
         --rm -it \
@@ -96,7 +96,43 @@ To see your pipelines on your machine you can run:
         bash -c 'python3 -m jaypore_ci'
 
 
-This will open up a console where you can interact and explore the job logs.
+This will open up a console where you can explore the job logs. If you don't
+want to do this it's also possible to simply use `docker logs <container ID>`
+to explore jobs.
+
+
+Config rules
+------------
+
+1. A config is simply a python file that imports and uses **jaypore_ci**
+2. A config starts with creating a :class:`jaypore_ci.jci.Pipeline` and using it as a context manager.
+    - A pipeline has to have one implementation of a Remote, Reporter, Executor specified.
+        - :class:`jaypore_ci.interfaces.Remote`
+        - :class:`jaypore_ci.interfaces.Reporter`
+        - :class:`jaypore_ci.interfaces.Executor`
+    - If you do not specify it then the defaults are:
+        - :class:`jaypore_ci.remotes.gitea.Gitea`
+        - :class:`jaypore_ci.reporters.text.Text`
+        - :class:`jaypore_ci.executors.docker.Docker`
+    - You can specify ANY other keyword arguments to the pipeline and they will
+      be applied to jobs in that pipeline as a default. This allows you to keep
+      your code DRY. For example, we can specify **image='some/docker:image'**
+      and this will be used for all jobs in the pipeline.
+3. Each pipeline can declare multiple :meth:`jaypore_ci.jci.Pipeline.stage` sections.
+    - Stage names have to be unique. They cannot conflict with job names as well.
+    - Stages are executed in the order in which they are declared in the config.
+    - The default stage is called **Pipeline**
+    - Any extra keyword arguments specified while creating the stage are
+      applied to jobs. These arguments override whatever is specified at the
+      Pipeline level.
+4. Finally, any number of :meth:`jaypore_ci.jci.Pipeline.job` can be declared.
+    - Jobs declared inside a stage belong to that stage.
+    - Job names have to be unique. They cannot clash with stage names / other job names.
+    - Jobs are run in parallel **UNLESS** they specify
+      **depends_on=["other_job"]**, in which case the job runs after
+      **other_job** has passed.
+    - Jobs inherit keyword arguments from Pipelines, then stages, then whatever
+      is specified at the job level.
 
 
 Examples

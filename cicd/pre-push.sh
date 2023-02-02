@@ -36,7 +36,7 @@ hook() {
         -e JAYPORE_CODE_DIR=$JAYPORE_CODE_DIR \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v $REPO_ROOT:/jaypore_ci/repo:ro \
-        -v /tmp/jaypore_$SHA:/jaypore_ci/run \
+        -v /tmp/jayporeci__src__$SHA:/jaypore_ci/run \
         --workdir /jaypore_ci/run \
         arjoonn/jci:latest \
         bash -c "bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/pre-push.sh run"

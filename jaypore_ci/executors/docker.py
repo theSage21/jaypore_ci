@@ -54,9 +54,7 @@ class Docker(Executor):
         if self.pipe_id is not None:
             self.delete_network()
             self.delete_all_jobs()
-        self.pipe_id = __check_output__(
-            "cat /proc/self/cgroup | grep name= | awk -F/ '{print $3}'"
-        )
+        self.pipe_id = pipeline.pipe_id
         self.pipeline = pipeline
         self.create_network()
 
@@ -136,9 +134,8 @@ class Docker(Executor):
         Generates a clean job name slug.
         """
         name = "".join(
-            l
-            for l in job.name.lower().replace(" ", "_")
-            if l in "abcdefghijklmnopqrstuvwxyz_1234567890"
+            l if l in "abcdefghijklmnopqrstuvwxyz1234567890" else "-"
+            for l in job.name.lower()
         )
         return f"jayporeci__job__{self.pipe_id}__{name}"
 
@@ -152,7 +149,7 @@ class Docker(Executor):
         trigger = [
             "docker run -d",
             "-v /var/run/docker.sock:/var/run/docker.sock",
-            f"-v /tmp/jaypore_{job.pipeline.remote.sha}:/jaypore_ci/run",
+            f"-v /tmp/jayporeci__src__{self.pipeline.remote.sha}:/jaypore_ci/run",
             *["--workdir /jaypore_ci/run" if not job.is_service else None],
             f"--name {self.get_job_name(job)}",
             f"--network {self.get_net()}",

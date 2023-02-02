@@ -3,6 +3,7 @@ The code submodule for Jaypore CI.
 """
 import time
 import os
+import subprocess
 from itertools import product
 from collections import defaultdict
 from typing import List, Union, Callable
@@ -27,10 +28,15 @@ PREFIX = "JAYPORE_"
 
 class Job:  # pylint: disable=too-many-instance-attributes
     """
-    This is the fundamental building block.
-    Each job goes through a lifecycle defined by `Status` class.
+    This is the fundamental building block for running jobs.
+    Each job goes through a lifecycle defined by
+    :class:`jaypore_ci.interfaces.Status`.
 
-    A job is run by an Executor as part of a Pipeline.
+    A job is run by an :class:`jaypore_ci.interfaces.Executor` as part of a
+    :class:`jaypore_ci.jci.Pipeline`.
+
+    It is never created manually. The correct way to create a job is to use
+    :meth:`jaypore_ci.jci.Pipeline.job`.
     """
 
     def __init__(
@@ -78,7 +84,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
             run_id=self.run_id,
         )
 
-    def update_report(self):
+    def update_report(self) -> str:
         """
         Update the status report. Usually called when a job changes some of
         it's internal state like when logs are updated or when status has
@@ -94,6 +100,8 @@ class Job:  # pylint: disable=too-many-instance-attributes
             Status.SKIPPED: "warning",
         }[self.pipeline.get_status()]
         report = self.pipeline.reporter.render(self.pipeline)
+        with open("/jaypore_ci/run/jaypore_ci.status.txt", "w", encoding="utf-8") as fl:
+            fl.write(report)
         try:
             self.pipeline.remote.publish(report, status)
         except Exception as e:  # pylint: disable=broad-except
@@ -154,7 +162,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
             if with_update_report:
                 self.update_report()
 
-    def is_complete(self):
+    def is_complete(self) -> bool:
         """
         Is this job complete? It could have passed/ failed etc.
         We no longer need to check for updates in a complete job.
@@ -163,8 +171,12 @@ class Job:  # pylint: disable=too-many-instance-attributes
 
     def get_env(self):
         """
-        Gets the environment variables for a given job by interpolating it with
-        the pipeline's environment.
+        Gets the environment variables for a given job.
+        Order of precedence for setting values is:
+
+        1. Pipeline
+        2. Stage
+        3. Job
         """
         return {
             **{
@@ -180,11 +192,6 @@ class Job:  # pylint: disable=too-many-instance-attributes
 class Pipeline:  # pylint: disable=too-many-instance-attributes
     """
     A pipeline acts as a controlling/organizing mechanism for multiple jobs.
-
-    - Each pipeline has stages. A default stage of 'Pipeline' is always available.
-    - Stages are executed in order. Execution proceeds to the next stage ONLY
-      if all jobs in a stage have passed.
-    - Jobs can be defined inside stages.
     """
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -205,8 +212,17 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.reporter = reporter if reporter is not None else reporters.text.Text()
         self.graph_direction = graph_direction
         self.poll_interval = poll_interval
-        self.executor.set_pipeline(self)
         self.stages = ["Pipeline"]
+        self.pipe_id = (
+            subprocess.check_output(
+                "cat /proc/self/cgroup | grep name= | awk -F/ '{print $3}'",
+                shell=True,
+                stderr=subprocess.STDOUT,
+            )
+            .decode()
+            .strip()
+        )
+        self.executor.set_pipeline(self)
         # ---
         kwargs["image"] = kwargs.get("image", "arjoonn/jaypore_ci:latest")
         kwargs["timeout"] = kwargs.get("timeout", 15 * 60)
@@ -239,7 +255,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.remote.__exit__(exc_type, exc_value, traceback)
         return False
 
-    def get_status(self):
+    def get_status(self) -> Status:
         """
         Calculates a pipeline's status based on the status of it's jobs.
         """
@@ -261,7 +277,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
                     return Status.FAILED
         return Status.PENDING if has_pending else Status.PASSED
 
-    def get_status_dot(self):
+    def get_status_dot(self) -> str:
         """
         Get's the status dot for the pipeline.
         """
@@ -334,8 +350,9 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 
     def run(self):
         """
-        Run the pipeline. This is almost always called automatically when the
-        context of the pipeline declaration finishes.
+        Run the pipeline. This is always called automatically when the context
+        of the pipeline declaration finishes and so unless you are doing
+        something fancy you don't need to call this manually.
         """
         self.__ensure_duplex__()
         # Run stages one by one
