@@ -37,7 +37,7 @@ You can easily install it using a bash script.
 
 .. code-block:: console
 
-   $ curl https://get.jayporeci.in | bash
+   $ curl https://www.jayporeci.in/setup.sh | bash
 
 
 **Or** you can manually install it. These names are convention, you can call your folders/files anything.

@@ -32,6 +32,7 @@ hook() {
         -d \
         --name jayporeci__pipe__$SHA \
         -e JAYPORE_CODE_DIR=$JAYPORE_CODE_DIR \
+        -e SHA=$SHA \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v $REPO_ROOT:/jaypore_ci/repo:ro \
         -v /tmp/jayporeci__src__$SHA:/jaypore_ci/run \

@@ -15,11 +15,12 @@ main (){
     echo $KEY_FILE
     echo $ENC_FILE
     echo $PLAINTEXT_FILE
+    PATH="$BIN:$PATH"
     if [[ -f "$SECRETS/$NAME.enc" ]]; then
-        SOPS_AGE_KEY_FILE=$KEY_FILE $BIN/sops --decrypt --input-type dotenv --output-type dotenv $ENC_FILE > $PLAINTEXT_FILE
+        SOPS_AGE_KEY_FILE=$KEY_FILE sops --decrypt --input-type dotenv --output-type dotenv $ENC_FILE > $PLAINTEXT_FILE
     fi
     vim $PLAINTEXT_FILE
-    $BIN/sops --input-type dotenv --output-type dotenv --encrypt --age $($BIN/age-keygen -y $KEY_FILE) $PLAINTEXT_FILE > $ENC_FILE
+    sops --input-type dotenv --output-type dotenv --encrypt --age $(age-keygen -y $KEY_FILE) $PLAINTEXT_FILE > $ENC_FILE
     rm $PLAINTEXT_FILE
 }
 (main $1)

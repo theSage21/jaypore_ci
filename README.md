@@ -10,5 +10,5 @@ Documentation is at : https://www.jayporeci.in
 
 ## Usage
 
-- Install : `curl https://get.jayporeci.in | bash`
+- Install : `curl https://www.jayporeci.in/setup.sh | bash`
 - Trigger : `git push origin`
