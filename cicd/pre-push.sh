@@ -6,7 +6,12 @@ set -o pipefail
 
 
 run() {
-    source /jaypore_ci/repo/secrets/bin/set_env.sh ci
+    if [ -z ${ENV+x} ]; then
+        echo "ENV : ? -> SKIP sourcing from secrets."
+    else
+        echo "ENV : '$ENV' -> Sourcing from secrets"
+        source /jaypore_ci/repo/secrets/bin/set_env.sh $ENV
+    fi
     cp -r /jaypore_ci/repo/. /jaypore_ci/run
     cd /jaypore_ci/run/
     git clean -fdx
@@ -38,7 +43,7 @@ hook() {
         -v /tmp/jayporeci__src__$SHA:/jaypore_ci/run \
         --workdir /jaypore_ci/run \
         arjoonn/jci:latest \
-        bash -c "bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/pre-push.sh run"
+        bash -c "ENV=$ENV bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/pre-push.sh run"
     echo '----------------------------------------------'
 }
 ("$@")

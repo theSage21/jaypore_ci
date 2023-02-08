@@ -30,6 +30,7 @@ EOF
     curl -s https://www.jayporeci.in/pre-push.sh -o $REPO_ROOT/cicd/pre-push.sh
     chmod u+x $REPO_ROOT/cicd/pre-push.sh
     # ----------------<<<<<<<<<<<<<
+    ENV_PREFIX=''
     read -r -p "Do you want to create 'secrets' folder for environment variables? [Y/n] " response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
     then
@@ -60,6 +61,7 @@ EOF
         then
             (bash $REPO_ROOT/secrets/bin/edit_env.sh ci)
         fi
+        ENV_PREFIX='ENV=ci '
     fi
     # ----------------<<<<<<<<<<<<<
     echo "Creating git hook for pre-push"
@@ -82,7 +84,7 @@ EOF
             echo "$REPO_ROOT/.git/hooks/pre-push.old" >> $REPO_ROOT/.git/hooks/pre-push
         fi
     fi
-    echo "$REPO_ROOT/cicd/pre-push.sh hook" >> $REPO_ROOT/.git/hooks/pre-push
+    echo "$ENV_PREFIX$REPO_ROOT/cicd/pre-push.sh hook" >> $REPO_ROOT/.git/hooks/pre-push
     chmod u+x $LOCAL_HOOK
 }
 (main)
