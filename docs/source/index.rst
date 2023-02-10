@@ -323,8 +323,27 @@ Artifacts / Cache
 - Anything you write to this directory is available to all jobs so you can use this to pass artifacts / cache between jobs.
 - You can have a separate job to POST your artifacts to some remote location / git notes / S3 / gitea
 
-Testing your pipelines too!
----------------------------
+
+Jobs based on files change / branch name
+----------------------------------------
+
+Some jobs only need to run when your branch is **main** or in release branches.
+At other times we want to check commit messages and based on the message run
+different jobs.
+
+.. code-block:: python
+
+    from jaypore_ci import jci
+
+    
+    with jci.Pipeline() as p:
+        p.job("testing", "bash cicd/lint_test_n_build.sh")
+        if p.remote.branch == 'main':
+            p.job("publish", "bash cicd/publish_release.sh", depends_on=['testing'])
+
+
+Test your pipeline config
+-------------------------
 
 Mistakes in the pipeline config can take a long time to catch if you are running a large test harness.
 
