@@ -149,6 +149,7 @@ class Docker(Executor):
         trigger = [
             "docker run -d",
             "-v /var/run/docker.sock:/var/run/docker.sock",
+            "-v /usr/bin/docker:/usr/bin/docker:ro",
             f"-v /tmp/jayporeci__src__{self.pipeline.remote.sha}:/jaypore_ci/run",
             *["--workdir /jaypore_ci/run" if not job.is_service else None],
             f"--name {self.get_job_name(job)}",

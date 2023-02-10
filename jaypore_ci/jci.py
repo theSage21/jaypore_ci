@@ -26,6 +26,48 @@ FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 PREFIX = "JAYPORE_"
 
 
+class Repo:
+    """
+    Contains information about the current repo.
+    """
+
+    sha: str
+    branch: str
+    remote: str
+
+    def files_changed(self, target):
+        "Returns list of files changed between current sha and target"
+        return (
+            subprocess.check_output(
+                f"git diff --name-only {target} {self.sha}", shell=True
+            )
+            .decode()
+            .strip()
+            .split("\n")
+        )
+
+    @classmethod
+    def from_env(cls):
+        remote = (
+            subprocess.check_output(
+                "git remote -v | grep push | awk '{print $2}'", shell=True
+            )
+            .decode()
+            .strip()
+        )
+        assert "https://" in remote, "Only https remotes supported"
+        assert ".git" in remote
+        branch = (
+            subprocess.check_output(
+                r"git branch | grep \* | awk '{print $2}'", shell=True
+            )
+            .decode()
+            .strip()
+        )
+        sha = subprocess.check_output("git rev-parse HEAD", shell=True).decode().strip()
+        return Repo(sha=sha, branch=branch, remote=remote)
+
+
 class Job:  # pylint: disable=too-many-instance-attributes
     """
     This is the fundamental building block for running jobs.

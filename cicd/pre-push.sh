@@ -30,7 +30,8 @@ hook() {
     # Then we will run git clean to remove anything that is not in git
     # Then we call the actual cicd code
     #
-    # We also pass docker.sock to the run so that jaypore_ci can create docker containers
+    # We also pass docker.sock and the docker executable to the run so that
+    # jaypore_ci can create docker containers
     echo '----------------------------------------------'
     echo "JayporeCi: "
     docker run \
@@ -38,6 +39,7 @@ hook() {
         --name jayporeci__pipe__$SHA \
         -e JAYPORE_CODE_DIR=$JAYPORE_CODE_DIR \
         -e SHA=$SHA \
+        -v /usr/bin/docker:/usr/bin/docker:ro \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v $REPO_ROOT:/jaypore_ci/repo:ro \
         -v /tmp/jayporeci__src__$SHA:/jaypore_ci/run \

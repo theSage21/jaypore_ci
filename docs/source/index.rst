@@ -351,9 +351,7 @@ would test and make sure that jobs are running in order.
             p.job(name, name)
 
     order = pipeline.executor.get_execution_order()
-    # assert order == {}
     assert order["x"] < order["y"] < order["z"]
-
 
 Contributing
 ============
