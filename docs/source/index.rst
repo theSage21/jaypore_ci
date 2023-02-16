@@ -147,6 +147,7 @@ Examples
 Job logs / debugging
 --------------------
 
+- The recommended way is to have a `Dozzle <https://dozzle.dev/>` container on your localhost to explore CI jobs.
 - To see logs you can do `docker logs <container ID>`
 - To debug you can `docker exec <container ID>` while the job is running.
 
