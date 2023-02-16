@@ -16,11 +16,13 @@ def __check_output__(cmd):
     Common arguments that need to be provided while
     calling subprocess.check_output
     """
-    return (
-        subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
-        .decode()
-        .strip()
+    proc = subprocess.run(
+        cmd, check=False, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE
     )
+    if proc.returncode != 0:
+        print(proc.stdout.decode())
+        raise TriggerFailed(cmd)
+    return proc.stdout.decode().strip()
 
 
 class Docker(Executor):
