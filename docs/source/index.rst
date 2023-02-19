@@ -190,7 +190,7 @@ codebase, then builds and publishes documentation.
     from jaypore_ci import jci
 
     with jci.Pipeline() as p:
-        image = f"myproject_{p.remote.sha}"
+        image = f"myproject_{p.repo.sha}"
 
         with p.stage("build"):
             p.job("DockDev", f"docker build --target DevEnv -t {image}_dev .")
@@ -216,16 +216,16 @@ codebase, then builds and publishes documentation.
             )
 
         with p.stage("publish"):
-            p.job("TagProd", f"docker tag -t {image}_prod hub/{image}_prod:{p.remote.sha}")
-            p.job("TagDev", f"docker tag -t {image}_dev hub/{image}_dev:{p.remote.sha}")
+            p.job("TagProd", f"docker tag -t {image}_prod hub/{image}_prod:{p.repo.sha}")
+            p.job("TagDev", f"docker tag -t {image}_dev hub/{image}_dev:{p.repo.sha}")
             p.job(
                 "PushProd",
-                f"docker push hub/{image}_prod:{p.remote.sha}",
+                f"docker push hub/{image}_prod:{p.repo.sha}",
                 depends_on=["TagProd"],
             )
             p.job(
                 "PushDev",
-                f"docker push hub/{image}_dev:{p.remote.sha}",
+                f"docker push hub/{image}_dev:{p.repo.sha}",
                 depends_on=["TagDev"],
             )
             p.job(
@@ -339,7 +339,7 @@ different jobs.
     
     with jci.Pipeline() as p:
         p.job("testing", "bash cicd/lint_test_n_build.sh")
-        if p.remote.branch == 'main':
+        if p.repo.branch == 'main':
             p.job("publish", "bash cicd/publish_release.sh", depends_on=['testing'])
 
 
@@ -372,6 +372,24 @@ would test and make sure that jobs are running in order.
 
     order = pipeline.executor.get_execution_order()
     assert order["x"] < order["y"] < order["z"]
+
+Status report via email
+-----------------------
+
+You can send pipeline status reports via email if you don't want to use the PR system for gitea/github etc.
+
+See the :class:`~jaypore_ci.remotes.email.Email` docs for the environment
+variables you will have to supply to make this work.
+
+.. code-block:: python
+
+    from jaypore_ci import jci, executors, remotes, repos
+
+    git = repos.Git.from_env()
+    email = remotes.Email.from_env(repo=git)
+    
+    with jci.Pipeline(repo=git, remote=email) as p:
+        p.job("x", "x")
 
 Contributing
 ============

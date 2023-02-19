@@ -12,8 +12,15 @@ from contextlib import contextmanager
 import structlog
 import pendulum
 
-from jaypore_ci import remotes, executors, reporters
-from jaypore_ci.interfaces import Remote, Executor, Reporter, TriggerFailed, Status
+from jaypore_ci import remotes, executors, reporters, repos
+from jaypore_ci.interfaces import (
+    Remote,
+    Executor,
+    Reporter,
+    TriggerFailed,
+    Status,
+    Repo,
+)
 from jaypore_ci.logging import logger
 
 TZ = "UTC"
@@ -26,59 +33,17 @@ FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 PREFIX = "JAYPORE_"
 
 
-class Repo:
-    """
-    Contains information about the current repo.
-    """
-
-    sha: str
-    branch: str
-    remote: str
-
-    def files_changed(self, target):
-        "Returns list of files changed between current sha and target"
-        return (
-            subprocess.check_output(
-                f"git diff --name-only {target} {self.sha}", shell=True
-            )
-            .decode()
-            .strip()
-            .split("\n")
-        )
-
-    @classmethod
-    def from_env(cls):
-        remote = (
-            subprocess.check_output(
-                "git remote -v | grep push | awk '{print $2}'", shell=True
-            )
-            .decode()
-            .strip()
-        )
-        assert "https://" in remote, "Only https remotes supported"
-        assert ".git" in remote
-        branch = (
-            subprocess.check_output(
-                r"git branch | grep \* | awk '{print $2}'", shell=True
-            )
-            .decode()
-            .strip()
-        )
-        sha = subprocess.check_output("git rev-parse HEAD", shell=True).decode().strip()
-        return Repo(sha=sha, branch=branch, remote=remote)
-
-
 class Job:  # pylint: disable=too-many-instance-attributes
     """
     This is the fundamental building block for running jobs.
     Each job goes through a lifecycle defined by
     :class:`jaypore_ci.interfaces.Status`.
 
-    A job is run by an :class:`jaypore_ci.interfaces.Executor` as part of a
-    :class:`jaypore_ci.jci.Pipeline`.
+    A job is run by an :class:`~jaypore_ci.interfaces.Executor` as part of a
+    :class:`~jaypore_ci.jci.Pipeline`.
 
     It is never created manually. The correct way to create a job is to use
-    :meth:`jaypore_ci.jci.Pipeline.job`.
+    :meth:`~jaypore_ci.jci.Pipeline.job`.
     """
 
     def __init__(
@@ -238,10 +203,11 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
+        *,
+        repo: Repo = None,
         remote: Remote = None,
         executor: Executor = None,
         reporter: Reporter = None,
-        *,
         graph_direction: str = "TB",
         poll_interval: int = 1,
         **kwargs,
@@ -249,7 +215,12 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.jobs = {}
         self.services = []
         self.should_pass_called = set()
-        self.remote = remote if remote is not None else remotes.gitea.Gitea.from_env()
+        self.repo = repo if repo is not None else repos.Git.from_env()
+        self.remote = (
+            remote
+            if remote is not None
+            else remotes.gitea.Gitea.from_env(repo=self.repo)
+        )
         self.executor = executor if executor is not None else executors.docker.Docker()
         self.reporter = reporter if reporter is not None else reporters.text.Text()
         self.graph_direction = graph_direction
@@ -266,7 +237,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         )
         self.executor.set_pipeline(self)
         # ---
-        kwargs["image"] = kwargs.get("image", "arjoonn/jaypore_ci:latest")
+        kwargs["image"] = kwargs.get("image", "arjoonn/jci:latest")
         kwargs["timeout"] = kwargs.get("timeout", 15 * 60)
         kwargs["env"] = kwargs.get("env", {})
         kwargs["stage"] = "Pipeline"

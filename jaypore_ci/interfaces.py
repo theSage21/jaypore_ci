@@ -5,7 +5,7 @@ Currently only gitea and docker are supported as remote and executor
 respectively.
 """
 from enum import Enum
-from typing import NamedTuple
+from typing import NamedTuple, List
 
 
 class TriggerFailed(Exception):
@@ -32,6 +32,29 @@ class Status(Enum):
     PASSED = 50
     TIMEOUT = 60
     SKIPPED = 70
+
+
+class Repo:
+    """
+    Contains information about the current VCS repo.
+    """
+
+    def __init__(self, sha: str, branch: str, remote: str):
+        self.sha: str = sha
+        self.branch: str = branch
+        self.remote: str = remote
+
+    def files_changed(self, target: str) -> List[str]:
+        "Returns list of files changed between current sha and target"
+        raise NotImplementedError()
+
+    @classmethod
+    def from_env(cls) -> "Repo":
+        """
+        Creates a :class:`~jaypore_ci.interfaces.Repo` instance
+        from the environment and git repo on disk.
+        """
+        raise NotImplementedError()
 
 
 class Executor:
@@ -97,7 +120,7 @@ class Remote:
         pass
 
     @classmethod
-    def from_env(cls):
+    def from_env(cls, *, repo: "Repo"):
         """
         This function should create a Remote instance from the given environment.
         It can read git information / look at environment variables etc.

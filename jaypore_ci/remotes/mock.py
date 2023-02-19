@@ -6,7 +6,7 @@ This is used to report pipeline status to the remote.
 import os
 
 
-from jaypore_ci.interfaces import Remote
+from jaypore_ci.interfaces import Remote, Repo
 from jaypore_ci.logging import logger
 
 
@@ -16,7 +16,7 @@ class Mock(Remote):  # pylint: disable=too-many-instance-attributes
     """
 
     @classmethod
-    def from_env(cls):
+    def from_env(cls, *, repo: Repo):
         return cls(branch=os.environ["JAYPORE_BRANCH"], sha=os.environ["JAYPORE_SHA"])
 
     def logging(self):

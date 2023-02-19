@@ -1,13 +1,12 @@
 from jaypore_ci import jci
 
-
 with jci.Pipeline() as p:
-    jcienv = f"jcienv:{p.remote.sha}"
+    jcienv = f"jcienv:{p.repo.sha}"
     with p.stage("build_and_test"):
-        p.job("JciEnv", f"docker build  --target jcienv -t jcienv:{p.remote.sha} .")
+        p.job("JciEnv", f"docker build  --target jcienv -t jcienv:{p.repo.sha} .")
         p.job(
             "Jci",
-            f"docker build  --target jci -t jci:{p.remote.sha} .",
+            f"docker build  --target jci -t jci:{p.repo.sha} .",
             depends_on=["JciEnv"],
         )
         kwargs = dict(image=jcienv, depends_on=["JciEnv"])
