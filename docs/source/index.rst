@@ -12,14 +12,9 @@ Jaypore CI
 TLDR
 ----
 
-- Python is the config language.
-    - No more debugging YAML configs / escape errors.
-    - It's a general purpose programming language! Go wild in how / where / when you want your CI to run.
-- Jobs are run via docker; on your laptop.
-    - No more debugging why stuff is only working in local.
-    - You can exec into a running job / see full logs / inspect and even run a debugger on a live job without too much effort.
-- Runs offline so I can work without internet.
-    - If needed CAN run on cloud runners.
+- Configure pipelines in Python
+- Jobs are run via docker; on your laptop and on cloud IF needed.
+- Send status reports anywhere. Email, Store in git, Gitea PR, Github PR, Telegram, or only on your laptop.
 
 
 Contents
@@ -33,27 +28,25 @@ Getting Started
 Installation
 ------------
 
-You can easily install it using a bash script.
+You can install it using a bash script.
 
 .. code-block:: console
 
    $ curl https://www.jayporeci.in/setup.sh | bash
 
 
-**Or** you can manually install it. These names are convention, you can call your folders/files anything.
+**Or** you can manually install it. The names are convention, you can call your
+folders/files anything but you'll need to make sure they match everywhere.
     
 1. Create a directory called *cicd* in the root of your repo.
 2. Create a file *cicd/pre-push.sh*
 3. Create a file *cicd/cicd.py*
 4. Update your repo's pre-push git hook so that it runs the *cicd/pre-push.sh* file when you push.
-
-
-How it works
-------------
-
-1. Git hook calls `cicd/pre-push.sh`
-2. After doing some administration stuff, `cicd/pre-push.sh` calls `cicd/cicd.py`
-3. As per your config, `cicd/cicd.py` will run your jobs within docker.
+    1. Git hook should call `cicd/pre-push.sh`
+    2. After setting environment variables `cicd/pre-push.sh` calls
+           `cicd/cicd.py` inside a docker container having JayporeCI installed.
+           You can use `arjoonn/jci` if you don't have anything else ready.
+    3. `cicd/cicd.py` will run your jobs within other docker containers.
 
 
 Your entire config is inside `cicd/cicd.py`. Edit it to whatever you like! A basic config would look like this:
@@ -88,58 +81,70 @@ This would produce a CI report like::
   will be displayed in the report.
   - Although this is used for coverage reports you could potentially use this for anything you want. A few ideas:
     - You could report error codes here to indicate WHY a job failed.
-    - Report information about artifacts created.
+    - Report information about artifacts created like package publish versions. 
 
 
-To see the pipelines on your machine you can run:
+To see the pipelines on your machine you can use a `Dozzle
+<https://dozzle.dev/>`_ container on your localhost to explore CI jobs.
 
-.. code-block:: bash
-
-    docker run \
-        --rm -it \
-        -v /var/run/docker.sock:/var/run/docker.sock \
-        --workdir /app \
-        bash -c 'python3 -m jaypore_ci'
+If you don't want to do this it's also possible to simply use `docker logs
+<container ID>` to explore jobs.
 
 
-This will open up a console where you can explore the job logs. If you don't
-want to do this it's also possible to simply use `docker logs <container ID>`
-to explore jobs.
+Concepts
+--------
 
-
-Config rules
-------------
-
-1. A config is simply a python file that imports and uses **jaypore_ci**
-2. A config starts with creating a :class:`jaypore_ci.jci.Pipeline` and using it as a context manager.
-    - A pipeline has to have one implementation of a Remote, Reporter, Executor specified.
-        - :class:`jaypore_ci.interfaces.Remote`
-        - :class:`jaypore_ci.interfaces.Reporter`
-        - :class:`jaypore_ci.interfaces.Executor`
-    - If you do not specify it then the defaults are:
-        - :class:`jaypore_ci.remotes.gitea.Gitea`
-        - :class:`jaypore_ci.reporters.text.Text`
-        - :class:`jaypore_ci.executors.docker.Docker`
+1. A pipeline config is simply a python file that imports and uses **jaypore_ci**.
+   - It can also import other libraries / configs. Do whatever your usecase needs.
+2. A config starts with creating a :class:`~jaypore_ci.jci.Pipeline` instance. Everything happens inside this context.
+    - A pipeline has to have one implementation of a
+      :class:`~jaypore_ci.interfaces.Remote`,
+      :class:`~jaypore_ci.interfaces.Reporter`,
+      :class:`~jaypore_ci.interfaces.Executor`, and
+      :class:`~jaypore_ci.interfaces.Repo` specified.
+    - If you do not specify them then the defaults are
+      :class:`~jaypore_ci.remotes.gitea.Gitea`,
+      :class:`~jaypore_ci.reporters.text.Text`,
+      :class:`~jaypore_ci.executors.docker.Docker`, and
+      :class:`~jaypore_ci.repos.git.Git`.
     - You can specify ANY other keyword arguments to the pipeline and they will
       be applied to jobs in that pipeline as a default. This allows you to keep
       your code DRY. For example, we can specify **image='some/docker:image'**
       and this will be used for all jobs in the pipeline.
-3. Each pipeline can declare multiple :meth:`jaypore_ci.jci.Pipeline.stage` sections.
-    - Stage names have to be unique. They cannot conflict with job names as well.
+3. Pipeline components
+    1. :class:`~jaypore_ci.interfaces.Repo` holds information about the project.
+        - You can use this to get information about things like `sha` and `branch`.
+        - Currently only :class:`~jaypore_ci.repos.git.Git` is supported.
+    2. :class:`~jaypore_ci.interfaces.Executor` Is used to run the job. Perhaps in
+       the future we might have shell / VMs.
+    3. :class:`~jaypore_ci.interfaces.Reporter` Given the status of the pipeline
+       the reporter is responsible for creating a text output that can be read by
+       humans.
+       - Along with :class:`~jaypore_ci.reporters.text.Text` , we also have
+         the :class:`~jaypore_ci.reporters.markdown.Markdown` reporter that uses
+         Mermaid graphs to show you pipeline dependencies.
+    4. :class:`~jaypore_ci.interfaces.Remote` is where the report is published to. Currently we have:
+        - :class:`~jaypore_ci.remotes.git.Git` which can store the pipeline status
+          in git itself. You can then push the status to your github and share it
+          with others. This works similar to git-bug.
+        - :class:`~jaypore_ci.remotes.gitea.Gitea` can open a PR and publish pipeline status as the PR description on Gitea.
+        - :class:`~jaypore_ci.remotes.github.Github` can open a PR and publish pipeline status as the PR description on Github.
+        - :class:`~jaypore_ci.remotes.email.Email` can email you the pipeline status.
+4. Each pipeline can declare multiple :meth:`~jaypore_ci.jci.Pipeline.stage` sections.
+    - Stage names have to be unique. They cannot conflict with job names and other stage names.
     - Stages are executed in the order in which they are declared in the config.
-    - The default stage is called **Pipeline**
+    - The catch all stage is called **Pipeline**. Any job defined outside a stage belongs to this stage.
     - Any extra keyword arguments specified while creating the stage are
-      applied to jobs. These arguments override whatever is specified at the
+      passed to jobs. These arguments override whatever is specified at the
       Pipeline level.
-4. Finally, any number of :meth:`jaypore_ci.jci.Pipeline.job` can be declared.
+4. Finally, any number of :meth:`~jaypore_ci.jci.Pipeline.job` definitions can be made.
     - Jobs declared inside a stage belong to that stage.
-    - Job names have to be unique. They cannot clash with stage names / other job names.
+    - Job names have to be unique. They cannot clash with stage names and other job names.
     - Jobs are run in parallel **UNLESS** they specify
       **depends_on=["other_job"]**, in which case the job runs after
       **other_job** has passed.
     - Jobs inherit keyword arguments from Pipelines, then stages, then whatever
       is specified at the job level.
-
 
 Examples
 ========
@@ -147,8 +152,8 @@ Examples
 Job logs / debugging
 --------------------
 
-- The recommended way is to have a `Dozzle <https://dozzle.dev/>` container on your localhost to explore CI jobs.
-- To see logs you can do `docker logs <container ID>`
+- The recommended way is to have a `Dozzle <https://dozzle.dev/>`_ container on your localhost to explore CI jobs.
+- To see logs you can run `docker logs <container ID>` locally.
 - To debug you can `docker exec <container ID>` while the job is running.
 
 Dependencies in docker
@@ -174,14 +179,7 @@ your docker image and then run the job with that built image.
 Complex job relations
 ---------------------
 
-- A pipeline can have stages.
-- Stages are executed one after the other.
-- Jobs inside a stage are all run in parallel **unless** a job declares what other jobs it `depends_on`.
-- Keyword arguments can be set at `Pipeline`, `stage`, and `job` level. For
-  example you can set `env` vars / what docker image to use and so on.
-
-
-For example, this config builds docker images, runs linting, testing on the
+This config builds docker images, runs linting, testing on the
 codebase, then builds and publishes documentation.
 
 
