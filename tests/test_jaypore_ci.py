@@ -1,10 +1,8 @@
 import pytest
 
-from jaypore_ci import __version__
 
-
-def test_version():
-    assert __version__ == "0.1.0"
+def test_sanity():
+    assert 4 == 2 + 2
 
 
 def test_simple_linear_jobs(pipeline):

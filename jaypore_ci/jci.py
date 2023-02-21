@@ -37,13 +37,30 @@ class Job:  # pylint: disable=too-many-instance-attributes
     """
     This is the fundamental building block for running jobs.
     Each job goes through a lifecycle defined by
-    :class:`jaypore_ci.interfaces.Status`.
+    :class:`~jaypore_ci.interfaces.Status`.
 
     A job is run by an :class:`~jaypore_ci.interfaces.Executor` as part of a
     :class:`~jaypore_ci.jci.Pipeline`.
 
     It is never created manually. The correct way to create a job is to use
     :meth:`~jaypore_ci.jci.Pipeline.job`.
+
+    :param name: The name for the job. Names must be unique across jobs and stages.
+    :param command: The command that we need to run for the job. It can be set
+        to `None` when `is_service` is True.
+    :param is_service: Is this job a service or not? Service jobs are assumed
+        to be :class:`~jaypore_ci.interfaces.Status.PASSED` as long as they start.
+        They are shut down when the entire pipeline has finished executing.
+    :param pipeline: The pipeline this job is associated with.
+    :param status: The :class:`~jaypore_ci.interfaces.Status` of this job.
+    :param image: What docker image to use for this job.
+    :param timeout: Defines how long a job is allowed to run before being
+        killed and marked as class:`~jaypore_ci.interfaces.Status.FAILED`.
+    :param env: A dictionary of environment variables to pass to the docker run command.
+    :param children: Defines which jobs depend on this job's output status.
+    :param parents: Defines which jobs need to pass before this job can be run.
+    :param stage: What stage the job belongs to. This stage name must exist so
+        that we can assign jobs to it.
     """
 
     def __init__(
@@ -112,7 +129,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         try:
             self.pipeline.remote.publish(report, status)
         except Exception as e:  # pylint: disable=broad-except
-            self.logging().exeception(e)
+            self.logging().exception(e)
         return report
 
     def trigger(self):
@@ -199,6 +216,13 @@ class Job:  # pylint: disable=too-many-instance-attributes
 class Pipeline:  # pylint: disable=too-many-instance-attributes
     """
     A pipeline acts as a controlling/organizing mechanism for multiple jobs.
+
+    :param repo         : Provides information about the codebase.
+    :param reporter     : Provides reports based on the state of the pipeline.
+    :param remote       : Allows us to publish reports to somewhere like gitea/email.
+    :param executor     : Runs the specified jobs.
+    :param poll_interval: Defines how frequently (in seconds) to check the
+        pipeline status and publish a report.
     """
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -208,8 +232,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         remote: Remote = None,
         executor: Executor = None,
         reporter: Reporter = None,
-        graph_direction: str = "TB",
-        poll_interval: int = 1,
+        poll_interval: int = 10,
         **kwargs,
     ) -> "Pipeline":
         self.jobs = {}
@@ -223,7 +246,6 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         )
         self.executor = executor if executor is not None else executors.docker.Docker()
         self.reporter = reporter if reporter is not None else reporters.text.Text()
-        self.graph_direction = graph_direction
         self.poll_interval = poll_interval
         self.stages = ["Pipeline"]
         self.pipe_id = (
@@ -311,12 +333,10 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         **kwargs,
     ) -> Job:
         """
-        Declare a job in this pipeline.
-
-        Jobs inherit their keyword arguments from the stage they are defined in
-        and the pipeline they are defined in.
-
-        Initially jobs are in a `PENDING` state.
+        Creates a :class:`~jaypore_ci.jci.Job` instance based on the
+        pipeline/stage that it is being defined in. See
+        :class:`~jaypore_ci.jci.Job` for details on what parameters can be
+        passed to the job.
         """
         depends_on = [] if depends_on is None else depends_on
         depends_on = [depends_on] if isinstance(depends_on, str) else depends_on
@@ -347,7 +367,8 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
             self.services.append(job)
         return job
 
-    def env_matrix(self, **kwargs):
+    @classmethod
+    def env_matrix(cls, **kwargs):
         """
         Return a cartesian product of all the provided kwargs.
         """

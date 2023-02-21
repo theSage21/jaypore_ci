@@ -11,6 +11,10 @@ def __node_mod__(nodes):
 
 
 class Markdown(Reporter):
+    def __init__(self, *, graph_direction: str = "TD", **kwargs):
+        super().__init__(**kwargs)
+        self.graph_direction = graph_direction
+
     def render(self, pipeline):
         """
         Returns a markdown report for a given pipeline.
@@ -40,7 +44,7 @@ class Markdown(Reporter):
         }
         mermaid = f"""
 ```mermaid
-flowchart {pipeline.graph_direction}
+flowchart {self.graph_direction}
 """
         for stage in pipeline.stages:
             nodes, edges = set(), set()
@@ -51,7 +55,7 @@ flowchart {pipeline.graph_direction}
                 edges |= {(p, job.name) for p in job.parents}
             mermaid += f"""
             subgraph {stage}
-                direction {pipeline.graph_direction}
+                direction {self.graph_direction}
             """
             ref = {n: f"{stage}_{i}" for i, n in enumerate(nodes)}
             # If there are too many nodes, scatter them with different length arrows

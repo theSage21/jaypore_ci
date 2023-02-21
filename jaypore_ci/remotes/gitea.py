@@ -53,6 +53,8 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         self.token = token
         self.timeout = 10
         self.base_branch = "main"
+        # ---
+        self.__pr_id__ = None
 
     def logging(self):
         """
@@ -66,36 +68,43 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         """
         Returns the pull request ID for the current branch.
         """
-        r = requests.post(
-            f"{self.api}/repos/{self.owner}/{self.repo}/pulls",
-            params={"access_token": self.token},
-            timeout=self.timeout,
-            json={
-                "base": self.base_branch,
-                "body": "Branch auto created by JayporeCI",
-                "head": self.branch,
-                "title": self.branch,
-            },
-        )
-        self.logging().debug("Get PR Id", status_code=r.status_code)
-        if r.status_code == 409:
-            return r.text.split("issue_id:")[1].split(",")[0].strip()
-        if r.status_code == 201:
-            return self.get_pr_id()
-        if r.status_code == 404 and r.json()["message"] == "IsBranchExist":
-            self.base_branch = "develop"
-            return self.get_pr_id()
-        self.logging().debug()(
-            "Failed gitea api",
-            api=self.api,
-            owner=self.owner,
-            repo=self.repo,
-            token=self.token,
-            branch=self.branch,
-            status=r.status_code,
-            response=r.text,
-        )
-        raise RemoteApiFailed(r)
+        if self.__pr_id__ is None:
+            r = requests.post(
+                f"{self.api}/repos/{self.owner}/{self.repo}/pulls",
+                params={"access_token": self.token},
+                timeout=self.timeout,
+                json={
+                    "base": self.base_branch,
+                    "body": "Branch auto created by JayporeCI",
+                    "head": self.branch,
+                    "title": self.branch,
+                },
+            )
+            self.logging().debug("Get PR Id", status_code=r.status_code)
+            if r.status_code == 409:
+                self.__pr_id__ = r.text.split("issue_id:")[1].split(",")[0].strip()
+                return self.get_pr_id()
+            if r.status_code == 201:
+                return self.get_pr_id()
+            if (
+                r.status_code == 404
+                and r.json()["message"] == "IsBranchExist"
+                and self.base_branch != "develop"
+            ):
+                self.base_branch = "develop"
+                return self.get_pr_id()
+            self.logging().debug()(
+                "Failed gitea api",
+                api=self.api,
+                owner=self.owner,
+                repo=self.repo,
+                token=self.token,
+                branch=self.branch,
+                status=r.status_code,
+                response=r.text,
+            )
+            raise RemoteApiFailed(r)
+        return self.__pr_id__
 
     def publish(self, report: str, status: str):
         """

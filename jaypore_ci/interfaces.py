@@ -39,10 +39,11 @@ class Repo:
     Contains information about the current VCS repo.
     """
 
-    def __init__(self, sha: str, branch: str, remote: str):
+    def __init__(self, sha: str, branch: str, remote: str, commit_message: str):
         self.sha: str = sha
         self.branch: str = branch
         self.remote: str = remote
+        self.commit_message: str = commit_message
 
     def files_changed(self, target: str) -> List[str]:
         "Returns list of files changed between current sha and target"

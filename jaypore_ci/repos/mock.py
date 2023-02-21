@@ -15,6 +15,6 @@ class Mock(Repo):
     @classmethod
     def from_env(cls, **kwargs) -> "Mock":
         """
-        Gets repo status from the environment and git repo on disk.
+        Save whatever is provided to kwargs
         """
         return cls(**kwargs)

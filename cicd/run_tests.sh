@@ -6,7 +6,7 @@ set -o pipefail
 
 
 main() {
-    python -m coverage run --source=. -m pytest -vv
+    python -m coverage run --branch --source=. -m pytest -vv
     coverage html
     coverage report
     echo "$(coverage report --format=total)%" > "/jaypore_ci/run/pytest.txt"

@@ -12,7 +12,7 @@ main (){
     echo "--------------------"
     echo "Installing in repo: $REPO_ROOT"
     echo "Creating folder for cicd:  $REPO_ROOT/$CICD_ROOT"
-    # ----------------<<<<<<<<<<<<<
+    # ----------------==
     read -r -p "Should we continue? [Y/n] " response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
     then
@@ -29,7 +29,7 @@ with jci.Pipeline() as p:
 EOF
     curl -s https://www.jayporeci.in/pre-push.sh -o $REPO_ROOT/cicd/pre-push.sh
     chmod u+x $REPO_ROOT/cicd/pre-push.sh
-    # ----------------<<<<<<<<<<<<<
+    # ----------------==
     ENV_PREFIX=''
     read -r -p "Do you want to create 'secrets' folder for environment variables? [Y/n] " response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
@@ -63,7 +63,7 @@ EOF
         fi
         ENV_PREFIX='ENV=ci '
     fi
-    # ----------------<<<<<<<<<<<<<
+    # ----------------==
     echo "Creating git hook for pre-push"
     if test -f "$LOCAL_HOOK"; then
         if test -f "$LOCAL_HOOK.local"; then

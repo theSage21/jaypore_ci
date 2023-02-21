@@ -28,7 +28,7 @@ class Git(Repo):
             .decode()
             .strip()
         )
-        assert "https://" in remote, "Only https remotes supported"
+        assert "https://" in remote, f"Only https remotes supported: {remote}"
         assert ".git" in remote
         # NOTE: Later on perhaps we should support non-https remotes as well
         # since JCI does not actually do anything with the remote.
@@ -40,4 +40,9 @@ class Git(Repo):
             .strip()
         )
         sha = subprocess.check_output("git rev-parse HEAD", shell=True).decode().strip()
-        return Repo(sha=sha, branch=branch, remote=remote)
+        message = (
+            subprocess.check_output("git log -1 --pretty=%B", shell=True)
+            .decode()
+            .strip()
+        )
+        return cls(sha=sha, branch=branch, remote=remote, commit_message=message)

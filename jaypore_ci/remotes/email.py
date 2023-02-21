@@ -63,7 +63,9 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
             addr=os.environ["JAYPORE_EMAIL_ADDR"],
             password=os.environ["JAYPORE_EMAIL_PASSWORD"],
             email_to=os.environ["JAYPORE_EMAIL_TO"],
-            email_from=os.environ["JAYPORE_EMAIL_FROM"],
+            email_from=os.environ.get(
+                "JAYPORE_EMAIL_FROM", os.environ["JAYPORE_EMAIL_ADDR"]
+            ),
             subject=f"JCI [{owner}/{name}] [{repo.branch} {repo.sha[:8]}]",
             branch=repo.branch,
             sha=repo.sha,

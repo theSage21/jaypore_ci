@@ -70,14 +70,14 @@ This would produce a CI report like::
     ┃ 🟢 : PyTest          [28d4985f]   0:15 [Cov: 65%  ]
     ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
 
-- `edcb193bae` is the SHA that the report is for.
-- `Pipeline` is the default pipeline stage.
+- **edcb193bae** is the SHA that the report is for.
+- **Pipeline** is the default pipeline stage.
 - 🟢 indicates that the job has passed
-- `Black`, `Pylint`, and `PyTest` are the job names.
-- `[ffcda0a9]` is the docker container ID for that job.
-- `1: 3` is the time taken by the job.
-- `[Cov: 65%  ]` is custom reporting done by the job. Any job can create a file
-  `/jaypore_ci/run/<job name>.txt` and the first 5 characters from that file
+- **Black**, **Pylint**, and **PyTest** are the job names.
+- **[ffcda0a9]** is the docker container ID for that job.
+- **1: 3** is the time taken by the job.
+- **[Cov: 65%  ]** is custom reporting done by the job. Any job can create a file
+  **/jaypore_ci/run/<job name>.txt** and the first 5 characters from that file
   will be displayed in the report.
   - Although this is used for coverage reports you could potentially use this for anything you want. A few ideas:
     - You could report error codes here to indicate WHY a job failed.
@@ -124,7 +124,7 @@ Concepts
          the :class:`~jaypore_ci.reporters.markdown.Markdown` reporter that uses
          Mermaid graphs to show you pipeline dependencies.
     4. :class:`~jaypore_ci.interfaces.Remote` is where the report is published to. Currently we have:
-        - :class:`~jaypore_ci.remotes.git.Git` which can store the pipeline status
+        - :class:`~jaypore_ci.remotes.git.GitRemote` which can store the pipeline status
           in git itself. You can then push the status to your github and share it
           with others. This works similar to git-bug.
         - :class:`~jaypore_ci.remotes.gitea.Gitea` can open a PR and publish pipeline status as the PR description on Gitea.
@@ -146,18 +146,18 @@ Concepts
     - Jobs inherit keyword arguments from Pipelines, then stages, then whatever
       is specified at the job level.
 
-Examples
-========
+How to
+======
 
-Job logs / debugging
---------------------
+See job logs
+------------
 
 - The recommended way is to have a `Dozzle <https://dozzle.dev/>`_ container on your localhost to explore CI jobs.
-- To see logs you can run `docker logs <container ID>` locally.
-- To debug you can `docker exec <container ID>` while the job is running.
+- You can also run `docker logs <container ID>` locally.
+- To debug running containers you can `docker exec <container ID>` while the job is running.
 
-Dependencies in docker
-----------------------
+Build and publish docker images
+-------------------------------
 
 Environment / package dependencies can be cached in docker easily. Simply build
 your docker image and then run the job with that built image.
@@ -176,7 +176,7 @@ your docker image and then run the job with that built image.
         )
 
 
-Complex job relations
+Define complex job relations
 ---------------------
 
 This config builds docker images, runs linting, testing on the
@@ -188,53 +188,18 @@ codebase, then builds and publishes documentation.
     from jaypore_ci import jci
 
     with jci.Pipeline() as p:
-        image = f"myproject_{p.repo.sha}"
 
         with p.stage("build"):
-            p.job("DockDev", f"docker build --target DevEnv -t {image}_dev .")
+            p.job("DockDev", f"docker build --target DevEnv -t {p.repo.sha}_dev .")
 
-        with p.stage("checking", image=f"{image}_dev"):
-            p.job("UnitTest", "python3 -m pytest -m unit tests/")
-            p.job("PyLint", "python3 -m pylint src/")
-            p.job("Black", "python3 -m black --check .")
-            p.job(
-                "IntegrationTest",
-                "python3 -m pytest -m integration tests/",
-                depends_on=["PyLint", "UnitTest"],
-            )
-            p.job(
-                "RegressionTest",
-                "python3 -m pytest -m regression tests/",
-                depends_on=["PyLint", "UnitTest"],
-            )
-            p.job(
-                "FuzzyTest",
-                "python3 -m pytest -m fuzzy tests/",
-                depends_on=["PyLint", "UnitTest"],
-            )
-
-        with p.stage("publish"):
-            p.job("TagProd", f"docker tag -t {image}_prod hub/{image}_prod:{p.repo.sha}")
-            p.job("TagDev", f"docker tag -t {image}_dev hub/{image}_dev:{p.repo.sha}")
-            p.job(
-                "PushProd",
-                f"docker push hub/{image}_prod:{p.repo.sha}",
-                depends_on=["TagProd"],
-            )
-            p.job(
-                "PushDev",
-                f"docker push hub/{image}_dev:{p.repo.sha}",
-                depends_on=["TagDev"],
-            )
-            p.job(
-                "BuildDocs",
-                "sphinx-build -b html docs/source/ docs/build/html",
-                image=f"{image}_dev"
-            )
+        with p.stage("checking", image=f"{p.repo.sha}_dev"):
+            p.job( "IntTest", "run int_test.sh")
+            p.job( "RegText", "bash regression_tests.sh", depends_on=["IntTest"])
+            p.job( "FuzzTest", "bash fuzzy_tests.sh", depends_on=["IntTest", "RegText"])
 
 
-Job matrix
-----------
+Run a job matrix
+----------------
  
 There is no special concept for matrix jobs. Just declare as many jobs as you
 want in a while loop. There is a function to make this easier when you want to
@@ -256,8 +221,8 @@ run combinations of variables.
 
 The above config generates 3 x 3 x 2 = 18 jobs and sets the environment for each to a unique combination of `BROWSER` , `SCREENSIZE`, and `ONLINE`.
 
-Cloud/remote runners
---------------------
+Run on cloud/remote runners
+---------------------------
 
 - Make sure docker is installed on the remote machine.
 - Make sure you have ssh access to remote machine and the user you are logging in as can run docker commands.
@@ -271,8 +236,8 @@ Cloud/remote runners
 - Now in your `cicd/pre-push.sh` file, where the `docker run` command is mentioned, simply add `DOCKER_HOST=ssh://my.aws.machine`
 - JayporeCi will then run on the remote machine.
 
-DB Services
------------
+Use custom services for testing
+-------------------------------
 
 Some jobs don't affect the status of the pipeline. They just need to be there
 while you are running your tests. For example, you might need a DB to run API
@@ -315,10 +280,10 @@ You can also import jobs defined by other people. Some examples of why you might
 Since `JayporeCI` has a normal programming language as it's config language, most things can be solved without too much effort.
 
 
-Artifacts / Cache
------------------
+Publish Artifacts / Cache
+-------------------------
 
-- All jobs run in a shared directory `jaypore_ci/run`.
+- All jobs run in a shared directory **/jaypore_ci/run**.
 - Anything you write to this directory is available to all jobs so you can use this to pass artifacts / cache between jobs.
 - You can have a separate job to POST your artifacts to some remote location / git notes / S3 / gitea
 
@@ -388,6 +353,24 @@ variables you will have to supply to make this work.
     
     with jci.Pipeline(repo=git, remote=email) as p:
         p.job("x", "x")
+
+Run selected jobs based on commit message
+--------------------------------------
+
+Sometimes we want to control when some jobs run. For example, build/release jobs, or intensive testing jobs.
+A simple way to do this is to read the commit messsage and see if the author
+asked us to run these jobs. JayporeCI itself only runs release jobs when the
+commit message contains **jci:release** as one of it's lines.
+
+.. code-block:: python
+
+    from jaypore_ci import jci
+
+    with jci.Pipeline() as p:
+        p.job("build", "bash cicd/build.sh")
+        if p.repo.commit_message.contains("jci:release"):
+            p.job("release", "bash cicd/release.sh", depends_on=["build"])
+
 
 Contributing
 ============

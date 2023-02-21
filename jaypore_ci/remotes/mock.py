@@ -1,11 +1,8 @@
 """
-A gitea remote git host.
+A mock remote.
 
-This is used to report pipeline status to the remote.
+This is used to test pipelines.
 """
-import os
-
-
 from jaypore_ci.interfaces import Remote, Repo
 from jaypore_ci.logging import logger
 
@@ -17,7 +14,7 @@ class Mock(Remote):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def from_env(cls, *, repo: Repo):
-        return cls(branch=os.environ["JAYPORE_BRANCH"], sha=os.environ["JAYPORE_SHA"])
+        return cls(branch=repo.branch, sha=repo.sha)
 
     def logging(self):
         """
