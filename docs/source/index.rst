@@ -3,10 +3,13 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Jaypore CI
-==========
+|logo|
+======
 
-**Jaypore CI** is a *small*, *very flexible*, and *powerful* system for automation within software projects.
+- **Jaypore CI** is a *small*, *very flexible*, and *powerful* system for automation within software projects.
+- Coverage : |coverage|
+- Version  : |package_version| on `PyPi <https://pypi.org/project/jaypore-ci/>`_
+
 
 
 TLDR
@@ -388,3 +391,7 @@ Reference
 
    reference/modules.rst
 
+.. |logo| image:: _static/logo80.png
+   :width: 80
+   :alt: Jaypore CI logo
+   :align: middle

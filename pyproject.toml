@@ -1,8 +1,10 @@
 [tool.poetry]
 name = "jaypore_ci"
-version = "0.2.14"
+version = "0.2.18"
 description = ""
 authors = ["arjoonn sharma <arjoonn.94@gmail.com>"]
+homepage = "https://www.jayporeci.in/"
+documentation = "https://www.jayporeci.in/"
 
 [tool.poetry.dependencies]
 python = "^3.8"

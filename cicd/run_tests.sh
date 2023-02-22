@@ -10,6 +10,10 @@ main() {
     coverage html
     coverage report
     echo "Cov: $(coverage report --format=total)%" > "/jaypore_ci/run/pytest.txt"
+    # Mark info in jci docs
+    # .. |Product| replace:: SoftTech Analyzer
+    echo -e "\n.. |coverage| replace:: $(coverage report --format=total)%\n" >> "/jaypore_ci/run/docs/source/index.rst"
+    echo -e "\n.. |package_version| replace:: $(poetry version | awk '{print $2}')\n" >> "/jaypore_ci/run/docs/source/index.rst"
 }
 
 (main)
