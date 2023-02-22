@@ -1,5 +1,7 @@
 from    python:3.11 as jcienv
 workdir /app
+add     cicd/install_docker.sh .
+run     bash install_docker.sh
 run     python3 -m pip install --upgrade pip
 run     python3 -m pip install poetry
 add     pyproject.toml .
