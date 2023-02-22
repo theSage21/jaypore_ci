@@ -39,7 +39,7 @@ class Text(Reporter):
         """
         max_name = max(len(job.name) for job in pipeline.jobs.values())
         max_name = max(max_name, len("jayporeci"))
-        max_report = 5
+        max_report = 10
         name = ("JayporeCI" + " " * max_name)[:max_name]
         graph = [
             "",
