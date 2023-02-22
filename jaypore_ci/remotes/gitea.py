@@ -52,7 +52,7 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         self.repo = repo
         self.token = token
         self.timeout = 10
-        self.base_branch = "main"
+        self.base_branch = "develop"
         # ---
         self.__pr_id__ = None
 
@@ -89,9 +89,9 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
             if (
                 r.status_code == 404
                 and r.json()["message"] == "IsBranchExist"
-                and self.base_branch != "develop"
+                and self.base_branch != "main"
             ):
-                self.base_branch = "develop"
+                self.base_branch = "main"
                 return self.get_pr_id()
             self.logging().debug()(
                 "Failed gitea api",

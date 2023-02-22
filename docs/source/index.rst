@@ -7,9 +7,8 @@
 ======
 
 - **Jaypore CI** is a *small*, *very flexible*, and *powerful* system for automation within software projects.
-- Coverage : |coverage|
-- Version  : |package_version| on `PyPi <https://pypi.org/project/jaypore-ci/>`_
-
+- `Coverage </htmlcov>`_ : |coverage|
+- `PyPi <https://pypi.org/project/jaypore-ci/>`_ : |package_version|
 
 
 TLDR
