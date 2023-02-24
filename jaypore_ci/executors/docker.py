@@ -1,28 +1,12 @@
 """
 A docker executor for Jaypore CI.
 """
-import json
-import subprocess
-
 import pendulum
+import docker
 from rich import print as rprint
 
 from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
 from jaypore_ci.logging import logger
-
-
-def __check_output__(cmd):
-    """
-    Common arguments that need to be provided while
-    calling subprocess.check_output
-    """
-    proc = subprocess.run(
-        cmd, check=False, shell=True, stderr=subprocess.STDOUT, stdout=subprocess.PIPE
-    )
-    if proc.returncode != 0:
-        print(proc.stdout.decode())
-        raise TriggerFailed(cmd)
-    return proc.stdout.decode().strip()
 
 
 class Docker(Executor):
@@ -39,6 +23,9 @@ class Docker(Executor):
         super().__init__()
         self.pipe_id = None
         self.pipeline = None
+        self.docker = docker.from_env()
+        self.client = docker.APIClient()
+        self.__execution_order__ = []
 
     def logging(self):
         """
@@ -79,22 +66,13 @@ class Docker(Executor):
         """
         assert self.pipe_id is not None, "Cannot create network if pipe is not set"
         for _ in range(3):
-            net_ls = subprocess.run(
-                f"docker network ls | grep {self.get_net()}",
-                shell=True,
-                check=False,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-            )
-            if net_ls.returncode == 0:
-                self.logging().info(
-                    "Found network", network_name=self.get_net(), subprocess=net_ls
-                )
-                return net_ls
+            if len(self.docker.networks.list(names=[self.get_net()])) != 0:
+                self.logging().info("Found network", network_name=self.get_net())
+                return
             self.logging().info(
                 "Create network",
-                subprocess=__check_output__(
-                    f"docker network create -d bridge {self.get_net()}"
+                subprocess=self.docker.networks.create(
+                    name=self.get_net(), driver="bridge"
                 ),
             )
         raise TriggerFailed("Cannot create network")
@@ -110,10 +88,9 @@ class Docker(Executor):
         job = None
         for job in self.pipeline.jobs.values():
             if job.run_id is not None and not job.run_id.startswith("pyrun_"):
-                self.logging().info(
-                    "Stop job:",
-                    subprocess=__check_output__(f"docker stop -t 1 {job.run_id}"),
-                )
+                container = self.docker.containers.get(job.run_id)
+                container.stop(timeout=1)
+                self.logging().info("Stop job:", run_id=job.run_id)
                 job.check_job(with_update_report=False)
         if job is not None:
             job.check_job()
@@ -124,14 +101,13 @@ class Docker(Executor):
         Delete the network for this executor.
         """
         assert self.pipe_id is not None, "Cannot delete network if pipe is not set"
-        self.logging().info(
-            "Delete network",
-            subprocess=__check_output__(
-                f"docker network rm {self.get_net()} || echo 'No such net'"
-            ),
-        )
+        try:
+            net = self.docker.networks.get(self.get_net())
+            net.remove()
+        except docker.errors.NotFound:
+            self.logging().error("Delete network: Not found", netid=self.get_net())
 
-    def get_job_name(self, job):
+    def get_job_name(self, job, tail=False):
         """
         Generates a clean job name slug.
         """
@@ -139,6 +115,8 @@ class Docker(Executor):
             l if l in "abcdefghijklmnopqrstuvwxyz1234567890" else "-"
             for l in job.name.lower()
         )
+        if tail:
+            return name
         return f"jayporeci__job__{self.pipe_id}__{name}"
 
     def run(self, job: "Job") -> str:
@@ -147,39 +125,39 @@ class Docker(Executor):
         In case something goes wrong it will raise TriggerFailed
         """
         assert self.pipe_id is not None, "Cannot run job if pipe id is not set"
-        env_vars = [f"--env {key}={val}" for key, val in job.get_env().items()]
-        trigger = [
-            "docker run -d",
-            "-v /var/run/docker.sock:/var/run/docker.sock",
-            "-v /usr/bin/docker:/usr/bin/docker:ro",
-            f"-v /tmp/jayporeci__src__{self.pipeline.remote.sha}:/jaypore_ci/run",
-            *["--workdir /jaypore_ci/run" if not job.is_service else None],
-            f"--name {self.get_job_name(job)}",
-            f"--network {self.get_net()}",
-            *env_vars,
-            job.image,
-            job.command if not job.is_service else None,
-        ]
+        trigger = {
+            "detach": True,
+            "environment": job.get_env(),
+            "volumes": [
+                "/var/run/docker.sock:/var/run/docker.sock",
+                "/usr/bin/docker:/usr/bin/docker:ro",
+                f"/tmp/jayporeci__src__{self.pipeline.remote.sha}:/jaypore_ci/run",
+            ],
+            "name": self.get_job_name(job),
+            "network": self.get_net(),
+            "image": job.image,
+            "command": job.command if not job.is_service else None,
+        }
+        if not job.is_service:
+            trigger["working_dir"] = "/jaypore_ci/run"
         if not job.is_service:
             assert job.command
         rprint(trigger)
-        trigger = " ".join(t for t in trigger if t is not None)
-        run_job = subprocess.run(
-            trigger,
-            shell=True,
-            check=False,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        if run_job.returncode == 0:
-            return run_job.stdout.decode().strip()
-        raise TriggerFailed(run_job)
+        try:
+            container = self.docker.containers.run(**trigger)
+            self.__execution_order__.append(
+                (self.get_job_name(job, tail=True), container.id, "Run")
+            )
+            return container.id
+        except docker.errors.APIError as e:
+            self.logging().exception(e)
+            raise TriggerFailed(e) from e
 
     def get_status(self, run_id: str) -> JobStatus:
         """
         Given a run_id, it will get the status for that run.
         """
-        inspect = json.loads(__check_output__(f"docker inspect {run_id}"))[0]
+        inspect = self.client.inspect_container(run_id)
         status = JobStatus(
             is_running=inspect["State"]["Running"],
             exit_code=int(inspect["State"]["ExitCode"]),
@@ -191,5 +169,8 @@ class Docker(Executor):
         )
         # --- logs
         self.logging().debug("Check status", status=status)
-        logs = __check_output__(f"docker logs {run_id}")
+        logs = self.docker.containers.get(run_id).logs().decode()
         return status._replace(logs=logs)
+
+    def get_execution_order(self):
+        return {name: i for i, (name, *_) in enumerate(self.__execution_order__)}

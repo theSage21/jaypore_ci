@@ -149,14 +149,11 @@ class Job:  # pylint: disable=too-many-instance-attributes
                     self.run_id = self.pipeline.executor.run(self)
                     self.logging().info("Trigger done")
                 except TriggerFailed as e:
-                    job_run = e.args[0]
                     self.logging().error(
                         "Trigger failed",
-                        returncode=job_run.returncode,
+                        error=e,
                         job_name=self.name,
                     )
-                    logs = job_run.stdout.decode()
-                    self.logs["stdout"] = reporters.clean_logs(logs)
                     self.status = Status.FAILED
         else:
             self.logging().info("Trigger called but job already running")

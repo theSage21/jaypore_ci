@@ -5,7 +5,7 @@ import time
 import subprocess
 
 from jaypore_ci.interfaces import Remote
-from jaypore_ci.repos import Git, Mock
+from jaypore_ci.repos import Git
 from jaypore_ci.logging import logger
 
 
@@ -26,7 +26,7 @@ class GitRemote(Remote):  # pylint: disable=too-many-instance-attributes
         """
         Creates a remote instance from the environment.
         """
-        assert isinstance(repo, (Git, Mock)), "Git remote can only work in a git repo"
+        assert isinstance(repo, Git), "Git remote can only work in a git repo"
         return cls(
             repo=repo,
             branch=repo.branch,

@@ -4,6 +4,7 @@ import unittest
 
 import pytest
 import tests.subprocess_mock  # pylint: disable=unused-import
+import tests.docker_mock  # pylint: disable=unused-import
 from tests.requests_mock import Mock
 
 from jaypore_ci import jci, executors, remotes, reporters, repos
@@ -64,7 +65,7 @@ def idfn(x):
     scope="function",
     params=list(
         jci.Pipeline.env_matrix(
-            reporter=[reporters.Text, reporters.Mock, reporters.Markdown],
+            reporter=[reporters.Text, reporters.Markdown],
             remote=[
                 remotes.Mock,
                 remotes.Email,
@@ -72,8 +73,8 @@ def idfn(x):
                 remotes.Gitea,
                 remotes.Github,
             ],
-            repo=[repos.Mock, repos.Git],
-            executor=[executors.Mock],
+            repo=[repos.Git],
+            executor=[executors.Docker],
         )
     ),
     ids=idfn,
@@ -85,16 +86,7 @@ def pipeline(request):
     os.environ["JAYPORE_EMAIL_PASSWORD"] = "fake_email_password"
     os.environ["JAYPORE_EMAIL_TO"] = "fake.to@mymailmail.com"
     kwargs = {}
-    if request.param["repo"] == repos.Mock:
-        kwargs["repo"] = repos.Mock.from_env(
-            files_changed=[],
-            branch="test_branch",
-            sha="fake_sha",
-            remote="https://fake_remote.com/fake_owner/fake_repo.git",
-            commit_message="fake_commit_message",
-        )
-    else:
-        kwargs["repo"] = request.param["repo"].from_env()
+    kwargs["repo"] = request.param["repo"].from_env()
     # --- remote
     kwargs["remote"] = request.param["remote"].from_env(repo=kwargs["repo"])
     if request.param["remote"] == remotes.Gitea and not Mock.gitea_added:
