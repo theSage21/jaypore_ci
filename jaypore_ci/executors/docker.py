@@ -5,6 +5,7 @@ import pendulum
 import docker
 from rich import print as rprint
 
+from jaypore_ci import clean
 from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
 from jaypore_ci.logging import logger
 
@@ -111,10 +112,7 @@ class Docker(Executor):
         """
         Generates a clean job name slug.
         """
-        name = "".join(
-            l if l in "abcdefghijklmnopqrstuvwxyz1234567890" else "-"
-            for l in job.name.lower()
-        )
+        name = clean.name(job.name)
         if tail:
             return name
         return f"jayporeci__job__{self.pipe_id}__{name}"

@@ -6,7 +6,7 @@ set -o pipefail
 
 
 main() {
-    python -m coverage run --branch --source=. -m pytest -xl --full-trace -vv
+    python -m coverage run --branch --source=. -m pytest -l --full-trace -vvvv --hypothesis-verbosity=verbose
     coverage html
     coverage report
     echo "Cov: $(coverage report --format=total)%" > "/jaypore_ci/run/pytest.txt"

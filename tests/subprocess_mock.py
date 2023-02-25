@@ -12,6 +12,13 @@ def sha():
     return hex(random.getrandbits(128))
 
 
+__rev_parse__ = sha()
+__hash_object__ = sha()
+__mktree = sha()
+__commit_tree = sha()
+__update_ref__ = sha()
+
+
 def check_output(cmd, **_):
     text = ""
     # repos.git
@@ -22,7 +29,7 @@ def check_output(cmd, **_):
     elif "git branch" in cmd and "grep" in cmd:
         text = "subprocess_mock_fake_branch"
     elif "rev-parse HEAD" in cmd:
-        text = sha()
+        text = __rev_parse__
     elif "git log -1" in cmd:
         text = "some_fake_git_commit_message\nfrom_subprocess_mock"
     # jci
@@ -30,13 +37,13 @@ def check_output(cmd, **_):
         text = "fake_pipe_id_from_subprocess_mock"
     # remotes.git
     elif "git hash-object" in cmd:
-        text = sha()
+        text = __hash_object__
     elif "git mktree" in cmd:
-        text = sha()
+        text = __mktree
     elif "git commit-tree" in cmd:
-        text = sha()
+        text = __commit_tree
     elif "git update-ref" in cmd:
-        text = sha()
+        text = __update_ref__
     return text.encode()
 
 

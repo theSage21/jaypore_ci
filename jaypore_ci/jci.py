@@ -12,7 +12,7 @@ from contextlib import contextmanager
 import structlog
 import pendulum
 
-from jaypore_ci import remotes, executors, reporters, repos
+from jaypore_ci import remotes, executors, reporters, repos, clean
 from jaypore_ci.interfaces import (
     Remote,
     Executor,
@@ -126,10 +126,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         report = self.pipeline.reporter.render(self.pipeline)
         with open("/jaypore_ci/run/jaypore_ci.status.txt", "w", encoding="utf-8") as fl:
             fl.write(report)
-        try:
-            self.pipeline.remote.publish(report, status)
-        except Exception as e:  # pylint: disable=broad-except
-            self.logging().exception(e)
+        self.pipeline.remote.publish(report, status)
         return report
 
     def trigger(self):
@@ -337,6 +334,8 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         """
         depends_on = [] if depends_on is None else depends_on
         depends_on = [depends_on] if isinstance(depends_on, str) else depends_on
+        name = clean.name(name)
+        assert name, "Name should have some value after it is cleaned"
         assert name not in self.jobs, f"{name} already defined"
         assert name not in self.stages, "Stage name cannot match a job's name"
         kwargs, job_kwargs = dict(self.pipe_kwargs), kwargs
@@ -434,6 +433,8 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         Any kwargs passed to this stage are supplied to jobs created within
         this stage.
         """
+        name = clean.name(name)
+        assert name, "Name should have some value after it is cleaned"
         assert name not in self.jobs, "Stage name cannot match a job's name"
         assert name not in self.stages, "Stage names cannot be re-used"
         self.stages.append(name)

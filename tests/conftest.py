@@ -1,56 +1,12 @@
 import os
-import json
 import unittest
 
 import pytest
 import tests.subprocess_mock  # pylint: disable=unused-import
 import tests.docker_mock  # pylint: disable=unused-import
-from tests.requests_mock import Mock
+from tests.requests_mock import add_gitea_mocks, add_github_mocks, Mock
 
 from jaypore_ci import jci, executors, remotes, reporters, repos
-
-
-def add_gitea_mocks(gitea):
-    ISSUE_ID = 1
-    # --- create PR
-    create_pr_url = f"{gitea.api}/repos/{gitea.owner}/{gitea.repo}/pulls"
-    Mock.post(create_pr_url, body="", status=201)
-    Mock.post(create_pr_url, body="issue_id:{ISSUE_ID}", status=409)
-    # --- get existing body
-    Mock.get(
-        f"{gitea.api}/repos/{gitea.owner}/{gitea.repo}/pulls/{ISSUE_ID}",
-        body=json.dumps({"body": "Previous body in PR description."}),
-        content_type="application/json",
-    )
-    # --- update body
-    Mock.patch(f"{gitea.api}/repos/{gitea.owner}/{gitea.repo}/pulls/{ISSUE_ID}")
-    # --- set commit status
-    Mock.post(f"{gitea.api}/repos/{gitea.owner}/{gitea.repo}/statuses/{gitea.sha}")
-    Mock.gitea_added = True
-
-
-def add_github_mocks(github):
-    ISSUE_ID = 1
-    # --- create PR
-    create_pr_url = f"{github.api}/repos/{github.owner}/{github.repo}/pulls"
-    Mock.post(create_pr_url, body="", status=404)
-    Mock.get(
-        create_pr_url,
-        body=json.dumps([{"number": ISSUE_ID}]),
-        content_type="application/json",
-    )
-    Mock.post(create_pr_url, body="issue_id:{ISSUE_ID}", status=409)
-    # --- get existing body
-    Mock.get(
-        f"{github.api}/repos/{github.owner}/{github.repo}/pulls/{ISSUE_ID}",
-        body=json.dumps({"body": "Already existing body in PR description."}),
-        content_type="application/json",
-    )
-    # --- update body
-    Mock.patch(f"{github.api}/repos/{github.owner}/{github.repo}/pulls/{ISSUE_ID}")
-    # --- set commit status
-    Mock.post(f"{github.api}/repos/{github.owner}/{github.repo}/statuses/{github.sha}")
-    Mock.github_added = True
 
 
 def idfn(x):
@@ -59,6 +15,22 @@ def idfn(x):
         what, _, cls = str(item).replace(">", "").split(".")[-3:]
         name.append(".".join([what, cls]))
     return str(name)
+
+
+def factory(*, repo, remote, executor, reporter):
+    "Return a new pipeline every time the builder function is called"
+
+    def build():
+        r = repo.from_env()
+        return jci.Pipeline(
+            poll_interval=0,
+            repo=r,
+            remote=remote.from_env(repo=r),
+            executor=executor(),
+            reporter=reporter(),
+        )
+
+    return build
 
 
 @pytest.fixture(
@@ -85,19 +57,18 @@ def pipeline(request):
     os.environ["JAYPORE_EMAIL_ADDR"] = "fake@email.com"
     os.environ["JAYPORE_EMAIL_PASSWORD"] = "fake_email_password"
     os.environ["JAYPORE_EMAIL_TO"] = "fake.to@mymailmail.com"
-    kwargs = {}
-    kwargs["repo"] = request.param["repo"].from_env()
-    # --- remote
-    kwargs["remote"] = request.param["remote"].from_env(repo=kwargs["repo"])
+    builder = factory(
+        repo=request.param["repo"],
+        remote=request.param["remote"],
+        executor=request.param["executor"],
+        reporter=request.param["reporter"],
+    )
     if request.param["remote"] == remotes.Gitea and not Mock.gitea_added:
-        add_gitea_mocks(kwargs["remote"])
+        add_gitea_mocks(builder().remote)
     if request.param["remote"] == remotes.Github and not Mock.github_added:
-        add_github_mocks(kwargs["remote"])
-    kwargs["executor"] = request.param["executor"]()
-    kwargs["reporter"] = request.param["reporter"]()
-    p = jci.Pipeline(poll_interval=0, **kwargs)
+        add_github_mocks(builder().remote)
     if request.param["remote"] == remotes.Email:
         with unittest.mock.patch("smtplib.SMTP_SSL", autospec=True):
-            yield p
+            yield builder
     else:
-        yield p
+        yield builder

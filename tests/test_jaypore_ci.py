@@ -6,6 +6,7 @@ def test_sanity():
 
 
 def test_simple_linear_jobs(pipeline):
+    pipeline = pipeline()
     with pipeline as p:
         p.job("lint", "x")
         p.job("test", "x", depends_on=["lint"])
@@ -14,6 +15,7 @@ def test_simple_linear_jobs(pipeline):
 
 
 def test_no_duplicate_names(pipeline):
+    pipeline = pipeline()
     with pytest.raises(AssertionError):
         with pipeline as p:
             p.job("lint", "x")
@@ -21,6 +23,7 @@ def test_no_duplicate_names(pipeline):
 
 
 def test_dependency_has_to_be_defined_before_child(pipeline):
+    pipeline = pipeline()
     with pytest.raises(AssertionError):
         with pipeline as p:
             p.job("x", "x", depends_on=["y"])
@@ -28,6 +31,7 @@ def test_dependency_has_to_be_defined_before_child(pipeline):
 
 
 def test_dependency_cannot_cross_stages(pipeline):
+    pipeline = pipeline()
     with pytest.raises(AssertionError):
         with pipeline as p:
             with p.stage("stage1"):
@@ -37,6 +41,7 @@ def test_dependency_cannot_cross_stages(pipeline):
 
 
 def test_duplicate_stages_not_allowed(pipeline):
+    pipeline = pipeline()
     with pytest.raises(AssertionError):
         with pipeline as p:
             with p.stage("stage1"):
@@ -46,6 +51,7 @@ def test_duplicate_stages_not_allowed(pipeline):
 
 
 def test_stage_and_job_cannot_have_same_name(pipeline):
+    pipeline = pipeline()
     with pytest.raises(AssertionError):
         with pipeline as p:
             with p.stage("x"):
@@ -53,6 +59,7 @@ def test_stage_and_job_cannot_have_same_name(pipeline):
 
 
 def test_cannot_define_duplicate_jobs(pipeline):
+    pipeline = pipeline()
     with pytest.raises(AssertionError):
         with pipeline as p:
             p.job("x", "x")
@@ -60,12 +67,14 @@ def test_cannot_define_duplicate_jobs(pipeline):
 
 
 def test_non_service_jobs_must_have_commands(pipeline):
+    pipeline = pipeline()
     with pytest.raises(AssertionError):
         with pipeline as p:
             p.job("x", None)
 
 
 def test_call_chain_is_followed(pipeline):
+    pipeline = pipeline()
     with pipeline as p:
         for name in "pq":
             p.job(name, name)
@@ -80,6 +89,7 @@ def test_call_chain_is_followed(pipeline):
 
 
 def test_env_matrix_is_easy_to_make(pipeline):
+    pipeline = pipeline()
     with pipeline as p:
         for i, env in enumerate(p.env_matrix(A=[1, 2, 3], B=[5, 6, 7])):
             p.job(f"job{i}", "fake command", env=env)

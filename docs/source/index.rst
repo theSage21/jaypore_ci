@@ -392,5 +392,5 @@ Reference
 
 .. |logo| image:: _static/logo80.png
    :width: 80
-   :alt: Jaypore CI logo
+   :alt: Jaypore CI
    :align: middle
