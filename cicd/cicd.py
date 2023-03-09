@@ -4,7 +4,7 @@ from typing import NamedTuple
 
 class Should(NamedTuple):
     release: bool = False
-    lint: bool = False
+    lint: bool = True
 
 
 def parse_commit(repo):

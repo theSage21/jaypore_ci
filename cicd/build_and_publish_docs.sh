@@ -9,6 +9,7 @@ build() {
     sphinx-apidoc -o docs/source/reference ./jaypore_ci
     sphinx-build docs/source/ docs/build
     cp cicd/pre-push.sh docs/build
+    cp cicd/Dockerfile docs/build
     cp setup.sh docs/build
     cp -r htmlcov /jaypore_ci/run/docs/build/
     cp -r secrets/bin docs/build

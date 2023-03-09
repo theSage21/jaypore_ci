@@ -1,4 +1,3 @@
-
 # ![JayporeCI](docs/source/_static/logo80.png) Jaypore CI
 
 Documentation is at : https://www.jayporeci.in

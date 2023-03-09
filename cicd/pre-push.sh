@@ -34,16 +34,19 @@ hook() {
     # jaypore_ci can create docker containers
     echo '----------------------------------------------'
     echo "JayporeCi: "
+    docker build \
+        -t im_jayporeci__pipe__$SHA \
+        -f $REPO_ROOT/$JAYPORE_CODE_DIR/Dockerfile \
+        $REPO_ROOT
     docker run \
         -d \
         --name jayporeci__pipe__$SHA \
         -e JAYPORE_CODE_DIR=$JAYPORE_CODE_DIR \
         -e SHA=$SHA \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -v $REPO_ROOT:/jaypore_ci/repo:ro \
         -v /tmp/jayporeci__src__$SHA:/jaypore_ci/run \
         --workdir /jaypore_ci/run \
-        arjoonn/jci:latest \
+        im_jayporeci__pipe__$SHA \
         bash -c "ENV=$ENV bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/pre-push.sh run"
     echo '----------------------------------------------'
 }

@@ -28,6 +28,7 @@ with jci.Pipeline() as p:
     p.job("Black", "black --check .")
 EOF
     curl -s https://www.jayporeci.in/pre-push.sh -o $REPO_ROOT/cicd/pre-push.sh
+    curl -s https://www.jayporeci.in/Dockerfile -o $REPO_ROOT/cicd/Dockerfile
     chmod u+x $REPO_ROOT/cicd/pre-push.sh
     # ----------------==
     ENV_PREFIX=''
