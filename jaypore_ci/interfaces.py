@@ -46,7 +46,10 @@ class Repo:
         self.commit_message: str = commit_message
 
     def files_changed(self, target: str) -> List[str]:
-        "Returns list of files changed between current sha and target"
+        """
+        Returns list of file paths that have changed between current sha and
+        target.
+        """
         raise NotImplementedError()
 
     @classmethod

@@ -81,6 +81,7 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
         email_to: str,
         email_from: str,
         subject: str,
+        continuous_updates: bool = False,
         publish_interval: int = 30,
         **kwargs,
     ):  # pylint: disable=too-many-arguments
@@ -95,6 +96,7 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
         self.subject = subject
         self.timeout = 10
         self.publish_interval = publish_interval
+        self.continuous_updates = continuous_updates
         # ---
         self.__smtp__ = None
         self.__last_published_at__ = None
@@ -127,7 +129,7 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
         if (
             self.__last_published_at__ is not None
             and (time.time() - self.__last_published_at__) < self.publish_interval
-        ):
+        ) or (not self.continuous_updates and status not in ("success", "failure")):
             return
         if self.__last_report__ == report:
             return

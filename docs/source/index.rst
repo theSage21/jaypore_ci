@@ -30,11 +30,13 @@ Getting Started
 Installation
 ------------
 
-You can install it using a bash script.
+You can install it using a bash script. The script creates only affects your
+repository so if you want you can do this manually also.
 
 .. code-block:: console
 
-   $ curl https://www.jayporeci.in/setup.sh | bash
+   cd ~/myrepository
+   curl https://www.jayporeci.in/setup.sh | bash
 
 
 **Or** you can manually install it. The names are convention, you can call your
@@ -96,7 +98,10 @@ If you don't want to do this it's also possible to simply use `docker logs
 Concepts
 --------
 
-1. A pipeline config is simply a python file that imports and uses **jaypore_ci**.
+Pipeline config
+***************
+
+1. A pipeline is defined inside a python file that imports and uses **jaypore_ci**.
    - It can also import other libraries / configs. Do whatever your usecase needs.
 2. A config starts with creating a :class:`~jaypore_ci.jci.Pipeline` instance. Everything happens inside this context.
     - A pipeline has to have one implementation of a
@@ -113,9 +118,11 @@ Concepts
       be applied to jobs in that pipeline as a default. This allows you to keep
       your code DRY. For example, we can specify **image='some/docker:image'**
       and this will be used for all jobs in the pipeline.
-3. Pipeline components
+3. Parts of a pipeline
     1. :class:`~jaypore_ci.interfaces.Repo` holds information about the project.
         - You can use this to get information about things like `sha` and `branch`.
+        - It can also tell you which files have changed using
+          :meth:`~jaypore_ci.interfaces.Repo.files_changed`.
         - Currently only :class:`~jaypore_ci.repos.git.Git` is supported.
     2. :class:`~jaypore_ci.interfaces.Executor` Is used to run the job. Perhaps in
        the future we might have shell / VMs.
@@ -139,7 +146,7 @@ Concepts
     - Any extra keyword arguments specified while creating the stage are
       passed to jobs. These arguments override whatever is specified at the
       Pipeline level.
-4. Finally, any number of :meth:`~jaypore_ci.jci.Pipeline.job` definitions can be made.
+5. Finally, any number of :meth:`~jaypore_ci.jci.Pipeline.job` definitions can be made.
     - Jobs declared inside a stage belong to that stage.
     - Job names have to be unique. They cannot clash with stage names and other job names.
     - Jobs are run in parallel **UNLESS** they specify
@@ -147,6 +154,18 @@ Concepts
       **other_job** has passed.
     - Jobs inherit keyword arguments from Pipelines, then stages, then whatever
       is specified at the job level.
+
+
+Secrets and env variables
+*************************
+
+1. JayporeCI uses [SOPS](https://github.com/mozilla/sops) to manage environment variables and secrets.
+   - We add `secrets/<env_name>.enc` to store secrets.
+   - We add `secrets/<env_name>.key` to decrypt corresponding secret files. This is an [AGE](https://github.com/FiloSottile/age) key file. **Do NOT commit this to git!**. JayporeCI automatically adds a gitignore to ignore key files.
+   - We also add `secrets/bin/edit_env.sh` and `secrets/bin/set_env.sh` to help you manage your secrets easily.
+2. It is a good idea to have separate secret files for each developer, each environment respectively.
+   - For example, JayporeCI itself only has a single secret file called `ci`.
+
 
 How to
 ======

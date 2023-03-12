@@ -34,8 +34,8 @@ html_sidebars = {
 html_theme = "alabaster"
 html_static_path = ["_static"]
 html_theme_options = {
-    "nosidebar": True,
     "logo_name": "Jaypore CI",
+    "logo": "logo.png",
     "touch_icon": "logo.png",
     "github_user": "theSage21",
     "github_repo": "jaypore_ci",
