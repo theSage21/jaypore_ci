@@ -160,12 +160,12 @@ Pipeline config
 Secrets and environment variables
 *********************************
 
-1. JayporeCI uses [SOPS](https://github.com/mozilla/sops) to manage environment variables and secrets.
-   - We add `secrets/<env_name>.enc` to store secrets.
-   - We add `secrets/<env_name>.key` to decrypt corresponding secret files. This is an [AGE](https://github.com/FiloSottile/age) key file. **Do NOT commit this to git!**. JayporeCI automatically adds a gitignore to ignore key files.
-   - We also add `secrets/bin/edit_env.sh` and `secrets/bin/set_env.sh` to help you manage your secrets easily.
+1. JayporeCI uses `SOPS <https://github.com/mozilla/sops>`_ to manage environment variables and secrets.
+    - We add `secrets/<env_name>.enc` to store secrets.
+    - We add `secrets/<env_name>.key` to decrypt corresponding secret files. This is an `AGE <https://github.com/FiloSottile/age>`_ key file. **Do NOT commit this to git!**. JayporeCI automatically adds a gitignore to ignore key files.
+    - We also add `secrets/bin/edit_env.sh` and `secrets/bin/set_env.sh` to help you manage your secrets easily.
 2. It is a good idea to have separate secret files for each developer, each environment respectively.
-   - For example, JayporeCI itself only has a single secret file called `ci`.
+    - For example, JayporeCI itself only has a single secret file called `ci`.
 
 
 How to
