@@ -20,12 +20,20 @@ def idfn(x):
     return str(name)
 
 
-def factory(*, repo: Repo, remote: Remote, remote_url: str, executor: Executor, reporter: Reporter) -> Callable:
+def factory(
+    *,
+    repo: Repo,
+    remote: Remote,
+    remote_url: str,
+    executor: Executor,
+    reporter: Reporter
+) -> Callable:
     "Return a new pipeline every time the builder function is called"
+
+    repo._get_git_remote_url = lambda: remote_url
 
     def build() -> jci.Pipeline:
         r = repo.from_env()
-        r.remote = r._parse_remote_url(remote_url)
         return jci.Pipeline(
             poll_interval=0,
             repo=r,

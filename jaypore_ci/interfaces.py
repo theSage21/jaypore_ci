@@ -59,23 +59,35 @@ class Repo:
         from the environment and git repo on disk.
         """
         raise NotImplementedError()
-    
+
+    @classmethod
+    def _get_git_remote_url(cls) -> str:
+        """
+        Returns remote URL from the git repo on disk.
+        """
+        raise NotImplementedError()
+
     @classmethod
     def _parse_remote_url(cls, remote_url: str) -> str:
+        """
+        Parses remote URL and validates it.
+        """
         if "@" in remote_url:
-            remote_url = cls._parse_ssh_to_https(remote_url)
+            remote_url = cls._convert_ssh_to_https(remote_url)
         assert (
             "https://" in remote_url and ".git" in remote_url
         ), f"Only https & ssh remotes are supported. (Remote: {remote_url})"
         return remote_url
 
     @classmethod
-    def _parse_ssh_to_https(cls, url: str) -> str:
+    def _convert_ssh_to_https(cls, url: str) -> str:
+        """
+        Converts ssh URL into https.
+        """
         ssh_url_pattern = r".+@(?P<uri>.+):(?P<path>.+\.git)"
         m = re.match(ssh_url_pattern, url)
         assert m, f"Failed to parse ssh URL to https! (URL: {url})"
         return f"https://{m.group('uri')}/{m.group('path')}"
-
 
 
 class Executor:

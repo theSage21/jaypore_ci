@@ -22,14 +22,7 @@ class Git(Repo):
         """
         Gets repo status from the environment and git repo on disk.
         """
-        remote_url = (
-            subprocess.check_output(
-                "git remote -v | grep push | awk '{print $2}'", shell=True
-            )
-            .decode()
-            .strip()
-        )
-        remote = cls._parse_remote_url(remote_url)
+        remote = cls._parse_remote_url(remote_url=cls._get_git_remote_url())
         branch = (
             subprocess.check_output(
                 r"git branch | grep \* | awk '{print $2}'", shell=True
@@ -44,3 +37,13 @@ class Git(Repo):
             .strip()
         )
         return cls(sha=sha, branch=branch, remote=remote, commit_message=message)
+
+    @classmethod
+    def _get_git_remote_url(cls) -> str:
+        return (
+            subprocess.check_output(
+                "git remote -v | grep push | awk '{print $2}'", shell=True
+            )
+            .decode()
+            .strip()
+        )
