@@ -4,6 +4,7 @@ Defines interfaces for remotes and executors.
 Currently only gitea and docker are supported as remote and executor
 respectively.
 """
+import re
 from enum import Enum
 from typing import NamedTuple, List
 
