@@ -5,3 +5,5 @@ dist/
 .hypothesis/
 .coverage
 prof/
+htmlcov/
+.pytest_cache/

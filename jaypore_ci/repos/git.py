@@ -1,3 +1,4 @@
+import re
 import subprocess
 from typing import List
 
@@ -21,17 +22,14 @@ class Git(Repo):
         """
         Gets repo status from the environment and git repo on disk.
         """
-        remote = (
+        remote_url = (
             subprocess.check_output(
-                "git remote -v | grep push | grep https | awk '{print $2}'", shell=True
+                "git remote -v | grep push | awk '{print $2}'", shell=True
             )
             .decode()
             .strip()
         )
-        assert "https://" in remote, f"Only https remotes supported: {remote}"
-        assert ".git" in remote
-        # NOTE: Later on perhaps we should support non-https remotes as well
-        # since JCI does not actually do anything with the remote.
+        remote = cls._parse_remote_url(remote_url)
         branch = (
             subprocess.check_output(
                 r"git branch | grep \* | awk '{print $2}'", shell=True

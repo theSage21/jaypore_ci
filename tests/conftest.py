@@ -8,6 +8,9 @@ from tests.requests_mock import add_gitea_mocks, add_github_mocks, Mock
 
 from jaypore_ci import jci, executors, remotes, reporters, repos
 
+from typing import Callable
+from jaypore_ci.interfaces import Repo, Remote, Executor, Reporter
+
 
 def idfn(x):
     name = []
@@ -17,11 +20,12 @@ def idfn(x):
     return str(name)
 
 
-def factory(*, repo, remote, executor, reporter):
+def factory(*, repo: Repo, remote: Remote, remote_url: str, executor: Executor, reporter: Reporter) -> Callable:
     "Return a new pipeline every time the builder function is called"
 
-    def build():
+    def build() -> jci.Pipeline:
         r = repo.from_env()
+        r.remote = r._parse_remote_url(remote_url)
         return jci.Pipeline(
             poll_interval=0,
             repo=r,
@@ -37,6 +41,7 @@ def factory(*, repo, remote, executor, reporter):
     scope="function",
     params=list(
         jci.Pipeline.env_matrix(
+            executor=[executors.Docker],
             reporter=[reporters.Text, reporters.Markdown],
             remote=[
                 remotes.Mock,
@@ -45,8 +50,11 @@ def factory(*, repo, remote, executor, reporter):
                 remotes.Gitea,
                 remotes.Github,
             ],
+            remote_url=[
+                "https://fake_remote.com/fake_owner/fake_repo.git",
+                "user@fake_remote.com:fake_owner/fake_repo.git",
+            ],
             repo=[repos.Git],
-            executor=[executors.Docker],
         )
     ),
     ids=idfn,
@@ -60,6 +68,7 @@ def pipeline(request):
     builder = factory(
         repo=request.param["repo"],
         remote=request.param["remote"],
+        remote_url=request.param["remote_url"],
         executor=request.param["executor"],
         reporter=request.param["reporter"],
     )
