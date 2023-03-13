@@ -1,5 +1,6 @@
 # ![JayporeCI](docs/source/_static/logo80.png) Jaypore CI
 
+
 Documentation is at : https://www.jayporeci.in
 
 ## If you are reading this on github
@@ -10,5 +11,5 @@ Documentation is at : https://www.jayporeci.in
 
 ## Usage
 
-- Install : `curl https://www.jayporeci.in/setup.sh | bash`
+- Install : `curl https://www.jayporeci.in/setup.sh  > setup.sh && bash setup.sh -y`
 - Trigger : `git push origin`

@@ -35,8 +35,9 @@ repository so if you want you can do this manually also.
 
 .. code-block:: console
 
-   cd ~/myrepository
-   curl https://www.jayporeci.in/setup.sh | bash
+   $ cd ~/myrepository
+   $ curl https://www.jayporeci.in/setup.sh > setup.sh
+   $ bash setup.sh -y
 
 
 **Or** you can manually install it. The names are convention, you can call your
@@ -156,8 +157,8 @@ Pipeline config
       is specified at the job level.
 
 
-Secrets and env variables
-*************************
+Secrets and environment variables
+*********************************
 
 1. JayporeCI uses [SOPS](https://github.com/mozilla/sops) to manage environment variables and secrets.
    - We add `secrets/<env_name>.enc` to store secrets.

@@ -12,6 +12,7 @@ run() {
         echo "ENV : '$ENV' -> Sourcing from secrets"
         source /jaypore_ci/repo/secrets/bin/set_env.sh $ENV
     fi
+    env | awk -F\= '{print $1}'
     cp -r /jaypore_ci/repo/. /jaypore_ci/run
     cd /jaypore_ci/run/
     git clean -fdx

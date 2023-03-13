@@ -2,6 +2,34 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+ASSUME_YES="no"
+while getopts ":y" opt; do
+  case $opt in
+    y)
+      ASSUME_YES="yes"
+      ;;
+  esac
+done
+echo "ASSUME YES: $ASSUME_YES"
+
+should_continue (){
+    if [[ "$ASSUME_YES" = "yes" ]]
+    then
+        return 0
+    fi
+    # ---
+    read -r -p "Continue? [Y/n] " response
+    if [[ "$response" = "" ]]
+    then
+        return 0
+    fi
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
+    then
+        return 0
+    fi
+    return 1
+}
+
 main (){
     REPO_ROOT=$(git rev-parse --show-toplevel)
     LOCAL_HOOK=$(echo $REPO_ROOT/.git/hooks/pre-push)
@@ -13,8 +41,7 @@ main (){
     echo "Installing in repo: $REPO_ROOT"
     echo "Creating folder for cicd:  $REPO_ROOT/$CICD_ROOT"
     # ----------------==
-    read -r -p "Should we continue? [Y/n] " response
-    if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
+    if should_continue;
     then
         echo "Creating cicd.py and pre-push.sh"
     else
@@ -32,13 +59,13 @@ EOF
     chmod u+x $REPO_ROOT/cicd/pre-push.sh
     # ----------------==
     ENV_PREFIX=''
-    read -r -p "Do you want to create 'secrets' folder for environment variables? [Y/n] " response
-    if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
+    echo "Creating 'secrets' folder for environment variables."
+    if should_continue
     then
         mkdir -p secrets/bin
         PATH="$REPO_ROOT/secrets/bin:$PATH"
-        read -r -p "Do you want to download age/sops binaries? [Y/n] " response
-        if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
+        echo "Downloading age/sops binaries"
+        if should_continue
         then
             echo "Downloading age/ binaries"
             wget --quiet -O $HOME/.local/bin/age http://www.jayporeci.in/bin/age &
@@ -57,8 +84,8 @@ EOF
         echo "Creating new age-key at: $REPO_ROOT/secrets/ci.key"
         age-keygen > $REPO_ROOT/secrets/ci.key
         echo "You can now use (bash secrets/bin/edit_env.sh ci) to edit environment variables."
-        read -r -p "Do you want to edit_env now? [Y/n] " response
-        if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]
+        echo "Editing secrets now"
+        if should_continue
         then
             (bash $REPO_ROOT/secrets/bin/edit_env.sh ci)
         fi

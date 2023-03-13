@@ -47,6 +47,20 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
             pass
             # Do something
 
+    :param host: What smtp host to use.
+    :param port: Smtp port to use.
+    :param addr: Smtp address to use for login.
+    :param password: Smtp password to use for login.
+    :param email_to: Which address the email should go to.
+    :param email_from: Which address should be the sender of this email.
+    :param subject: The subject line of the email.
+    :param only_on_failure: If set to True, a single email will be sent when
+                            the pipeline fails. In all other cases no email is
+                            sent.
+    :param publish_interval: Determines the delay in sending another email when
+                             we are sending multiple email updates in a single
+                             email thread. If `only_on_failure` is set, this
+                             option is ignored.
     """
 
     @classmethod
@@ -81,7 +95,7 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
         email_to: str,
         email_from: str,
         subject: str,
-        continuous_updates: bool = False,
+        only_on_failure: bool = False,
         publish_interval: int = 30,
         **kwargs,
     ):  # pylint: disable=too-many-arguments
@@ -96,7 +110,7 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
         self.subject = subject
         self.timeout = 10
         self.publish_interval = publish_interval
-        self.continuous_updates = continuous_updates
+        self.only_on_failure = only_on_failure
         # ---
         self.__smtp__ = None
         self.__last_published_at__ = None
@@ -129,7 +143,8 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
         if (
             self.__last_published_at__ is not None
             and (time.time() - self.__last_published_at__) < self.publish_interval
-        ) or (not self.continuous_updates and status not in ("success", "failure")):
+            and status not in ("success", "failure")
+        ) or (self.only_on_failure and status != "failure"):
             return
         if self.__last_report__ == report:
             return
