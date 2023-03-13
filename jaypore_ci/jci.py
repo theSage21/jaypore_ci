@@ -57,7 +57,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
     :param timeout: Defines how long a job is allowed to run before being
         killed and marked as class:`~jaypore_ci.interfaces.Status.FAILED`.
     :param env: A dictionary of environment variables to pass to the docker run command.
-    :param extra_hosts: A dictionary of hosts aliases (i.e. `{localdomain:192.168.0.1}` to pass to the docker run command.) 
+    :param extra_hosts: A dictionary of hosts aliases (i.e. `{localdomain:192.168.0.1}` to pass to the docker run command.)
     :param children: Defines which jobs depend on this job's output status.
     :param parents: Defines which jobs need to pass before this job can be run.
     :param stage: What stage the job belongs to. This stage name must exist so
