@@ -21,7 +21,7 @@ main (){
     if [[ -f "$ENC_FILE" ]]; then
         sops --decrypt --input-type dotenv --output-type dotenv "$ENC_FILE" > "$PLAINTEXT_FILE"
     fi
-    vim "$PLAINTEXT_FILE"
+    ${EDITOR:-nano} "$PLAINTEXT_FILE"
     sops --input-type dotenv --output-type dotenv --encrypt --age $(age-keygen -y "$KEY_FILE") "$PLAINTEXT_FILE" > "$ENC_FILE"
     rm "$PLAINTEXT_FILE"
 }

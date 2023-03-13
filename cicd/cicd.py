@@ -34,6 +34,12 @@ with jci.Pipeline() as p:
         p.job("black", "python3 -m black --check .", **kwargs)
         p.job("pylint", "python3 -m pylint jaypore_ci/ tests/", **kwargs)
         p.job("pytest", "bash cicd/run_tests.sh", image=jcienv, depends_on=["JciEnv"])
+        p.job(
+            "install_test",
+            "bash cicd/test_installation.sh",
+            image=jcienv,
+            depends_on=["JciEnv"],
+        )
 
     if should.release:
         with p.stage("Publish", image=jcienv):
