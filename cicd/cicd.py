@@ -46,6 +46,7 @@ with jci.Pipeline() as p:
             p.job("DockerHubJcienv", "bash cicd/build_and_push_docker.sh jcienv")
             p.job("DockerHubJci", "bash cicd/build_and_push_docker.sh jci")
             p.job(
-                "PublishDocs", f"bash cicd/build_and_publish_docs.sh {p.remote.branch}"
+                "PublishDocs",
+                f"bash cicd/build_and_publish_docs.sh {p.remote.branch}",
             )
             p.job("PublishPypi", "bash cicd/build_and_push_pypi.sh")

@@ -1,9 +1,8 @@
 # ![JayporeCI](docs/source/_static/logo80.png) Jaypore CI
 
-
 Documentation is at : https://www.jayporeci.in
 
-## If you are reading this on github
+## If you are reading this on GitHub
 
 - Github is only the mirror for this codebase.
 - Actual development is on a personal gitea instance.
