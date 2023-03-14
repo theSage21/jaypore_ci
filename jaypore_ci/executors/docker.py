@@ -135,7 +135,8 @@ class Docker(Executor):
             "network": self.get_net(),
             "image": job.image,
             "command": job.command if not job.is_service else None,
-        }.update(job.docker_kwargs)
+        }
+        trigger.update(job.docker_kwargs)
         if not job.is_service:
             trigger["working_dir"] = "/jaypore_ci/run"
         if not job.is_service:
