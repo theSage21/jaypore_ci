@@ -393,6 +393,28 @@ commit message contains **jci:release** as one of it's lines.
         if p.repo.commit_message.contains("jci:release"):
             p.job("release", "bash cicd/release.sh", depends_on=["build"])
 
+[WIP: `Vote for it <https://github.com/theSage21/jaypore_ci/issues/14>`_ ] Select remote based on job status / branch / authors
+-------------------------------------------------------------
+
+At times it's necessary to inform multiple people about CI failues / passing.
+
+For example
+
+- Stakeholders might need notifications when releases happen.
+- People who wrote code might need notifications when their code breaks on a more intensite test suite / fuzzying run.
+- Perhaps you have downstream codebases that need to get patched when you do bugfixes.
+- Or perhaps a failure in the build section of the pipeline needs one set of
+  people to be informed and a failure in the user documentation building needs
+  another set of people.
+
+
+While all of this is already possible with JayporeCI, if this is a common
+workflow you can vote on it and we can implement an easier way to declare this
+configuration.
+
+
+
+
 
 Contributing
 ============
