@@ -126,7 +126,6 @@ class Docker(Executor):
         trigger = {
             "detach": True,
             "environment": job.get_env(),
-            "extra_hosts": job.extra_hosts,
             "volumes": [
                 "/var/run/docker.sock:/var/run/docker.sock",
                 "/usr/bin/docker:/usr/bin/docker:ro",
@@ -136,7 +135,7 @@ class Docker(Executor):
             "network": self.get_net(),
             "image": job.image,
             "command": job.command if not job.is_service else None,
-        }
+        }.update(job.docker_kwargs)
         if not job.is_service:
             trigger["working_dir"] = "/jaypore_ci/run"
         if not job.is_service:

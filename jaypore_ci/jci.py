@@ -6,7 +6,7 @@ import os
 import subprocess
 from itertools import product
 from collections import defaultdict
-from typing import List, Union, Callable, Dict
+from typing import List, Union, Callable
 from contextlib import contextmanager
 
 import structlog
@@ -57,7 +57,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
     :param timeout: Defines how long a job is allowed to run before being
         killed and marked as class:`~jaypore_ci.interfaces.Status.FAILED`.
     :param env: A dictionary of environment variables to pass to the docker run command.
-    :param extra_hosts: A dictionary of hosts aliases (e.g. `{localdomain:192.168.0.1}` to pass to the docker run command.)
+    :param docker_kwargs: A dictionary of additional kwargs to pass to the docker run command.)
     :param children: Defines which jobs depend on this job's output status.
     :param parents: Defines which jobs need to pass before this job can be run.
     :param stage: What stage the job belongs to. This stage name must exist so
@@ -74,7 +74,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         image: str = None,
         timeout: int = None,
         env: dict = None,
-        extra_hosts: Dict[str, str] = None,
+        docker_kwargs: dict = None,
         children: List["Job"] = None,
         parents: List["Job"] = None,
         is_service: bool = False,
@@ -88,7 +88,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         self.timeout = timeout
         self.pipeline = pipeline
         self.env = env
-        self.extra_hosts = extra_hosts
+        self.docker_kwargs = docker_kwargs
         self.children = children if children is not None else []
         self.parents = parents if parents is not None else []
         self.is_service = is_service
