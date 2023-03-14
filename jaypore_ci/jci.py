@@ -3,7 +3,6 @@ The code submodule for Jaypore CI.
 """
 import time
 import os
-import subprocess
 from itertools import product
 from collections import defaultdict
 from typing import List, Union, Callable
@@ -242,15 +241,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.reporter = reporter if reporter is not None else reporters.text.Text()
         self.poll_interval = poll_interval
         self.stages = ["Pipeline"]
-        self.pipe_id = (
-            subprocess.check_output(
-                "cat /proc/self/cgroup | grep name= | awk -F/ '{print $3}'",
-                shell=True,
-                stderr=subprocess.STDOUT,
-            )
-            .decode()
-            .strip()
-        )
+        self.__pipe_id__ = None
         self.executor.set_pipeline(self)
         # ---
         kwargs["image"] = kwargs.get("image", "arjoonn/jci:latest")
@@ -259,6 +250,20 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         kwargs["stage"] = "Pipeline"
         self.pipe_kwargs = kwargs
         self.stage_kwargs = None
+
+    @property
+    def pipe_id(self):
+        if self.__pipe_id__ is None:
+            self.__pipe_id__ = self.__get_pipe_id__()
+        return self.__pipe_id__
+
+    def __get_pipe_id__(self):
+        """
+        This is mainly here so that during testing we can override this and
+        provide a different way to get the pipe id
+        """
+        with open(f"/jaypore_ci/cidfiles/{self.repo.sha}", "r", encoding="utf-8") as fl:
+            return fl.read().strip()
 
     def logging(self):
         """

@@ -5,6 +5,7 @@ import pytest
 import tests.subprocess_mock  # pylint: disable=unused-import
 import tests.docker_mock  # pylint: disable=unused-import
 from tests.requests_mock import add_gitea_mocks, add_github_mocks, Mock
+import tests.jayporeci_patch  # pylint: disable=unused-import
 
 from jaypore_ci import jci, executors, remotes, reporters, repos
 

@@ -10,6 +10,7 @@ run() {
         echo "ENV : ? -> SKIP sourcing from secrets."
     else
         echo "ENV : '$ENV' -> Sourcing from secrets"
+        echo "---"
         source /jaypore_ci/repo/secrets/bin/set_env.sh $ENV
     fi
     env | awk -F\= '{print $1}'
@@ -17,6 +18,10 @@ run() {
     cd /jaypore_ci/run/
     git clean -fdx
     # Change the name of the file if this is not cicd.py
+    echo "---- Run container ID:"
+    cat /jaypore_ci/cidfiles/$SHA
+    echo
+    echo "---- ======="
     python /jaypore_ci/run/$JAYPORE_CODE_DIR/cicd.py
 }
 
@@ -33,6 +38,7 @@ hook() {
     #
     # We also pass docker.sock and the docker executable to the run so that
     # jaypore_ci can create docker containers
+    mkdir -p /tmp/jayporeci__cidfiles &> /dev/null
     echo '----------------------------------------------'
     echo "JayporeCi: "
     docker build \
@@ -46,6 +52,8 @@ hook() {
         -e SHA=$SHA \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v /tmp/jayporeci__src__$SHA:/jaypore_ci/run \
+        -v /tmp/jayporeci__cidfiles:/jaypore_ci/cidfiles:ro \
+        --cidfile /tmp/jayporeci__cidfiles/$SHA \
         --workdir /jaypore_ci/run \
         im_jayporeci__pipe__$SHA \
         bash -c "ENV=$ENV bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/pre-push.sh run"

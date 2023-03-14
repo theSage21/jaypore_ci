@@ -393,10 +393,12 @@ commit message contains **jci:release** as one of it's lines.
         if p.repo.commit_message.contains("jci:release"):
             p.job("release", "bash cicd/release.sh", depends_on=["build"])
 
-[`💬 <https://github.com/theSage21/jaypore_ci/discussions/20>`_ ] Select remote based on job status / branch / authors
+`💬 <https://github.com/theSage21/jaypore_ci/discussions/20>`_ :Select remote based on job status / branch / authors
 -------------------------------------------------------------
 
-    `Discuss this workflow on github <https://github.com/theSage21/jaypore_ci/discussions/20>`_
+.. note::
+    If you want this feature please go and vote for it on the `github
+   discussion https://github.com/theSage21/jaypore_ci/discussions/20>`_.
 
 At times it's necessary to inform multiple people about CI failues / passing.
 

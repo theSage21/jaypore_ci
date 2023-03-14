@@ -6,7 +6,8 @@ Documentation is at : https://www.jayporeci.in
 
 - Github is only the mirror for this codebase.
 - Actual development is on a personal gitea instance.
-- Please use github to file issues / PRs and I'll get them merged when I have time.
+- Please use github discussions for describing problems / asking for help / adding ideas.
+- If you want you can submit PRs and I'll get them merged as and when I have time.
 
 ## Usage
 
