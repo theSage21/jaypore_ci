@@ -160,12 +160,12 @@ Pipeline config
 Secrets and environment variables
 *********************************
 
-1. JayporeCI uses [SOPS](https://github.com/mozilla/sops) to manage environment variables and secrets.
-   - We add `secrets/<env_name>.enc` to store secrets.
-   - We add `secrets/<env_name>.key` to decrypt corresponding secret files. This is an [AGE](https://github.com/FiloSottile/age) key file. **Do NOT commit this to git!**. JayporeCI automatically adds a gitignore to ignore key files.
-   - We also add `secrets/bin/edit_env.sh` and `secrets/bin/set_env.sh` to help you manage your secrets easily.
+1. JayporeCI uses `SOPS <https://github.com/mozilla/sops>`_ to manage environment variables and secrets.
+    - We add `secrets/<env_name>.enc` to store secrets.
+    - We add `secrets/<env_name>.key` to decrypt corresponding secret files. This is an `AGE <https://github.com/FiloSottile/age>`_ key file. **Do NOT commit this to git!**. JayporeCI automatically adds a gitignore to ignore key files.
+    - We also add `secrets/bin/edit_env.sh` and `secrets/bin/set_env.sh` to help you manage your secrets easily.
 2. It is a good idea to have separate secret files for each developer, each environment respectively.
-   - For example, JayporeCI itself only has a single secret file called `ci`.
+    - For example, JayporeCI itself only has a single secret file called `ci`.
 
 
 How to
@@ -392,6 +392,30 @@ commit message contains **jci:release** as one of it's lines.
         p.job("build", "bash cicd/build.sh")
         if p.repo.commit_message.contains("jci:release"):
             p.job("release", "bash cicd/release.sh", depends_on=["build"])
+
+[`💬 <https://github.com/theSage21/jaypore_ci/discussions/20>`_ ] Select remote based on job status / branch / authors
+-------------------------------------------------------------
+
+    `Discuss this workflow on github <https://github.com/theSage21/jaypore_ci/discussions/20>`_
+
+At times it's necessary to inform multiple people about CI failues / passing.
+
+For example
+
+- Stakeholders might need notifications when releases happen.
+- People who wrote code might need notifications when their code breaks on a more intensite test suite / fuzzying run.
+- Perhaps you have downstream codebases that need to get patched when you do bugfixes.
+- Or perhaps a failure in the build section of the pipeline needs one set of
+  people to be informed and a failure in the user documentation building needs
+  another set of people.
+
+
+While all of this is already possible with JayporeCI, if this is a common
+workflow you can vote on it and we can implement an easier way to declare this
+configuration.
+
+
+
 
 
 Contributing
