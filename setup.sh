@@ -2,6 +2,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+RUNNING_IN_CI="${RUNNING_IN_CI:-no}"
 ASSUME_YES="no"
 while getopts ":y" opt; do
   case $opt in
@@ -10,7 +11,9 @@ while getopts ":y" opt; do
       ;;
   esac
 done
-echo "ASSUME YES: $ASSUME_YES"
+
+echo "RUNNING_IN_CI : $RUNNING_IN_CI"
+echo "ASSUME_YES    : $ASSUME_YES"
 
 should_continue (){
     if [[ "$ASSUME_YES" = "yes" ]]
@@ -85,10 +88,13 @@ EOF
         if should_continue
         then
             echo "Downloading age/ binaries"
-            getfile /bin/age $HOME/.local/bin/age &
-            getfile /bin/age-keygen $HOME/.local/bin/age-keygen &
-            getfile /bin/sops $HOME/.local/bin/sops &
+            BINLOC=$HOME/.local/bin
+            mkdir -p $BINLOC &> /dev/null
+            getfile /bin/age $BINLOC/age &
+            getfile /bin/age-keygen $BINLOC/age-keygen &
+            getfile /bin/sops $BINLOC/sops &
             wait
+            chmod u+x $BINLOC/age $BINLOC/age-keygen $BINLOC/sops
         fi
         echo "Downloading edit/set env scripts"
         getfile /bin/edit_env.sh secrets/bin/edit_env.sh  &
