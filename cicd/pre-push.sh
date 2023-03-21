@@ -13,12 +13,11 @@ run() {
         echo "---"
         source /jaypore_ci/repo/secrets/bin/set_env.sh $ENV
     fi
-    env | awk -F\= '{print $1}'
     cp -r /jaypore_ci/repo/. /jaypore_ci/run
     cd /jaypore_ci/run/
     git clean -fdx
     # Change the name of the file if this is not cicd.py
-    echo "---- Run container ID:"
+    echo "---- Container ID:"
     cat /jaypore_ci/cidfiles/$SHA
     echo
     echo "---- ======="
@@ -40,11 +39,14 @@ hook() {
     # jaypore_ci can create docker containers
     mkdir -p /tmp/jayporeci__cidfiles &> /dev/null
     echo '----------------------------------------------'
-    echo "JayporeCi: "
+    echo "Jaypore CI"
+    echo "Building image    : "
     docker build \
+        --build-arg JAYPORECI_VERSION=$EXPECTED_JAYPORECI_VERSION \
         -t im_jayporeci__pipe__$SHA \
         -f $REPO_ROOT/$JAYPORE_CODE_DIR/Dockerfile \
         $REPO_ROOT
+    echo "Running container : "
     docker run \
         -d \
         --name jayporeci__pipe__$SHA \
@@ -59,4 +61,7 @@ hook() {
         bash -c "ENV=$ENV bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/pre-push.sh run"
     echo '----------------------------------------------'
 }
+EXPECTED_JAYPORECI_VERSION=latest
+
+# --------- runner
 ("$@")

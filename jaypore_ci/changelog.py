@@ -1,0 +1,25 @@
+from jaypore_ci.config import Version
+
+V = Version.parse
+version_map = {
+    V("0.2.26"): {
+        "changes": [
+            (
+                "The Dockerfile inside `cicd/Dockerfile` now requires a build arg "
+                "that specifies the version of Jaypore CI to install."
+            ),
+        ],
+        "instructions": [
+            "Please run the Jaypore CI setup once again.",
+        ],
+    },
+    V("0.2.25"): {
+        "changes": [
+            (
+                "A dockerfile is now used to send context of the codebase to "
+                "the docker daemon instead of directly mounting the code."
+            )
+        ],
+        "instructions": [],
+    },
+}

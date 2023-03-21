@@ -11,6 +11,9 @@ from contextlib import contextmanager
 import structlog
 import pendulum
 
+from jaypore_ci.exceptions import BadConfig
+from jaypore_ci.config import const
+from jaypore_ci.changelog import version_map
 from jaypore_ci import remotes, executors, reporters, repos, clean
 from jaypore_ci.interfaces import (
     Remote,
@@ -30,6 +33,42 @@ __all__ = ["Pipeline", "Job"]
 # All of these statuses are considered "finished" statuses
 FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 PREFIX = "JAYPORE_"
+
+# Check if we need to upgrade Jaypore CI
+def ensure_version_is_correct():
+    """
+    Ensure that the version of Jaypore CI that is running, the code inside
+    cicd.py, and pre-push.sh are at compatible versions.
+
+    If versions do not match then this function will print out instructions on
+    what to do in order to upgrade.
+
+    Downgrades are not allowed, you need to re-install that specific version.
+    """
+    if (
+        const.expected_version is not None
+        and const.version is not None
+        and const.expected_version != const.version
+    ):
+        print("Expected : ", const.expected_version)
+        print("Got      : ", const.version)
+        if const.version > const.expected_version:
+            print(
+                "Your current version is higher than the expected one. Please "
+                "re-install Jaypore CI in this repo as downgrades are not "
+                "supported."
+            )
+        if const.version < const.expected_version:
+            print("--- Upgrade Instructions ---")
+            for version in sorted(version_map.keys()):
+                if version < const.version or version > const.expected_version:
+                    continue
+                for line in version_map[version]["instructions"]:
+                    print(line)
+            print("--- -------------------- ---")
+        raise BadConfig(
+            "Version mismatch between arjoonn/jci:<tag> docker container and pre-push.sh script"
+        )
 
 
 class Job:  # pylint: disable=too-many-instance-attributes
@@ -244,7 +283,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.__pipe_id__ = None
         self.executor.set_pipeline(self)
         # ---
-        kwargs["image"] = kwargs.get("image", "arjoonn/jci:latest")
+        kwargs["image"] = kwargs.get("image", "arjoonn/jci")
         kwargs["timeout"] = kwargs.get("timeout", 15 * 60)
         kwargs["env"] = kwargs.get("env", {})
         kwargs["stage"] = "Pipeline"
@@ -279,6 +318,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         )
 
     def __enter__(self):
+        ensure_version_is_correct()
         self.executor.__enter__()
         self.remote.__enter__()
         return self
