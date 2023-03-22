@@ -65,9 +65,6 @@ class Executor:
     """
     An executor is something used to run a job.
     It could be docker / podman / shell etc.
-
-    It must define `__enter__` and `__exit__` so that it can be used as a context manager.
-
     """
 
     def run(self, job: "Job") -> str:
@@ -83,10 +80,13 @@ class Executor:
         self.pipe_id = id(pipeline)
         self.pipeline = pipeline
 
-    def __enter__(self):
-        return self
+    def setup(self) -> None:
+        """
+        This function is meant to perform any work that should be done before
+        running any jobs.
+        """
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def teardown(self) -> None:
         """
         On exit the executor must clean up any pending / stuck / zombie jobs that are still there.
         """
@@ -102,9 +102,6 @@ class Remote:
     """
     Something that allows us to show other people the status of the CI job.
     It could be gitea / github / gitlab / email system.
-
-    Must define `__enter__` and `__exit__` so that it can be used as a context
-    manager.
     """
 
     def __init__(self, *, sha, branch):
@@ -117,11 +114,16 @@ class Remote:
         """
         raise NotImplementedError()
 
-    def __enter__(self):
-        return self
+    def setup(self) -> None:
+        """
+        This function is meant to perform any work that should be done before
+        running any jobs.
+        """
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
+    def teardown(self) -> None:
+        """
+        This function will be called once the pipeline is finished.
+        """
 
     @classmethod
     def from_env(cls, *, repo: "Repo"):

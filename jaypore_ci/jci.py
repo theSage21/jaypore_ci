@@ -319,14 +319,14 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
 
     def __enter__(self):
         ensure_version_is_correct()
-        self.executor.__enter__()
-        self.remote.__enter__()
+        self.executor.setup()
+        self.remote.setup()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         self.run()
-        self.executor.__exit__(exc_type, exc_value, traceback)
-        self.remote.__exit__(exc_type, exc_value, traceback)
+        self.executor.teardown()
+        self.remote.teardown()
         return False
 
     def get_status(self) -> Status:

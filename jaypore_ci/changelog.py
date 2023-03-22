@@ -2,6 +2,12 @@ from jaypore_ci.config import Version
 
 V = Version.parse
 version_map = {
+    V("0.2.27"): {
+        "changes": [
+            "Jobs older than 1 week will be removed before starting a new pipeline."
+        ],
+        "instructions": [],
+    },
     V("0.2.26"): {
         "changes": [
             (

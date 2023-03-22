@@ -4,6 +4,7 @@ A docker executor for Jaypore CI.
 import pendulum
 import docker
 from rich import print as rprint
+from tqdm import tqdm
 
 from jaypore_ci import clean
 from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
@@ -48,9 +49,24 @@ class Docker(Executor):
         self.pipeline = pipeline
         self.create_network()
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def teardown(self):
         self.delete_network()
         self.delete_all_jobs()
+
+    def setup(self):
+        self.delete_old_containers()
+
+    def delete_old_containers(self):
+        a_week_back = pendulum.now().subtract(days=7)
+        for container in tqdm(
+            self.docker.containers.list(filters={"status": "exited"}),
+            desc="Removing jobs older than a week",
+        ):
+            if "jayporeci_" not in container.name:
+                continue
+            finished_at = pendulum.parse(container.attrs["State"]["FinishedAt"])
+            if finished_at <= a_week_back:
+                container.remove(v=True)
 
     def get_net(self):
         """
