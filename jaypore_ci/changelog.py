@@ -2,6 +2,15 @@ from jaypore_ci.config import Version
 
 V = Version.parse
 version_map = {
+    V("0.2.28"): {
+        "changes": [
+            (
+                "Bugfix: When there are multiple (push) remotes, Jaypore CI"
+                " will pick the first one and use that"
+            )
+        ],
+        "instructions": [],
+    },
     V("0.2.27"): {
         "changes": [
             "Jobs older than 1 week will be removed before starting a new pipeline."

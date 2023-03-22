@@ -4,10 +4,9 @@ Documentation is at : https://www.jayporeci.in
 
 ## If you are reading this on GitHub
 
-- Github is only the mirror for this codebase.
-- Actual development is on a personal gitea instance.
-- Please use github discussions for describing problems / asking for help / adding ideas.
-- If you want you can submit PRs and I'll get them merged as and when I have time.
+- Github is the **mirror** for this codebase, actual development is on a personal gitea instance.
+- Please use [Github discussions](https://github.com/theSage21/jaypore_ci/discussions) for describing problems / asking for help / adding ideas.
+- Jaypore CI is open source, not openly developed so instead of submitting PRs, please fork the project and start a discussion.
 
 ## Usage
 
