@@ -186,19 +186,9 @@ Build and publish docker images
 Environment / package dependencies can be cached in docker easily. Simply build
 your docker image and then run the job with that built image.
 
-.. code-block:: python
-
-    from jaypore_ci import jci
-
-    with jci.Pipeline() as p:
-        p.job("Docker", f"docker build -t myimage .")
-        p.job(
-            "PyTest",
-            "python3 -m pytest tests/",
-            image="myimage",
-            depends_on=["Docker"]
-        )
-
+.. literalinclude:: build_and_publish_docker_images.py
+  :language: python
+  :linenos:
 
 Define complex job relations
 ----------------------------
@@ -206,20 +196,9 @@ Define complex job relations
 This config builds docker images, runs linting, testing on the
 codebase, then builds and publishes documentation.
 
-
-.. code-block:: python
-
-    from jaypore_ci import jci
-
-    with jci.Pipeline() as p:
-
-        with p.stage("build"):
-            p.job("DockDev", f"docker build --target DevEnv -t {p.repo.sha}_dev .")
-
-        with p.stage("checking", image=f"{p.repo.sha}_dev"):
-            p.job( "IntTest", "run int_test.sh")
-            p.job( "RegText", "bash regression_tests.sh", depends_on=["IntTest"])
-            p.job( "FuzzTest", "bash fuzzy_tests.sh", depends_on=["IntTest", "RegText"])
+.. literalinclude:: examples/complex_dependencies.py
+  :language: python
+  :linenos:
 
 
 Run a job matrix
@@ -229,19 +208,10 @@ There is no special concept for matrix jobs. Just declare as many jobs as you
 want in a while loop. There is a function to make this easier when you want to
 run combinations of variables.
 
-.. code-block:: python
+.. literalinclude:: examples/job_matrix.py
+  :language: python
+  :linenos:
 
-    from jaypore_ci import jci
-
-    with jci.Pipeline() as p:
-        # This will have 18 jobs
-        # one for each possible combination of BROWSER, SCREENSIZE, ONLINE
-        for env in p.env_matrix(
-            BROWSER=["firefox", "chromium", "webkit"],
-            SCREENSIZE=["phone", "laptop", "extended"],
-            ONLINE=["online", "offline"],
-        ):
-            p.job(f"Test: {env}", "python3 -m pytest tests", env=env)
 
 The above config generates 3 x 3 x 2 = 18 jobs and sets the environment for each to a unique combination of `BROWSER` , `SCREENSIZE`, and `ONLINE`.
 
@@ -257,6 +227,7 @@ Run on cloud/remote runners
     Host my.aws.machine
         HostName some.aws.machine
         IdentityFile ~/.ssh/id_rsa
+
 - Now in your `cicd/pre-push.sh` file, where the `docker run` command is mentioned, simply add `DOCKER_HOST=ssh://my.aws.machine`
 - JayporeCi will then run on the remote machine.
 
@@ -273,22 +244,11 @@ To do this you can add `is_service=True` to the job / stage / pipeline arguments
 Services are only shut down when the pipeline is finished.
 
 
-.. code-block:: python
 
-    from jaypore_ci import jci
+.. literalinclude:: examples/custom_sources.py
+  :language: python
+  :linenos:
 
-    # Services immediately return with a PASSED status
-    # If they exit with a Non ZERO code they are marked as FAILED, otherwise
-    # they are assumed to be PASSED
-    with jci.Pipeline() as p:
-        with p.stage("Services", is_service=True):
-            p.job("Mysql", None, image="mysql")
-            p.job("Redis", None, image="redis")
-            p.job("Api", "python3 -m src.run_api", image="python:3.11")
-        with p.stage("Testing"):
-            p.job("UnitTest", "python3 -m pytest -m unit_tests tests")
-            p.job("IntegrationTest", "python3 -m pytest -m integration_tests tests")
-            p.job("RegressionTest", "python3 -m pytest -m regression_tests tests")
 
 Import jobs with pip install
 ----------------------------
@@ -319,15 +279,9 @@ Some jobs only need to run when your branch is **main** or in release branches.
 At other times we want to check commit messages and based on the message run
 different jobs.
 
-.. code-block:: python
-
-    from jaypore_ci import jci
-
-    
-    with jci.Pipeline() as p:
-        p.job("testing", "bash cicd/lint_test_n_build.sh")
-        if p.repo.branch == 'main':
-            p.job("publish", "bash cicd/publish_release.sh", depends_on=['testing'])
+.. literalinclude:: examples/optional_jobs.py
+  :language: python
+  :linenos:
 
 
 Test your pipeline config
@@ -341,24 +295,9 @@ To help you do this there are mock executors/remotes that you can use instead
 of Docker/Gitea. This example taken from Jaypore CI's own tests shows how you
 would test and make sure that jobs are running in order.
 
-.. code-block:: python
-
-    from jaypore_ci import jci, executors, remotes
-
-    executor = executors.Mock()
-    remote = remotes.Mock(branch="test_branch", sha="fake_sha")
-    
-    with jci.Pipeline(executor=executor, remote=remote, poll_interval=0) as p:
-        for name in "pq":
-            p.job(name, name)
-        p.job("x", "x")
-        p.job("y", "y", depends_on=["x"])
-        p.job("z", "z", depends_on=["y"])
-        for name in "ab":
-            p.job(name, name)
-
-    order = pipeline.executor.get_execution_order()
-    assert order["x"] < order["y"] < order["z"]
+.. literalinclude:: examples/optional_jobs.py
+  :language: python
+  :linenos:
 
 Status report via email
 -----------------------
@@ -368,15 +307,10 @@ You can send pipeline status reports via email if you don't want to use the PR s
 See the :class:`~jaypore_ci.remotes.email.Email` docs for the environment
 variables you will have to supply to make this work.
 
-.. code-block:: python
 
-    from jaypore_ci import jci, executors, remotes, repos
-
-    git = repos.Git.from_env()
-    email = remotes.Email.from_env(repo=git)
-    
-    with jci.Pipeline(repo=git, remote=email) as p:
-        p.job("x", "x")
+.. literalinclude:: examples/report_via_email.py
+  :language: python
+  :linenos:
 
 Run selected jobs based on commit message
 -----------------------------------------
@@ -386,21 +320,17 @@ A simple way to do this is to read the commit messsage and see if the author
 asked us to run these jobs. JayporeCI itself only runs release jobs when the
 commit message contains **jci:release** as one of it's lines.
 
-.. code-block:: python
 
-    from jaypore_ci import jci
-
-    with jci.Pipeline() as p:
-        p.job("build", "bash cicd/build.sh")
-        if p.repo.commit_message.contains("jci:release"):
-            p.job("release", "bash cicd/release.sh", depends_on=["build"])
+.. literalinclude:: examples/jobs_based_on_commit_messages.py
+  :language: python
+  :linenos:
 
 `💬 <https://github.com/theSage21/jaypore_ci/discussions/20>`_ :Select remote based on job status / branch / authors
 --------------------------------------------------------------------------------------------------------------------
 
 .. note::
-   If you want this feature please go and vote for it on the `github
-   discussion https://github.com/theSage21/jaypore_ci/discussions/20>`_.
+   If you want this feature please go and vote for it on the `github discussion
+   <https://github.com/theSage21/jaypore_ci/discussions>`_.
 
 At times it's necessary to inform multiple people about CI failues / passing.
 
@@ -419,16 +349,13 @@ workflow you can vote on it and we can implement an easier way to declare this
 configuration.
 
 
-
-
-
 Contributing
 ============
 
-- Main development happens on a self hosted gitea instance.
-- Source code is mirrored at `Github <https://github.com/theSage21/jaypore_ci>`_
+- Development happens on a self hosted gitea instance and the source code is mirrored at `Github <https://github.com/theSage21/jaypore_ci>`_.
 - If you are facing issues please file them on github.
-- If you want to open pull requests please open them on github. I'll try to review and merge them when I get time.
+- Please use `Github discussions <https://github.com/theSage21/jaypore_ci/discussions>`_ for describing problems / asking for help / adding ideas.
+- Jaypore CI is open source, but not openly developed yet so instead of submitting PRs, please fork the project and start a discussion.
 
 Reference
 =========
@@ -442,3 +369,7 @@ Reference
    :width: 80
    :alt: Jaypore CI
    :align: middle
+
+
+Changelog
+=========
