@@ -28,7 +28,7 @@ Contents
 .. contents::
 
 Getting Started
-========
+===============
 
 Installation
 ------------
@@ -84,12 +84,11 @@ This would produce a CI report like::
 - **Black**, **Pylint**, and **PyTest** are the job names.
 - **[ffcda0a9]** is the docker container ID for that job.
 - **1: 3** is the time taken by the job.
-- **[Cov: 65%  ]** is custom reporting done by the job. Any job can create a file
-  **/jaypore_ci/run/<job name>.txt** and the first 5 characters from that file
-  will be displayed in the report.
-  - Although this is used for coverage reports you could potentially use this for anything you want. A few ideas:
-    - You could report error codes here to indicate WHY a job failed.
-    - Report information about artifacts created like package publish versions. 
+- **[Cov: 65%  ]** is custom reporting done by the job.
+  - Any job can create a file **/jaypore_ci/run/<job name>.txt** and the first 5 characters from that file will be displayed in the report.
+  - Although this is used for coverage reports you could potentially use this for anything you want.
+  - You could report error codes here to indicate WHY a job failed.
+  - Report information about artifacts created like package publish versions. 
 
 
 To see the pipelines on your machine you can use a `Dozzle
@@ -202,7 +201,7 @@ your docker image and then run the job with that built image.
 
 
 Define complex job relations
----------------------
+----------------------------
 
 This config builds docker images, runs linting, testing on the
 codebase, then builds and publishes documentation.
@@ -380,7 +379,7 @@ variables you will have to supply to make this work.
         p.job("x", "x")
 
 Run selected jobs based on commit message
---------------------------------------
+-----------------------------------------
 
 Sometimes we want to control when some jobs run. For example, build/release jobs, or intensive testing jobs.
 A simple way to do this is to read the commit messsage and see if the author
@@ -397,10 +396,10 @@ commit message contains **jci:release** as one of it's lines.
             p.job("release", "bash cicd/release.sh", depends_on=["build"])
 
 `💬 <https://github.com/theSage21/jaypore_ci/discussions/20>`_ :Select remote based on job status / branch / authors
--------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------------------
 
 .. note::
-    If you want this feature please go and vote for it on the `github
+   If you want this feature please go and vote for it on the `github
    discussion https://github.com/theSage21/jaypore_ci/discussions/20>`_.
 
 At times it's necessary to inform multiple people about CI failues / passing.
@@ -432,7 +431,7 @@ Contributing
 - If you want to open pull requests please open them on github. I'll try to review and merge them when I get time.
 
 Reference
-========
+=========
 
 .. toctree::
    :glob:

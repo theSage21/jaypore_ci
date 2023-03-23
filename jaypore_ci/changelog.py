@@ -6,7 +6,7 @@ version_map = {
         "changes": [
             (
                 "Bugfix: When there are multiple (push) remotes, Jaypore CI"
-                " will pick the first one and use that"
+                " will pick the first one and use that."
             )
         ],
         "instructions": [],

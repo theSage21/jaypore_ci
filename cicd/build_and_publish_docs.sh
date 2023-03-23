@@ -7,6 +7,7 @@ set -o pipefail
 build() {
     echo "Building docs"
     sphinx-apidoc -o docs/source/reference ./jaypore_ci
+    (python3 cicd/render_changelog.py >> docs/source/index.rst)
     sphinx-build docs/source/ docs/build
 
     # Create pre-push for repo
