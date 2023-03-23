@@ -93,7 +93,7 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
             ):
                 self.base_branch = "main"
                 return self.get_pr_id()
-            self.logging().debug()(
+            self.logging().debug(
                 "Failed gitea api",
                 api=self.api,
                 owner=self.owner,

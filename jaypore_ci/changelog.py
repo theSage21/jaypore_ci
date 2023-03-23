@@ -2,6 +2,15 @@ from jaypore_ci.config import Version
 
 V = Version.parse
 version_map = {
+    V("0.2.29"): {
+        "changes": [
+            (
+                "Bugfix: When gitea token does not have enough scope log"
+                " correctly and exit"
+            )
+        ],
+        "instructions": [],
+    },
     V("0.2.28"): {
         "changes": [
             (
