@@ -13,7 +13,11 @@ author = "Arjoonn Sharma"
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = ["sphinx.ext.autodoc", "sphinx.ext.autosummary"]
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx_rtd_theme",
+]
 
 templates_path = ["_templates"]
 exclude_patterns = []
@@ -32,15 +36,17 @@ html_sidebars = {
     ]
 }
 html_favicon = "_static/logo.ico"
-html_theme = "alabaster"
+# html_theme = "alabaster"
+html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_theme_options = {
-    "logo_name": "Jaypore CI",
-    "logo": "logo.png",
-    "touch_icon": "logo.png",
-    "github_user": "theSage21",
-    "github_repo": "jaypore_ci",
-    "github_banner": True,
-    "github_button": True,
-    "description": "Simple, flexible, powerful; Like the city of Jaypore.",
+    "display_version": True,
+    "prev_next_buttons_location": "bottom",
+    # Toc options
+    "collapse_navigation": True,
+    "sticky_navigation": True,
+    "navigation_depth": 4,
+    # "includehidden": True,
+    # "titles_only": False,
 }
+master_doc = "contents"

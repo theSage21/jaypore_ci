@@ -3,8 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+TLDR
+====
+
 |logo|
-======
 
 - **Jaypore CI** is a *small*, *very flexible*, and *powerful* system for automation within software projects.
 - Latest version: |package_version|
@@ -13,20 +15,13 @@
 - `Docker Hub <https://hub.docker.com/r/arjoonn/jci>`_
 - `Github Mirror <https://github.com/theSage21/jaypore_ci>`_
 
-
-TLDR
-----
+------------
 
 - Configure pipelines in Python
 - Jobs are run using `Docker <https://www.docker.com/>`_; on your laptop and on cloud IF needed.
 - Send status reports anywhere, or nowhere at all. Email, commit to git, Gitea
   PR, Github PR, or write your own class and send it where you want.
 
-
-Contents
---------
-
-.. contents::
 
 Getting Started
 ===============
@@ -224,7 +219,7 @@ Run on cloud/remote runners
 - Make sure you have ssh access to remote machine and the user you are logging in as can run docker commands.
 - Add to your local `~.ssh/config` an entry for your remote machine. Something like:
 
-  .. code-block:: config
+  .. code-block:: text
 
     Host my.aws.machine
         HostName some.aws.machine
@@ -384,6 +379,6 @@ Reference
    :alt: Jaypore CI
    :align: middle
 
-
 Changelog
 =========
+
