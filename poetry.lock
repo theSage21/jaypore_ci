@@ -1114,6 +1114,18 @@ files = [
 test = ["flake8", "mypy", "pytest"]
 
 [[package]]
+name = "sphinxcontrib-mermaid"
+version = "0.8.1"
+description = "Mermaid diagrams in yours Sphinx powered docs"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "sphinxcontrib-mermaid-0.8.1.tar.gz", hash = "sha256:fa3e5325d4ba395336e6137d113f55026b1a03ccd115dc54113d1d871a580466"},
+    {file = "sphinxcontrib_mermaid-0.8.1-py3-none-any.whl", hash = "sha256:15491c24ec78cf1626b1e79e797a9ce87cb7959cf38f955eb72dd5512aeb6ce9"},
+]
+
+[[package]]
 name = "sphinxcontrib-qthelp"
 version = "1.0.3"
 description = "sphinxcontrib-qthelp is a sphinx extension which outputs QtHelp document."
@@ -1358,4 +1370,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "524db2ef19c7ef454826113dd7c111e43592aa1c288db731a4c2a7951ecf7ac3"
+content-hash = "7433dfdb5a52ecc76bc584d9453c1c4449e7b7659bdc653e6704470ae53f537d"

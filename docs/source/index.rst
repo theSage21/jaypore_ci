@@ -101,6 +101,19 @@ Concepts
 Pipeline config
 ***************
 
+.. mermaid::
+
+    sequenceDiagram
+        autonumber
+        loop Pipeline execution
+            Pipeline ->> Executor: docker run [n jobs]
+            Executor -->> Pipeline: docker inspect [k jobs]
+            Pipeline ->> Reporter: Pipeline status
+            Reporter -->> Pipeline: Rendered report
+            Pipeline ->> Remote: Publish report
+            Remote -->> Pipeline: ok
+        end
+
 1. A pipeline is defined inside a python file that imports and uses **jaypore_ci**.
    - It can also import other libraries / configs. Do whatever your usecase needs.
 2. A config starts with creating a :class:`~jaypore_ci.jci.Pipeline` instance. Everything happens inside this context.
@@ -381,4 +394,29 @@ Reference
 
 Changelog
 =========
+
+0.2.29
+------
+
+-   🐞: When gitea token does not have enough scope log correctly and exit
+
+0.2.28
+------
+
+-   🐞: When there are multiple (push) remotes, Jaypore CI will pick the first one and use that.
+
+0.2.27
+------
+
+-   🎁: Jobs older than 1 week will be removed before starting a new pipeline.
+
+0.2.26
+------
+
+-   ⚙️: The Dockerfile inside `cicd/Dockerfile` now requires a build arg that specifies the version of Jaypore CI to install.
+
+0.2.25
+------
+
+-   🎁: A dockerfile is now used to send context of the codebase to the docker daemon instead of directly mounting the code. This allows us to easily use remote systems for jobs
 
