@@ -83,22 +83,27 @@ class Job:  # pylint: disable=too-many-instance-attributes
     It is never created manually. The correct way to create a job is to use
     :meth:`~jaypore_ci.jci.Pipeline.job`.
 
-    :param name: The name for the job. Names must be unique across jobs and stages.
-    :param command: The command that we need to run for the job. It can be set
-        to `None` when `is_service` is True.
-    :param is_service: Is this job a service or not? Service jobs are assumed
-        to be :class:`~jaypore_ci.interfaces.Status.PASSED` as long as they start.
-        They are shut down when the entire pipeline has finished executing.
-    :param pipeline: The pipeline this job is associated with.
-    :param status: The :class:`~jaypore_ci.interfaces.Status` of this job.
-    :param image: What docker image to use for this job.
-    :param timeout: Defines how long a job is allowed to run before being
-        killed and marked as class:`~jaypore_ci.interfaces.Status.FAILED`.
-    :param env: A dictionary of environment variables to pass to the docker run command.
-    :param children: Defines which jobs depend on this job's output status.
-    :param parents: Defines which jobs need to pass before this job can be run.
-    :param stage: What stage the job belongs to. This stage name must exist so
-        that we can assign jobs to it.
+    :param name:        The name for the job. Names must be unique across jobs
+                        and stages.
+    :param command:     The command that we need to run for the job. It can be
+                        set to `None` when `is_service` is True.
+    :param is_service:  Is this job a service or not? Service jobs are assumed
+                        to be :class:`~jaypore_ci.interfaces.Status.PASSED` as
+                        long as they start.  They are shut down when the entire
+                        pipeline has finished executing.
+    :param pipeline:    The pipeline this job is associated with.
+    :param status:      The :class:`~jaypore_ci.interfaces.Status` of this job.
+    :param image:       What docker image to use for this job.
+    :param timeout:     Defines how long a job is allowed to run before being
+                        killed and marked as
+                        class:`~jaypore_ci.interfaces.Status.FAILED`.
+    :param env:         A dictionary of environment variables to pass to the
+                        docker run command.
+    :param children:    Defines which jobs depend on this job's output status.
+    :param parents:     Defines which jobs need to pass before this job can be
+                        run.
+    :param stage:       What stage the job belongs to. This stage name must
+                        exist so that we can assign jobs to it.
     """
 
     def __init__(
@@ -249,13 +254,19 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
     """
     A pipeline acts as a controlling/organizing mechanism for multiple jobs.
 
-    :param repo         : Provides information about the codebase.
-    :param reporter     : Provides reports based on the state of the pipeline.
-    :param remote       : Allows us to publish reports to somewhere like gitea/email.
-    :param executor     : Runs the specified jobs.
-    :param poll_interval: Defines how frequently (in seconds) to check the
-        pipeline status and publish a report.
+    :param repo:            Provides information about the codebase.
+    :param reporter:        Provides reports based on the state of the pipeline.
+    :param remote:          Allows us to publish reports to somewhere like gitea/email.
+    :param executor:        Runs the specified jobs.
+    :param poll_interval:   Defines how frequently (in seconds) to check the
+                            pipeline status and publish a report.
     """
+
+    # We need a way to avoid actually running the examples. Something like a
+    # "dry-run" option so that only the building of the config is done and it's
+    # never actually run. It might be a good idea to make this an actual config
+    # variable but I'm not sure if we should do that or not.
+    __run_on_exit__ = True
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -324,9 +335,10 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.run()
-        self.executor.teardown()
-        self.remote.teardown()
+        if Pipeline.__run_on_exit__:
+            self.run()
+            self.executor.teardown()
+            self.remote.teardown()
         return False
 
     def get_status(self) -> Status:

@@ -1,11 +1,15 @@
 from jaypore_ci.config import Version
 
 V = Version.parse
+NEW = "🎁"
+CHANGE = "⚙️"
+BUGFIX = "🐞"
+
 version_map = {
     V("0.2.29"): {
         "changes": [
             (
-                "Bugfix: When gitea token does not have enough scope log"
+                f"{BUGFIX}: When gitea token does not have enough scope log"
                 " correctly and exit"
             )
         ],
@@ -14,7 +18,7 @@ version_map = {
     V("0.2.28"): {
         "changes": [
             (
-                "Bugfix: When there are multiple (push) remotes, Jaypore CI"
+                f"{BUGFIX}: When there are multiple (push) remotes, Jaypore CI"
                 " will pick the first one and use that."
             )
         ],
@@ -22,15 +26,19 @@ version_map = {
     },
     V("0.2.27"): {
         "changes": [
-            "Jobs older than 1 week will be removed before starting a new pipeline."
+            (
+                f"{NEW}: Jobs older than 1 week will be removed before starting"
+                " a new pipeline."
+            )
         ],
         "instructions": [],
     },
     V("0.2.26"): {
         "changes": [
             (
-                "The Dockerfile inside `cicd/Dockerfile` now requires a build arg "
-                "that specifies the version of Jaypore CI to install."
+                f"{CHANGE}: The Dockerfile inside `cicd/Dockerfile` now"
+                " requires a build arg that specifies the version of Jaypore CI"
+                " to install."
             ),
         ],
         "instructions": [
@@ -40,10 +48,16 @@ version_map = {
     V("0.2.25"): {
         "changes": [
             (
-                "A dockerfile is now used to send context of the codebase to "
-                "the docker daemon instead of directly mounting the code."
+                f"{NEW}: A dockerfile is now used to send context of the"
+                " codebase to the docker daemon instead of directly mounting the"
+                " code. This allows us to easily use remote systems for jobs"
             )
         ],
         "instructions": [],
     },
 }
+assert all(
+    line.startswith(NEW) or line.startswith(CHANGE) or line.startswith(BUGFIX)
+    for log in version_map.values()
+    for line in log["changes"]
+), "All change lines must start with one of NEW/CHANGE/BUGFIX"

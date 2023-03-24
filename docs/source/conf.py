@@ -31,6 +31,7 @@ html_sidebars = {
         "donate.html",
     ]
 }
+html_favicon = "_static/logo.ico"
 html_theme = "alabaster"
 html_static_path = ["_static"]
 html_theme_options = {

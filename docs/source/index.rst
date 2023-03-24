@@ -7,8 +7,8 @@
 ======
 
 - **Jaypore CI** is a *small*, *very flexible*, and *powerful* system for automation within software projects.
-- `Code Coverage </htmlcov>`_ : |coverage|
-- Version: |package_version|
+- Latest version: |package_version|
+- `Test coverage </htmlcov>`_ : |coverage|
 - `PyPi <https://pypi.org/project/jaypore-ci/>`_ 
 - `Docker Hub <https://hub.docker.com/r/arjoonn/jci>`_
 - `Github Mirror <https://github.com/theSage21/jaypore_ci>`_
@@ -18,8 +18,9 @@ TLDR
 ----
 
 - Configure pipelines in Python
-- Jobs are run via docker; on your laptop and on cloud IF needed.
-- Send status reports anywhere. Email, Store in git, Gitea PR, Github PR, Telegram, or only on your laptop.
+- Jobs are run using `Docker <https://www.docker.com/>`_; on your laptop and on cloud IF needed.
+- Send status reports anywhere, or nowhere at all. Email, commit to git, Gitea
+  PR, Github PR, or write your own class and send it where you want.
 
 
 Contents
@@ -33,8 +34,8 @@ Getting Started
 Installation
 ------------
 
-You can install it using a bash script. The script creates only affects your
-repository so if you want you can do this manually also.
+You can install Jaypore CI using a bash script. The script only makes changes in your
+repository so if you want you can do the installation manually as well.
 
 .. code-block:: console
 
@@ -43,8 +44,9 @@ repository so if you want you can do this manually also.
    $ bash setup.sh -y
 
 
-**Or** you can manually install it. The names are convention, you can call your
-folders/files anything but you'll need to make sure they match everywhere.
+**For a manual install** you can do the following. The names are convention,
+you can call your folders/files anything but you'll need to make sure they
+match everywhere.
     
 1. Create a directory called *cicd* in the root of your repo.
 2. Create a file *cicd/pre-push.sh*
@@ -132,9 +134,9 @@ Pipeline config
     3. :class:`~jaypore_ci.interfaces.Reporter` Given the status of the pipeline
        the reporter is responsible for creating a text output that can be read by
        humans.
-       - Along with :class:`~jaypore_ci.reporters.text.Text` , we also have
-         the :class:`~jaypore_ci.reporters.markdown.Markdown` reporter that uses
-         Mermaid graphs to show you pipeline dependencies.
+       Along with :class:`~jaypore_ci.reporters.text.Text` , we also have
+       the :class:`~jaypore_ci.reporters.markdown.Markdown` reporter that uses
+       Mermaid graphs to show you pipeline dependencies.
     4. :class:`~jaypore_ci.interfaces.Remote` is where the report is published to. Currently we have:
         - :class:`~jaypore_ci.remotes.git.GitRemote` which can store the pipeline status
           in git itself. You can then push the status to your github and share it
@@ -186,7 +188,7 @@ Build and publish docker images
 Environment / package dependencies can be cached in docker easily. Simply build
 your docker image and then run the job with that built image.
 
-.. literalinclude:: build_and_publish_docker_images.py
+.. literalinclude:: examples/build_and_publish_docker_images.py
   :language: python
   :linenos:
 
@@ -245,7 +247,7 @@ Services are only shut down when the pipeline is finished.
 
 
 
-.. literalinclude:: examples/custom_sources.py
+.. literalinclude:: examples/custom_services.py
   :language: python
   :linenos:
 
@@ -347,6 +349,18 @@ For example
 While all of this is already possible with JayporeCI, if this is a common
 workflow you can vote on it and we can implement an easier way to declare this
 configuration.
+
+Run multiple pipelines on every commit
+--------------------------------------
+
+You can modify `cicd/pre-push.sh` so that instead of creating a single pipeline
+it creates multiple pipelines. This can be useful when you have a personal CI
+config that you want to run and a separate team / organization pipeline that
+needs to be run as well.
+
+This is not the recommended way however since it would be a lot easier to make
+`cicd/cicd.py` a proper python package instead and put the two configs there
+itself.
 
 
 Contributing

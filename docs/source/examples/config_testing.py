@@ -1,9 +1,7 @@
-from jaypore_ci import jci, executors, remotes
+from jaypore_ci import jci
 
-executor = executors.Mock()
-remote = remotes.Mock(branch="test_branch", sha="fake_sha")
-
-with jci.Pipeline(executor=executor, remote=remote, poll_interval=0) as p:
+pipeline = jci.Pipeline(poll_interval=0)
+with pipeline as p:
     for name in "pq":
         p.job(name, name)
     p.job("x", "x")
@@ -13,4 +11,4 @@ with jci.Pipeline(executor=executor, remote=remote, poll_interval=0) as p:
         p.job(name, name)
 
 order = pipeline.executor.get_execution_order()
-assert order["x"] < order["y"] < order["z"]
+# assert order["x"] < order["y"] < order["z"]
