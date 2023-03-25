@@ -23,7 +23,8 @@ class Git(Repo):
         """
         remote = (
             subprocess.check_output(
-                "git remote -v | grep push | grep https | awk '{print $2}'", shell=True
+                "git remote -v | grep push | head -n1 | grep https | awk '{print $2}'",
+                shell=True,
             )
             .decode()
             .strip()

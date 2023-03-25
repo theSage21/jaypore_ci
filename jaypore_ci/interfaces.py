@@ -5,6 +5,8 @@ Currently only gitea and docker are supported as remote and executor
 respectively.
 """
 from enum import Enum
+from pathlib import Path
+from urllib.parse import urlparse
 from typing import NamedTuple, List
 
 
@@ -32,6 +34,58 @@ class Status(Enum):
     PASSED = 50
     TIMEOUT = 60
     SKIPPED = 70
+
+
+class RemoteInfo(NamedTuple):
+    """
+    Holds information about the remote irrespective of if the remote was ssh or
+    https.
+    """
+
+    netloc: str
+    owner: str
+    repo: str
+    original: str
+
+    @classmethod
+    def parse(cls, remote: str) -> "RemoteInfo":
+        """
+        Given a git remote url string, parses and breaks down information
+        contained in the url.
+
+        Works with the following formats:
+
+            ssh://git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
+            ssh+git://git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
+
+            git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
+            git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
+
+            https://gitea.arjoonn.com/midpath/jaypore_ci.git
+            http://gitea.arjoonn.com/midpath/jaypore_ci.git
+        """
+        original = remote
+        if (
+            ("ssh://" in remote or "ssh+git://" in remote or "://" not in remote)
+            and "@" in remote
+            and remote.endswith(".git")
+        ):
+            _, remote = remote.split("@")
+            netloc, path = remote.split(":")
+            owner, repo = path.split("/")
+            return RemoteInfo(
+                netloc=netloc,
+                owner=owner,
+                repo=repo.replace(".git", ""),
+                original=original,
+            )
+        url = urlparse(remote)
+        return RemoteInfo(
+            netloc=url.netloc,
+            owner=Path(url.path).parts[1],
+            repo=Path(url.path).parts[2].replace(".git", ""),
+            original=original,
+        )
 
 
 class Repo:
@@ -65,9 +119,6 @@ class Executor:
     """
     An executor is something used to run a job.
     It could be docker / podman / shell etc.
-
-    It must define `__enter__` and `__exit__` so that it can be used as a context manager.
-
     """
 
     def run(self, job: "Job") -> str:
@@ -83,10 +134,13 @@ class Executor:
         self.pipe_id = id(pipeline)
         self.pipeline = pipeline
 
-    def __enter__(self):
-        return self
+    def setup(self) -> None:
+        """
+        This function is meant to perform any work that should be done before
+        running any jobs.
+        """
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def teardown(self) -> None:
         """
         On exit the executor must clean up any pending / stuck / zombie jobs that are still there.
         """
@@ -102,9 +156,6 @@ class Remote:
     """
     Something that allows us to show other people the status of the CI job.
     It could be gitea / github / gitlab / email system.
-
-    Must define `__enter__` and `__exit__` so that it can be used as a context
-    manager.
     """
 
     def __init__(self, *, sha, branch):
@@ -117,11 +168,16 @@ class Remote:
         """
         raise NotImplementedError()
 
-    def __enter__(self):
-        return self
+    def setup(self) -> None:
+        """
+        This function is meant to perform any work that should be done before
+        running any jobs.
+        """
 
-    def __exit__(self, exc_type, exc_value, traceback):
-        pass
+    def teardown(self) -> None:
+        """
+        This function will be called once the pipeline is finished.
+        """
 
     @classmethod
     def from_env(cls, *, repo: "Repo"):

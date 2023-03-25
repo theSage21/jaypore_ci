@@ -2,6 +2,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+RUNNING_IN_CI="${RUNNING_IN_CI:-no}"
 ASSUME_YES="no"
 while getopts ":y" opt; do
   case $opt in
@@ -10,7 +11,9 @@ while getopts ":y" opt; do
       ;;
   esac
 done
-echo "ASSUME YES: $ASSUME_YES"
+
+echo "RUNNING_IN_CI : $RUNNING_IN_CI"
+echo "ASSUME_YES    : $ASSUME_YES"
 
 should_continue (){
     if [[ "$ASSUME_YES" = "yes" ]]
@@ -50,7 +53,6 @@ getfile(){
 main (){
     REPO_ROOT=$(git rev-parse --show-toplevel)
     LOCAL_HOOK=$(echo $REPO_ROOT/.git/hooks/pre-push)
-    IMAGE='arjoonn/jci:latest'
     CICD_ROOT=cicd
     echo "--------------------"
     echo "Installing JayporeCI"
@@ -81,14 +83,24 @@ EOF
     then
         mkdir -p secrets/bin
         PATH="$REPO_ROOT/secrets/bin:$PATH"
-        echo "Downloading age/sops binaries"
+        BINLOC=$HOME/.local/jayporeci_bin
+        echo "Downloading age/sops binaries to: $BINLOC"
         if should_continue
         then
             echo "Downloading age/ binaries"
-            getfile /bin/age $HOME/.local/bin/age &
-            getfile /bin/age-keygen $HOME/.local/bin/age-keygen &
-            getfile /bin/sops $HOME/.local/bin/sops &
+            mkdir -p $BINLOC &> /dev/null
+            getfile /bin/age $BINLOC/age &
+            getfile /bin/age-keygen $BINLOC/age-keygen &
+            getfile /bin/sops $BINLOC/sops &
             wait
+            chmod u+x $BINLOC/age $BINLOC/age-keygen $BINLOC/sops
+        fi
+        echo "Adding line to .bashrc:"
+        echo "  \$PATH=$BINLOC:\$PATH"
+        if should_continue
+        then
+            echo "export PATH=$BINLOC:\$PATH" >> $HOME/.bashrc
+            source $HOME/.bashrc
         fi
         echo "Downloading edit/set env scripts"
         getfile /bin/edit_env.sh secrets/bin/edit_env.sh  &

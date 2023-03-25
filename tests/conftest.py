@@ -1,10 +1,12 @@
 import os
+from pathlib import Path
 import unittest
 
 import pytest
 import tests.subprocess_mock  # pylint: disable=unused-import
 import tests.docker_mock  # pylint: disable=unused-import
 from tests.requests_mock import add_gitea_mocks, add_github_mocks, Mock
+import tests.jayporeci_patch  # pylint: disable=unused-import
 
 from jaypore_ci import jci, executors, remotes, reporters, repos
 
@@ -33,6 +35,14 @@ def factory(*, repo, remote, executor, reporter):
     return build
 
 
+def set_env_keys():
+    os.environ["JAYPORE_GITEA_TOKEN"] = "fake_gitea_token"
+    os.environ["JAYPORE_GITHUB_TOKEN"] = "fake_github_token"
+    os.environ["JAYPORE_EMAIL_ADDR"] = "fake@email.com"
+    os.environ["JAYPORE_EMAIL_PASSWORD"] = "fake_email_password"
+    os.environ["JAYPORE_EMAIL_TO"] = "fake.to@mymailmail.com"
+
+
 @pytest.fixture(
     scope="function",
     params=list(
@@ -52,11 +62,7 @@ def factory(*, repo, remote, executor, reporter):
     ids=idfn,
 )
 def pipeline(request):
-    os.environ["JAYPORE_GITEA_TOKEN"] = "fake_gitea_token"
-    os.environ["JAYPORE_GITHUB_TOKEN"] = "fake_github_token"
-    os.environ["JAYPORE_EMAIL_ADDR"] = "fake@email.com"
-    os.environ["JAYPORE_EMAIL_PASSWORD"] = "fake_email_password"
-    os.environ["JAYPORE_EMAIL_TO"] = "fake.to@mymailmail.com"
+    set_env_keys()
     builder = factory(
         repo=request.param["repo"],
         remote=request.param["remote"],
@@ -72,3 +78,13 @@ def pipeline(request):
             yield builder
     else:
         yield builder
+
+
+@pytest.fixture(
+    scope="function",
+    params=list((Path(__name__) / "../docs/source/examples").resolve().glob("*.py")),
+    ids=str,
+)
+def doc_example_filepath(request):
+    set_env_keys()
+    yield request.param

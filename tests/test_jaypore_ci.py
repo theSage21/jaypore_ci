@@ -1,8 +1,14 @@
 import pytest
+from jaypore_ci.changelog import version_map
+from jaypore_ci.config import const
 
 
 def test_sanity():
     assert 4 == 2 + 2
+
+
+def test_version_has_entry_in_version_map():
+    assert const.version in version_map, const
 
 
 def test_simple_linear_jobs(pipeline):

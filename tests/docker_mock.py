@@ -14,7 +14,7 @@ class Network:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
-    def remove(self):
+    def remove(self, **_):
         pass
 
 
@@ -39,13 +39,23 @@ class Container:
         self.__dict__.update(kwargs)
         self.FinishedAt = "0001-01-01T00:00:00Z"
         self.ExitCode = 0
+        self.attrs = {
+            "State": {
+                "StartedAt": getattr(self, "StartedAt", None),
+                "FinishedAt": getattr(self, "FinishedAt", None),
+            }
+        }
 
     def logs(self):
         return b""
 
     def stop(self, **_):
         self.FinishedAt = str(pendulum.now())
+        self.attrs["State"]["FinishedAt"] = self.FinishedAt
         self.ExitCode = 0
+
+    def remove(self, **_):
+        Containers.boxes.pop(self.id, None)
 
 
 class Containers:
@@ -59,6 +69,9 @@ class Containers:
         c = Container(**kwargs)
         self.boxes[c.id] = c
         return c
+
+    def list(self, **_):
+        return list(Containers.boxes.values())
 
 
 class Docker:
