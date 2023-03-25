@@ -1,6 +1,8 @@
 """
 A docker executor for Jaypore CI.
 """
+from copy import deepcopy
+
 import pendulum
 import docker
 from rich import print as rprint
@@ -13,9 +15,10 @@ from jaypore_ci.logging import logger
 
 class Docker(Executor):
     """
-    Run jobs via docker.
+    Run jobs via docker. To communicate with docker we use the `Python docker
+    sdk <https://docker-py.readthedocs.io/en/stable/client.html>`_.
 
-    This will:
+    Using this executor will:
         - Create a separate network for each run
         - Run jobs as part of the network
         - Clean up all jobs when the pipeline exits.
@@ -139,20 +142,36 @@ class Docker(Executor):
         In case something goes wrong it will raise TriggerFailed
         """
         assert self.pipe_id is not None, "Cannot run job if pipe id is not set"
+        ex_kwargs = deepcopy(job.executor_kwargs)
+        env = job.get_env()
+        env.update(ex_kwargs.pop("environment", {}))
         trigger = {
             "detach": True,
-            "environment": job.get_env(),
-            "volumes": [
-                "/var/run/docker.sock:/var/run/docker.sock",
-                "/usr/bin/docker:/usr/bin/docker:ro",
-                "/tmp/jayporeci__cidfiles:/jaypore_ci/cidfiles:ro",
-                f"/tmp/jayporeci__src__{self.pipeline.remote.sha}:/jaypore_ci/run",
-            ],
+            "environment": env,
+            "volumes": list(
+                set(
+                    [
+                        "/var/run/docker.sock:/var/run/docker.sock",
+                        "/usr/bin/docker:/usr/bin/docker:ro",
+                        "/tmp/jayporeci__cidfiles:/jaypore_ci/cidfiles:ro",
+                        f"/tmp/jayporeci__src__{self.pipeline.remote.sha}:/jaypore_ci/run",
+                    ]
+                    + (ex_kwargs.pop("volumes", []))
+                )
+            ),
             "name": self.get_job_name(job),
             "network": self.get_net(),
             "image": job.image,
             "command": job.command if not job.is_service else None,
         }
+        for key, value in ex_kwargs.items():
+            if key in trigger:
+                self.logging().warning(
+                    f"Overwriting existing value of `{key}` for job trigger.",
+                    old_value=trigger[key],
+                    new_value=value,
+                )
+            trigger[key] = value
         if not job.is_service:
             trigger["working_dir"] = "/jaypore_ci/run"
         if not job.is_service:

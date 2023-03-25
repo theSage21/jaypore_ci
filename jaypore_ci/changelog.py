@@ -6,6 +6,17 @@ CHANGE = "⚙️"
 BUGFIX = "🐞"
 
 version_map = {
+    V("0.2.30"): {
+        "changes": [
+            (
+                f"{NEW}: You can pass arbitrary arguments to the `docker run` "
+                "command simply by using the `executor_kwargs` argument while "
+                "defining the job. Read more in `Passing extra_hosts and other "
+                "arguments to docker`_."
+            )
+        ],
+        "instructions": [],
+    },
     V("0.2.29"): {
         "changes": [
             (

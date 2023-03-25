@@ -83,27 +83,37 @@ class Job:  # pylint: disable=too-many-instance-attributes
     It is never created manually. The correct way to create a job is to use
     :meth:`~jaypore_ci.jci.Pipeline.job`.
 
-    :param name:        The name for the job. Names must be unique across jobs
-                        and stages.
-    :param command:     The command that we need to run for the job. It can be
-                        set to `None` when `is_service` is True.
-    :param is_service:  Is this job a service or not? Service jobs are assumed
-                        to be :class:`~jaypore_ci.interfaces.Status.PASSED` as
-                        long as they start.  They are shut down when the entire
-                        pipeline has finished executing.
-    :param pipeline:    The pipeline this job is associated with.
-    :param status:      The :class:`~jaypore_ci.interfaces.Status` of this job.
-    :param image:       What docker image to use for this job.
-    :param timeout:     Defines how long a job is allowed to run before being
-                        killed and marked as
-                        class:`~jaypore_ci.interfaces.Status.FAILED`.
-    :param env:         A dictionary of environment variables to pass to the
-                        docker run command.
-    :param children:    Defines which jobs depend on this job's output status.
-    :param parents:     Defines which jobs need to pass before this job can be
-                        run.
-    :param stage:       What stage the job belongs to. This stage name must
-                        exist so that we can assign jobs to it.
+    :param name:            The name for the job. Names must be unique across
+                            jobs and stages.
+    :param command:         The command that we need to run for the job. It can
+                            be set to `None` when `is_service` is True.
+    :param is_service:      Is this job a service or not? Service jobs are
+                            assumed to be
+                            :class:`~jaypore_ci.interfaces.Status.PASSED` as
+                            long as they start.  They are shut down when the
+                            entire pipeline has finished executing.
+    :param pipeline:        The pipeline this job is associated with.
+    :param status:          The :class:`~jaypore_ci.interfaces.Status` of this job.
+    :param image:           What docker image to use for this job.
+    :param timeout:         Defines how long a job is allowed to run before being
+                            killed and marked as
+                            class:`~jaypore_ci.interfaces.Status.FAILED`.
+    :param env:             A dictionary of environment variables to pass to
+                            the docker run command.
+    :param children:        Defines which jobs depend on this job's output
+                            status.
+    :param parents:         Defines which jobs need to pass before this job can
+                            be run.
+    :param stage:           What stage the job belongs to. This stage name must
+                            exist so that we can assign jobs to it.
+    :param executor_kwargs: A dictionary of keyword arguments that the executor
+                            can use when running a job. Different executors may
+                            use this in different ways, for example with the
+                            :class:`~jaypore_ci.executors.docker.Docker`
+                            executor this may be used to run jobs with
+                            `--add-host or --device
+                            <https://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run>`_
+                            .
     """
 
     def __init__(
@@ -113,13 +123,15 @@ class Job:  # pylint: disable=too-many-instance-attributes
         pipeline: "Pipeline",
         *,
         status: str = None,
-        image: str = None,
-        timeout: int = None,
-        env: dict = None,
         children: List["Job"] = None,
         parents: List["Job"] = None,
         is_service: bool = False,
         stage: str = None,
+        # --- executor kwargs
+        image: str = None,
+        timeout: int = None,
+        env: dict = None,
+        executor_kwargs: dict = None,
     ):
         self.name = name
         self.command = command
@@ -133,6 +145,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         self.parents = parents if parents is not None else []
         self.is_service = is_service
         self.stage = stage
+        self.executor_kwargs = executor_kwargs if executor_kwargs is not None else {}
         # --- run information
         self.logs = defaultdict(list)
         self.job_id = id(self)
@@ -239,15 +252,12 @@ class Job:  # pylint: disable=too-many-instance-attributes
         2. Stage
         3. Job
         """
-        return {
-            **{
-                k[len(PREFIX) :]: v
-                for k, v in os.environ.items()
-                if k.startswith(PREFIX)
-            },
-            **self.pipeline.pipe_kwargs.get("env", {}),
-            **self.env,
+        env = {
+            k[len(PREFIX) :]: v for k, v in os.environ.items() if k.startswith(PREFIX)
         }
+        env.update(self.pipeline.pipe_kwargs.get("env", {}))
+        env.update(self.env)  # Includes env specified in stage kwargs AND job kwargs
+        return env
 
 
 class Pipeline:  # pylint: disable=too-many-instance-attributes

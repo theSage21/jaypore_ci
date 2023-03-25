@@ -370,6 +370,23 @@ This is not the recommended way however since it would be a lot easier to make
 `cicd/cicd.py` a proper python package instead and put the two configs there
 itself.
 
+Passing extra_hosts and other arguments to docker
+-------------------------------------------------
+
+Often times you want to configure some extra stuff for the docker run command
+that will be used to run your job, like when you want to pass `extra_hosts` or
+`device_requests` to the container.
+
+To do such things you can use the `executor_kwargs` argument while defining the
+job using :method:`~jaypore_ci.jci.Pipeline.job`. Anything that you pass to
+this dictionary will be handed off to `Docker-py
+<https://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run>`_
+and so you can use anything that is mentioned in that documentation.
+
+.. literalinclude:: examples/extra_hosts.py
+  :language: python
+  :linenos:
+
 
 Contributing
 ============
