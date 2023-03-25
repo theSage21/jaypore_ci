@@ -3,7 +3,6 @@ The code submodule for Jaypore CI.
 """
 import time
 import os
-import subprocess
 from itertools import product
 from collections import defaultdict
 from typing import List, Union, Callable
@@ -12,6 +11,9 @@ from contextlib import contextmanager
 import structlog
 import pendulum
 
+from jaypore_ci.exceptions import BadConfig
+from jaypore_ci.config import const
+from jaypore_ci.changelog import version_map
 from jaypore_ci import remotes, executors, reporters, repos, clean
 from jaypore_ci.interfaces import (
     Remote,
@@ -32,6 +34,42 @@ __all__ = ["Pipeline", "Job"]
 FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 PREFIX = "JAYPORE_"
 
+# Check if we need to upgrade Jaypore CI
+def ensure_version_is_correct():
+    """
+    Ensure that the version of Jaypore CI that is running, the code inside
+    cicd.py, and pre-push.sh are at compatible versions.
+
+    If versions do not match then this function will print out instructions on
+    what to do in order to upgrade.
+
+    Downgrades are not allowed, you need to re-install that specific version.
+    """
+    if (
+        const.expected_version is not None
+        and const.version is not None
+        and const.expected_version != const.version
+    ):
+        print("Expected : ", const.expected_version)
+        print("Got      : ", const.version)
+        if const.version > const.expected_version:
+            print(
+                "Your current version is higher than the expected one. Please "
+                "re-install Jaypore CI in this repo as downgrades are not "
+                "supported."
+            )
+        if const.version < const.expected_version:
+            print("--- Upgrade Instructions ---")
+            for version in sorted(version_map.keys()):
+                if version < const.version or version > const.expected_version:
+                    continue
+                for line in version_map[version]["instructions"]:
+                    print(line)
+            print("--- -------------------- ---")
+        raise BadConfig(
+            "Version mismatch between arjoonn/jci:<tag> docker container and pre-push.sh script"
+        )
+
 
 class Job:  # pylint: disable=too-many-instance-attributes
     """
@@ -45,22 +83,37 @@ class Job:  # pylint: disable=too-many-instance-attributes
     It is never created manually. The correct way to create a job is to use
     :meth:`~jaypore_ci.jci.Pipeline.job`.
 
-    :param name: The name for the job. Names must be unique across jobs and stages.
-    :param command: The command that we need to run for the job. It can be set
-        to `None` when `is_service` is True.
-    :param is_service: Is this job a service or not? Service jobs are assumed
-        to be :class:`~jaypore_ci.interfaces.Status.PASSED` as long as they start.
-        They are shut down when the entire pipeline has finished executing.
-    :param pipeline: The pipeline this job is associated with.
-    :param status: The :class:`~jaypore_ci.interfaces.Status` of this job.
-    :param image: What docker image to use for this job.
-    :param timeout: Defines how long a job is allowed to run before being
-        killed and marked as class:`~jaypore_ci.interfaces.Status.FAILED`.
-    :param env: A dictionary of environment variables to pass to the docker run command.
-    :param children: Defines which jobs depend on this job's output status.
-    :param parents: Defines which jobs need to pass before this job can be run.
-    :param stage: What stage the job belongs to. This stage name must exist so
-        that we can assign jobs to it.
+    :param name:            The name for the job. Names must be unique across
+                            jobs and stages.
+    :param command:         The command that we need to run for the job. It can
+                            be set to `None` when `is_service` is True.
+    :param is_service:      Is this job a service or not? Service jobs are
+                            assumed to be
+                            :class:`~jaypore_ci.interfaces.Status.PASSED` as
+                            long as they start.  They are shut down when the
+                            entire pipeline has finished executing.
+    :param pipeline:        The pipeline this job is associated with.
+    :param status:          The :class:`~jaypore_ci.interfaces.Status` of this job.
+    :param image:           What docker image to use for this job.
+    :param timeout:         Defines how long a job is allowed to run before being
+                            killed and marked as
+                            class:`~jaypore_ci.interfaces.Status.FAILED`.
+    :param env:             A dictionary of environment variables to pass to
+                            the docker run command.
+    :param children:        Defines which jobs depend on this job's output
+                            status.
+    :param parents:         Defines which jobs need to pass before this job can
+                            be run.
+    :param stage:           What stage the job belongs to. This stage name must
+                            exist so that we can assign jobs to it.
+    :param executor_kwargs: A dictionary of keyword arguments that the executor
+                            can use when running a job. Different executors may
+                            use this in different ways, for example with the
+                            :class:`~jaypore_ci.executors.docker.Docker`
+                            executor this may be used to run jobs with
+                            `--add-host or --device
+                            <https://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run>`_
+                            .
     """
 
     def __init__(
@@ -70,13 +123,15 @@ class Job:  # pylint: disable=too-many-instance-attributes
         pipeline: "Pipeline",
         *,
         status: str = None,
-        image: str = None,
-        timeout: int = None,
-        env: dict = None,
         children: List["Job"] = None,
         parents: List["Job"] = None,
         is_service: bool = False,
         stage: str = None,
+        # --- executor kwargs
+        image: str = None,
+        timeout: int = None,
+        env: dict = None,
+        executor_kwargs: dict = None,
     ):
         self.name = name
         self.command = command
@@ -90,6 +145,7 @@ class Job:  # pylint: disable=too-many-instance-attributes
         self.parents = parents if parents is not None else []
         self.is_service = is_service
         self.stage = stage
+        self.executor_kwargs = executor_kwargs if executor_kwargs is not None else {}
         # --- run information
         self.logs = defaultdict(list)
         self.job_id = id(self)
@@ -196,28 +252,31 @@ class Job:  # pylint: disable=too-many-instance-attributes
         2. Stage
         3. Job
         """
-        return {
-            **{
-                k[len(PREFIX) :]: v
-                for k, v in os.environ.items()
-                if k.startswith(PREFIX)
-            },
-            **self.pipeline.pipe_kwargs.get("env", {}),
-            **self.env,
+        env = {
+            k[len(PREFIX) :]: v for k, v in os.environ.items() if k.startswith(PREFIX)
         }
+        env.update(self.pipeline.pipe_kwargs.get("env", {}))
+        env.update(self.env)  # Includes env specified in stage kwargs AND job kwargs
+        return env
 
 
 class Pipeline:  # pylint: disable=too-many-instance-attributes
     """
     A pipeline acts as a controlling/organizing mechanism for multiple jobs.
 
-    :param repo         : Provides information about the codebase.
-    :param reporter     : Provides reports based on the state of the pipeline.
-    :param remote       : Allows us to publish reports to somewhere like gitea/email.
-    :param executor     : Runs the specified jobs.
-    :param poll_interval: Defines how frequently (in seconds) to check the
-        pipeline status and publish a report.
+    :param repo:            Provides information about the codebase.
+    :param reporter:        Provides reports based on the state of the pipeline.
+    :param remote:          Allows us to publish reports to somewhere like gitea/email.
+    :param executor:        Runs the specified jobs.
+    :param poll_interval:   Defines how frequently (in seconds) to check the
+                            pipeline status and publish a report.
     """
+
+    # We need a way to avoid actually running the examples. Something like a
+    # "dry-run" option so that only the building of the config is done and it's
+    # never actually run. It might be a good idea to make this an actual config
+    # variable but I'm not sure if we should do that or not.
+    __run_on_exit__ = True
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
@@ -242,23 +301,29 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         self.reporter = reporter if reporter is not None else reporters.text.Text()
         self.poll_interval = poll_interval
         self.stages = ["Pipeline"]
-        self.pipe_id = (
-            subprocess.check_output(
-                "cat /proc/self/cgroup | grep name= | awk -F/ '{print $3}'",
-                shell=True,
-                stderr=subprocess.STDOUT,
-            )
-            .decode()
-            .strip()
-        )
+        self.__pipe_id__ = None
         self.executor.set_pipeline(self)
         # ---
-        kwargs["image"] = kwargs.get("image", "arjoonn/jci:latest")
+        kwargs["image"] = kwargs.get("image", "arjoonn/jci")
         kwargs["timeout"] = kwargs.get("timeout", 15 * 60)
         kwargs["env"] = kwargs.get("env", {})
         kwargs["stage"] = "Pipeline"
         self.pipe_kwargs = kwargs
         self.stage_kwargs = None
+
+    @property
+    def pipe_id(self):
+        if self.__pipe_id__ is None:
+            self.__pipe_id__ = self.__get_pipe_id__()
+        return self.__pipe_id__
+
+    def __get_pipe_id__(self):
+        """
+        This is mainly here so that during testing we can override this and
+        provide a different way to get the pipe id
+        """
+        with open(f"/jaypore_ci/cidfiles/{self.repo.sha}", "r", encoding="utf-8") as fl:
+            return fl.read().strip()
 
     def logging(self):
         """
@@ -274,14 +339,16 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         )
 
     def __enter__(self):
-        self.executor.__enter__()
-        self.remote.__enter__()
+        ensure_version_is_correct()
+        self.executor.setup()
+        self.remote.setup()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.run()
-        self.executor.__exit__(exc_type, exc_value, traceback)
-        self.remote.__exit__(exc_type, exc_value, traceback)
+        if Pipeline.__run_on_exit__:
+            self.run()
+            self.executor.teardown()
+            self.remote.teardown()
         return False
 
     def get_status(self) -> Status:

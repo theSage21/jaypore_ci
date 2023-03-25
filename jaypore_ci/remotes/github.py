@@ -4,12 +4,10 @@ A github remote git host.
 This is used to report pipeline status to the remote.
 """
 import os
-from pathlib import Path
-from urllib.parse import urlparse
 
 import requests
 
-from jaypore_ci.interfaces import Remote, RemoteApiFailed, Repo
+from jaypore_ci.interfaces import Remote, RemoteApiFailed, Repo, RemoteInfo
 from jaypore_ci.logging import logger
 
 
@@ -36,13 +34,13 @@ class Github(Remote):  # pylint: disable=too-many-instance-attributes
             - Create a new pull request for that branch
             - Allow posting updates using the gitea token provided
         """
-        remote = urlparse(repo.remote)
+        rem = RemoteInfo.parse(repo.remote)
         os.environ["JAYPORE_COMMIT_BRANCH"] = repo.branch
         os.environ["JAYPORE_COMMIT_SHA"] = repo.sha
         return cls(
             root="https://api.github.com",
-            owner=Path(remote.path).parts[1],
-            repo=Path(remote.path).parts[2].replace(".git", ""),
+            owner=rem.owner,
+            repo=rem.repo,
             branch=repo.branch,
             token=os.environ["JAYPORE_GITHUB_TOKEN"],
             sha=repo.sha,

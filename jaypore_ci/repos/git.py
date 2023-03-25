@@ -39,11 +39,33 @@ class Git(Repo):
         return cls(sha=sha, branch=branch, remote=remote, commit_message=message)
 
     @classmethod
-    def _get_git_remote_url(cls) -> str:
+    def _get_remote_url(cls) -> str:
         return (
             subprocess.check_output(
-                "git remote -v | grep push | awk '{print $2}'", shell=True
+                "git remote -v | grep push | head -n1 | awk '{print $2}'", shell=True
             )
             .decode()
             .strip()
         )
+
+    @classmethod
+    def _parse_remote_url(cls, remote_url: str) -> str:
+        """
+        Parses remote URL and validates it.
+        """
+        if "@" in remote_url:
+            remote_url = cls._convert_ssh_to_https(remote_url)
+        assert (
+            "https://" in remote_url and ".git" in remote_url
+        ), f"Only https & ssh remotes are supported. (Remote: {remote_url})"
+        return remote_url
+
+    @classmethod
+    def _convert_ssh_to_https(cls, url: str) -> str:
+        """
+        Converts ssh URL into https.
+        """
+        ssh_url_pattern = r".+@(?P<uri>.+):(?P<path>.+\.git)"
+        m = re.match(ssh_url_pattern, url)
+        assert m, f"Failed to parse ssh URL to https! (URL: {url})"
+        return f"https://{m.group('uri')}/{m.group('path')}"
