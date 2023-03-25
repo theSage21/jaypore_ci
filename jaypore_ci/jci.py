@@ -101,7 +101,6 @@ class Job:  # pylint: disable=too-many-instance-attributes
     :param env:             A dictionary of environment variables to pass to
                             the docker run command.
     :param executor_kwargs: A dictionary of additional kwargs to pass to the 
-                            executor run command.
     :param children:        Defines which jobs depend on this job's output
                             status.
     :param parents:         Defines which jobs need to pass before this job can
