@@ -13,7 +13,8 @@ version_map = {
                 "command simply by using the `executor_kwargs` argument while "
                 "defining the job. Read more in `Passing extra_hosts and other "
                 "arguments to docker`_."
-            )
+            ),
+            f"{NEW}: SSH remotes are now compatible with Jaypore CI.",
         ],
         "instructions": [],
     },

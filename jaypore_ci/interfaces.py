@@ -5,6 +5,8 @@ Currently only gitea and docker are supported as remote and executor
 respectively.
 """
 from enum import Enum
+from pathlib import Path
+from urllib.parse import urlparse
 from typing import NamedTuple, List
 
 
@@ -32,6 +34,58 @@ class Status(Enum):
     PASSED = 50
     TIMEOUT = 60
     SKIPPED = 70
+
+
+class RemoteInfo(NamedTuple):
+    """
+    Holds information about the remote irrespective of if the remote was ssh or
+    https.
+    """
+
+    netloc: str
+    owner: str
+    repo: str
+    original: str
+
+    @classmethod
+    def parse(cls, remote: str) -> "RemoteInfo":
+        """
+        Given a git remote url string, parses and breaks down information
+        contained in the url.
+
+        Works with the following formats:
+
+            ssh://git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
+            ssh+git://git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
+
+            git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
+            git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
+
+            https://gitea.arjoonn.com/midpath/jaypore_ci.git
+            http://gitea.arjoonn.com/midpath/jaypore_ci.git
+        """
+        original = remote
+        if (
+            ("ssh://" in remote or "ssh+git://" in remote or "://" not in remote)
+            and "@" in remote
+            and remote.endswith(".git")
+        ):
+            _, remote = remote.split("@")
+            netloc, path = remote.split(":")
+            owner, repo = path.split("/")
+            return RemoteInfo(
+                netloc=netloc,
+                owner=owner,
+                repo=repo.replace(".git", ""),
+                original=original,
+            )
+        url = urlparse(remote)
+        return RemoteInfo(
+            netloc=url.netloc,
+            owner=Path(url.path).parts[1],
+            repo=Path(url.path).parts[2].replace(".git", ""),
+            original=original,
+        )
 
 
 class Repo:

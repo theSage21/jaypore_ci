@@ -387,6 +387,15 @@ and so you can use anything that is mentioned in that documentation.
   :language: python
   :linenos:
 
+Using a github remote
+---------------------
+
+If you want to use github instead of gitea, it's very simple to use.
+
+.. literalinclude:: examples/github_remote.py
+  :language: python
+  :linenos:
+
 
 Contributing
 ============
@@ -412,28 +421,4 @@ Reference
 Changelog
 =========
 
-0.2.29
-------
-
--   🐞: When gitea token does not have enough scope log correctly and exit
-
-0.2.28
-------
-
--   🐞: When there are multiple (push) remotes, Jaypore CI will pick the first one and use that.
-
-0.2.27
-------
-
--   🎁: Jobs older than 1 week will be removed before starting a new pipeline.
-
-0.2.26
-------
-
--   ⚙️: The Dockerfile inside `cicd/Dockerfile` now requires a build arg that specifies the version of Jaypore CI to install.
-
-0.2.25
-------
-
--   🎁: A dockerfile is now used to send context of the codebase to the docker daemon instead of directly mounting the code. This allows us to easily use remote systems for jobs
 
