@@ -1,7 +1,6 @@
 from jaypore_ci import jci
 
 with jci.Pipeline() as p:
-
     with p.stage("build"):
         p.job("DockDev", f"docker build --target DevEnv -t {p.repo.sha}_dev .")
 

@@ -4,7 +4,6 @@ from jaypore_ci import jci
 # If they exit with a Non ZERO code they are marked as FAILED, otherwise
 # they are assumed to be PASSED
 with jci.Pipeline() as p:
-
     # Since we define all jobs in this section as `is_service=True`, they will
     # keep running for as long as the pipeline runs.
     with p.stage("Services", is_service=True):
