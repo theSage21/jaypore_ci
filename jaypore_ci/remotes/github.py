@@ -34,13 +34,12 @@ class Github(Remote):  # pylint: disable=too-many-instance-attributes
             - Create a new pull request for that branch
             - Allow posting updates using the gitea token provided
         """
-        rem = RemoteInfo.parse(repo.remote)
         os.environ["JAYPORE_COMMIT_BRANCH"] = repo.branch
         os.environ["JAYPORE_COMMIT_SHA"] = repo.sha
         return cls(
             root="https://api.github.com",
-            owner=rem.owner,
-            repo=rem.repo,
+            owner=repo.remote.owner,
+            repo=repo.remote.repo,
             branch=repo.branch,
             token=os.environ["JAYPORE_GITHUB_TOKEN"],
             sha=repo.sha,

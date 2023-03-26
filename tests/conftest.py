@@ -69,8 +69,11 @@ def set_env_keys():
                 remotes.Github,
             ],
             remote_url=[
-                "https://fake_remote.com/fake_owner/fake_repo.git",
-                "user@fake_remote.com:fake_owner/fake_repo.git",
+                "https://fake-remote.com/fake_owner/fake_repo.git",
+                "http://fake-remote.com/midpath/jaypore_ci.git",
+                "ssh://user@fake-remote.com:fake_owner/fake_repo.git",
+                "ssh+git://user@fake-remote.com:fake_owner/fake_repo.git",
+                "user@fake-remote.com:fake_owner/fake_repo.git",
             ],
             repo=[repos.Git],
         )
