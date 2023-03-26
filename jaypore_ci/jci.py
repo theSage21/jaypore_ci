@@ -34,6 +34,7 @@ __all__ = ["Pipeline", "Job"]
 FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 PREFIX = "JAYPORE_"
 
+
 # Check if we need to upgrade Jaypore CI
 def ensure_version_is_correct():
     """

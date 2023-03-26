@@ -59,17 +59,19 @@ class RemoteInfo(NamedTuple):
             ssh+git://git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
 
             git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
-        
+
             https://gitea.arjoonn.com/midpath/jaypore_ci.git
             http://gitea.arjoonn.com/midpath/jaypore_ci.git
         """
         if cls._is_remote_ssh(remote):
-            return cls._parse_ssh_remote(remote)   
-        
+            return cls._parse_ssh_remote(remote)
+
         assert (
-            ("https://" in remote or "http://" in remote) and ".git" in remote
-        ), f"Only https, http & ssh remotes are supported. (Remote: {remote})"
-        
+            "https://" in remote or "http://" in remote
+        ) and ".git" in remote, (
+            f"Only https, http & ssh remotes are supported. (Remote: {remote})"
+        )
+
         url = urlparse(remote)
         return RemoteInfo(
             netloc=url.netloc,
@@ -77,10 +79,14 @@ class RemoteInfo(NamedTuple):
             repo=Path(url.path).parts[2].replace(".git", ""),
             original=remote,
         )
-    
+
     @classmethod
     def _is_remote_ssh(cls, remote: str) -> bool:
-        return ("ssh://" in remote or "ssh+git://" in remote or "://" not in remote) and "@" in remote and remote.endswith(".git")
+        return (
+            ("ssh://" in remote or "ssh+git://" in remote or "://" not in remote)
+            and "@" in remote
+            and remote.endswith(".git")
+        )
 
     @classmethod
     def _parse_ssh_remote(cls, remote: str) -> "RemoteInfo":
@@ -94,6 +100,7 @@ class RemoteInfo(NamedTuple):
             repo=repo.replace(".git", ""),
             original=original,
         )
+
 
 class Repo:
     """
