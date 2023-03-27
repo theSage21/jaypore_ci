@@ -28,7 +28,7 @@ class GitRemote(Remote):  # pylint: disable=too-many-instance-attributes
         """
         assert isinstance(repo, Git), "Git remote can only work in a git repo"
         return cls(
-            repo=repo.remote.repo,
+            repo=repo,
             branch=repo.branch,
             sha=repo.sha,
         )

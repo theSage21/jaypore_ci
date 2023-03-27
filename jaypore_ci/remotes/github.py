@@ -37,7 +37,7 @@ class Github(Remote):  # pylint: disable=too-many-instance-attributes
         os.environ["JAYPORE_COMMIT_BRANCH"] = repo.branch
         os.environ["JAYPORE_COMMIT_SHA"] = repo.sha
         return cls(
-            root="https://api.github.com",
+            root=f"https://{repo.remote.netloc}",
             owner=repo.remote.owner,
             repo=repo.remote.repo,
             branch=repo.branch,

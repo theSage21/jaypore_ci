@@ -1,9 +1,10 @@
 import json
+import requests
 
-from typing import NamedTuple
+from typing import NamedTuple, Callable, List
 from collections import defaultdict
 
-import requests
+from jaypore_ci.remotes import Gitea, Github
 
 
 class MockResponse(NamedTuple):
@@ -11,41 +12,59 @@ class MockResponse(NamedTuple):
     body: str
     content_type: str
 
-    def json(self):
+    def json(self) -> str:
         return json.loads(self.body)
 
     @property
-    def text(self):
+    def text(self) -> str:
         return self.body
 
 
 class Mock:
     registry = defaultdict(list)
     index = defaultdict(int)
-    gitea_added = False
-    github_added = False
+    gitea_remotes: List[str] = []
+    github_remotes: List[str] = []
 
     @classmethod
-    def get(cls, url, status=200, body="", content_type="text/html"):
+    def get(
+        cls,
+        url: str,
+        status: int = 200,
+        body: str = "",
+        content_type: str = "text/html",
+    ) -> None:
         cls.registry["get", url].append(
             MockResponse(status_code=status, body=body, content_type=content_type)
         )
 
     @classmethod
-    def post(cls, url, status=200, body="", content_type="text/html"):
+    def post(
+        cls,
+        url: str,
+        status: int = 200,
+        body: str = "",
+        content_type: str = "text/html",
+    ) -> None:
         cls.registry["post", url].append(
             MockResponse(status_code=status, body=body, content_type=content_type)
         )
 
     @classmethod
-    def patch(cls, url, status=200, body="", content_type="text/html"):
+    def patch(
+        cls,
+        url: str,
+        status: int = 200,
+        body: str = "",
+        content_type: str = "text/html",
+    ) -> None:
         cls.registry["patch", url].append(
             MockResponse(status_code=status, body=body, content_type=content_type)
         )
 
     @classmethod
-    def handle(cls, method):
-        def handler(url, **_):
+    def handle(cls, method: str) -> Callable:
+        def handler(url: str, **_):
             options = cls.registry[method, url]
             index = cls.index[method, url]
             resp = options[index]
@@ -55,7 +74,7 @@ class Mock:
         return handler
 
 
-def add_gitea_mocks(gitea):
+def add_gitea_mocks(gitea: Gitea, remote_url: str) -> None:
     ISSUE_ID = 1
     # --- create PR
     create_pr_url = f"{gitea.api}/repos/{gitea.owner}/{gitea.repo}/pulls"
@@ -71,10 +90,10 @@ def add_gitea_mocks(gitea):
     Mock.patch(f"{gitea.api}/repos/{gitea.owner}/{gitea.repo}/pulls/{ISSUE_ID}")
     # --- set commit status
     Mock.post(f"{gitea.api}/repos/{gitea.owner}/{gitea.repo}/statuses/{gitea.sha}")
-    Mock.gitea_added = True
+    Mock.gitea_remotes.append(remote_url)
 
 
-def add_github_mocks(github):
+def add_github_mocks(github: Github, remote_url: str) -> None:
     ISSUE_ID = 1
     # --- create PR
     create_pr_url = f"{github.api}/repos/{github.owner}/{github.repo}/pulls"
@@ -95,7 +114,7 @@ def add_github_mocks(github):
     Mock.patch(f"{github.api}/repos/{github.owner}/{github.repo}/pulls/{ISSUE_ID}")
     # --- set commit status
     Mock.post(f"{github.api}/repos/{github.owner}/{github.repo}/statuses/{github.sha}")
-    Mock.github_added = True
+    Mock.github_remotes.append(remote_url)
 
 
 requests.get = Mock.handle("get")

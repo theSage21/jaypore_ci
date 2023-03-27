@@ -89,10 +89,17 @@ def pipeline(request):
         executor=request.param["executor"],
         reporter=request.param["reporter"],
     )
-    if request.param["remote"] == remotes.Gitea and not Mock.gitea_added:
-        add_gitea_mocks(builder().remote)
-    if request.param["remote"] == remotes.Github and not Mock.github_added:
-        add_github_mocks(builder().remote)
+    if (
+        request.param["remote"] == remotes.Gitea
+        and not request.param["remote_url"] in Mock.gitea_remotes
+    ):
+        add_gitea_mocks(builder().remote, request.param["remote_url"])
+    if (
+        request.param["remote"] == remotes.Github
+        and not request.param["remote_url"] in Mock.github_remotes
+    ):
+        add_github_mocks(builder().remote, request.param["remote_url"])
+
     if request.param["remote"] == remotes.Email:
         with unittest.mock.patch("smtplib.SMTP_SSL", autospec=True):
             yield builder
@@ -107,4 +114,6 @@ def pipeline(request):
 )
 def doc_example_filepath(request):
     set_env_keys()
+    os.environ["JAYPORECI_DOCS_EXAMPLE_TEST_MODE"] = "1"
     yield request.param
+    os.environ.pop("JAYPORECI_DOCS_EXAMPLE_TEST_MODE")

@@ -180,8 +180,8 @@ class Remote:
     """
 
     def __init__(self, *, sha, branch):
-        self.sha = sha
         self.branch = branch
+        self.sha = sha
 
     def publish(self, report: str, status: str):
         """
