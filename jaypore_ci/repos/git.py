@@ -41,7 +41,7 @@ class Git(Repo):
 
     @classmethod
     def _get_remote_url(cls) -> str:
-        if os.environ.get("JAYPORECI_DOCS_EXAMPLE_TEST_MODE", False):
+        if os.environ.get("JAYPORECI_DOCS_EXAMPLES_TEST_MODE", False):
             return "https://test-mode.com/test/test-remote.git"
         return (
             subprocess.check_output(

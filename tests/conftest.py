@@ -114,6 +114,6 @@ def pipeline(request):
 )
 def doc_example_filepath(request):
     set_env_keys()
-    os.environ["JAYPORECI_DOCS_EXAMPLE_TEST_MODE"] = "1"
+    os.environ["JAYPORECI_DOCS_EXAMPLES_TEST_MODE"] = "1"
     yield request.param
-    os.environ.pop("JAYPORECI_DOCS_EXAMPLE_TEST_MODE")
+    os.environ.pop("JAYPORECI_DOCS_EXAMPLES_TEST_MODE")
