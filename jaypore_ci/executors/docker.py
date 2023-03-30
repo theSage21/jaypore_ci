@@ -61,21 +61,34 @@ class Docker(Executor):
 
     def delete_old_containers(self):
         a_week_back = pendulum.now().subtract(days=7)
+        pipe_ids_removed = set()
         for container in tqdm(
             self.docker.containers.list(filters={"status": "exited"}),
             desc="Removing jobs older than a week",
         ):
             if "jayporeci_" not in container.name:
                 continue
+            if "__job__" in container.name:
+                pipe_ids_removed.add(
+                    container.name.split("__job__")[1].split("__", 1)[0]
+                )
             finished_at = pendulum.parse(container.attrs["State"]["FinishedAt"])
             if finished_at <= a_week_back:
                 container.remove(v=True)
+        for network in tqdm(
+            self.docker.networks.list(
+                names=[self.get_net(pipe_id=pipe_id) for pipe_id in pipe_ids_removed]
+            ),
+            desc="Removing related networks",
+        ):
+            network.remove()
 
-    def get_net(self):
+    def get_net(self, *, pipe_id=None):
         """
         Return a network name based on what the curent pipeline is.
         """
-        return f"jayporeci__net__{self.pipe_id}" if self.pipe_id is not None else None
+        pipe_id = pipe_id if pipe_id is not None else self.pipe_id
+        return f"jayporeci__net__{pipe_id}" if pipe_id is not None else None
 
     def create_network(self):
         """

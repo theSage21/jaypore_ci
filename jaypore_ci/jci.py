@@ -35,7 +35,7 @@ FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 PREFIX = "JAYPORE_"
 
 # Check if we need to upgrade Jaypore CI
-def ensure_version_is_correct():
+def ensure_version_is_correct() -> None:
     """
     Ensure that the version of Jaypore CI that is running, the code inside
     cicd.py, and pre-push.sh are at compatible versions.

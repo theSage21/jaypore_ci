@@ -378,7 +378,7 @@ that will be used to run your job, like when you want to pass `extra_hosts` or
 `device_requests` to the container.
 
 To do such things you can use the `executor_kwargs` argument while defining the
-job using :method:`~jaypore_ci.jci.Pipeline.job`. Anything that you pass to
+job using :meth:`~jaypore_ci.jci.Pipeline.job`. Anything that you pass to
 this dictionary will be handed off to `Docker-py
 <https://docker-py.readthedocs.io/en/stable/containers.html#docker.models.containers.ContainerCollection.run>`_
 and so you can use anything that is mentioned in that documentation.
@@ -420,5 +420,4 @@ Reference
 
 Changelog
 =========
-
 

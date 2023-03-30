@@ -18,6 +18,9 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx_rtd_theme",
     "sphinxcontrib.mermaid",
+    "sphinx.ext.coverage",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.todo",
 ]
 
 templates_path = ["_templates"]
@@ -51,3 +54,4 @@ html_theme_options = {
     # "titles_only": False,
 }
 master_doc = "contents"
+todo_include_todos = True

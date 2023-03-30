@@ -5,10 +5,15 @@ set -o nounset
 set -o pipefail
 
 build() {
+    echo "Cleaning docs build"
+    touch docs/build
+    rm -rf docs/build && mkdir -p docs/build
+    ls -al docs
     echo "Building docs"
     sphinx-apidoc -o docs/source/reference ./jaypore_ci
     (python3 cicd/render_changelog.py >> docs/source/index.rst)
     sphinx-build docs/source/ docs/build
+    sphinx-build docs/source/ docs/build -b coverage
 
     # Create pre-push for repo
     PREPUSH=docs/build/pre-push.sh

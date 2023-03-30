@@ -6,6 +6,15 @@ CHANGE = "⚙️"
 BUGFIX = "🐞"
 
 version_map = {
+    V("0.2.31"): {
+        "changes": [
+            (
+                f"{NEW}: Old networks will also be removed automatically for "
+                "jobs that are older than a week."
+            ),
+        ],
+        "instructions": [],
+    },
     V("0.2.30"): {
         "changes": [
             (
