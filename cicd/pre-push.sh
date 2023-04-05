@@ -92,6 +92,13 @@ helptext(){
         usually automatically invoked inside the docker container created by
         the `hook` command.
 
+        activate
+        --------
+
+        When we clone a new repo, Jaypore CI is already available in it but the
+        pre-push hooks are not established. This command will establish the
+        hook for the repo.
+
         helptext
         --------
 
@@ -101,6 +108,32 @@ helptext(){
         Show this help document and exit. If no command is specified this
         command is the default one.
     "
+}
+
+activate(){
+    echo "Which environment would you like to use?"
+    echo "Keys are available for:"
+    REPO_ROOT=$(git rev-parse --show-toplevel)
+    for env in $REPO_ROOT/secrets/*key;
+    do
+        echo "    - " $(basename $env | awk -F\. '{print $1}')
+    done
+    echo "Available environments are:"
+    for env in $REPO_ROOT/secrets/*enc;
+    do
+        echo "    - " $(basename $env | awk -F\. '{print $1}')
+    done
+    echo "---------"
+    read -r -p "Enter env name to use: " response
+    echo $response
+    if test -f "$REPO_ROOT/.git/hooks/pre-push"; then
+        echo "$REPO_ROOT/.git/hooks/pre-push already exists. Please add the following line to the file manually."
+        echo ""
+        echo "ENV=$response $REPO_ROOT/cicd/pre-push.sh hook"
+    else
+        echo "ENV=$response $REPO_ROOT/cicd/pre-push.sh hook" > $REPO_ROOT/.git/hooks/pre-push
+        chmod u+x $REPO_ROOT/.git/hooks/pre-push
+    fi
 }
 
 EXPECTED_JAYPORECI_VERSION=latest
