@@ -27,7 +27,7 @@ build() {
     grep version pyproject.toml | python3 -c 'print(input().upper().replace(" ", "").replace("\"", ""))' >> $PREPUSH
 
     echo "" >> $PREPUSH
-    echo '("$@")' >> $PREPUSH
+    echo '("$CMD")' >> $PREPUSH
 
     # Copy other files
     cp cicd/Dockerfile docs/build

@@ -61,7 +61,50 @@ hook() {
         bash -c "ENV=$ENV bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/pre-push.sh run"
     echo '----------------------------------------------'
 }
+
+helptext(){
+    echo "
+    Jaypore CI: pre-push.sh
+    =======================
+
+    This pre-push.sh script has a few functions that can be used to run Jaypore CI.
+    You can use it like:
+
+        $ bash cicd/pre-push.sh <cmd>
+
+    The available commands are as follows:
+
+        hook
+        ----
+
+            $ bash cicd/pre-push.sh hook
+
+        This command is usually put inside the `.git/hooks/pre-push` file
+        and is used to indicate that the pre-push hook has been triggered.
+        It will create a docker container and run Jaypore CI inside that.
+
+        run
+        ---
+
+            $ bash cicd/pre-push.sh run
+
+        This command runs the actual `cicd/cicd.py` file using python. It is
+        usually automatically invoked inside the docker container created by
+        the `hook` command.
+
+        helptext
+        --------
+
+            $ bash cicd/pre-push.sh helptext
+            $ bash cicd/pre-push.sh
+
+        Show this help document and exit. If no command is specified this
+        command is the default one.
+    "
+}
+
 EXPECTED_JAYPORECI_VERSION=latest
+CMD="${@:-helptext}" 
 
 # --------- runner
-("$@")
+("$CMD")
