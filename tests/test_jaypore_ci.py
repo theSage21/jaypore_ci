@@ -1,5 +1,5 @@
 import pytest
-from conftest import ok
+from .conftest import ok
 from jaypore_ci.changelog import version_map
 from jaypore_ci.config import const
 

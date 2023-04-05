@@ -1,6 +1,6 @@
 from hypothesis import given, strategies as st, settings, HealthCheck
 
-from conftest import ok
+from .conftest import ok
 from jaypore_ci.clean import allowed_alphabet
 
 
