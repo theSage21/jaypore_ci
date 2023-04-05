@@ -1,5 +1,6 @@
 from hypothesis import given, strategies as st, settings, HealthCheck
 
+from conftest import ok
 from jaypore_ci.clean import allowed_alphabet
 
 
@@ -8,4 +9,4 @@ from jaypore_ci.clean import allowed_alphabet
 def test_hypo_jobs(pipeline, name):
     pipeline = pipeline()
     with pipeline as p:
-        p.job(name, name)
+        p.job(name, ok())
