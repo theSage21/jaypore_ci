@@ -1,7 +1,7 @@
 from hypothesis import given, strategies as st, settings, HealthCheck
 
-from .conftest import ok
 from jaypore_ci.clean import allowed_alphabet
+from .conftest import ok
 
 
 @given(st.text(alphabet=allowed_alphabet, min_size=1))
