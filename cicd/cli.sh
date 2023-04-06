@@ -62,6 +62,33 @@ hook() {
     echo '----------------------------------------------'
 }
 
+
+activate(){
+    echo "Which environment would you like to use?"
+    echo "Keys are available for:"
+    REPO_ROOT=$(git rev-parse --show-toplevel)
+    for env in $REPO_ROOT/secrets/*key;
+    do
+        echo "    - " $(basename $env | awk -F\. '{print $1}')
+    done
+    echo "Available environments are:"
+    for env in $REPO_ROOT/secrets/*enc;
+    do
+        echo "    - " $(basename $env | awk -F\. '{print $1}')
+    done
+    echo "---------"
+    read -r -p "Enter env name to use: " response
+    echo $response
+    if test -f "$REPO_ROOT/.git/hooks/pre-push"; then
+        echo "$REPO_ROOT/.git/hooks/pre-push already exists. Please add the following line to the file manually."
+        echo ""
+        echo "ENV=$response $REPO_ROOT/cicd/pre-push.sh hook"
+    else
+        echo "ENV=$response $REPO_ROOT/cicd/pre-push.sh hook" > $REPO_ROOT/.git/hooks/pre-push
+        chmod u+x $REPO_ROOT/.git/hooks/pre-push
+    fi
+}
+
 helptext(){
     echo "
     Jaypore CI: pre-push.sh
@@ -109,33 +136,6 @@ helptext(){
         command is the default one.
     "
 }
-
-activate(){
-    echo "Which environment would you like to use?"
-    echo "Keys are available for:"
-    REPO_ROOT=$(git rev-parse --show-toplevel)
-    for env in $REPO_ROOT/secrets/*key;
-    do
-        echo "    - " $(basename $env | awk -F\. '{print $1}')
-    done
-    echo "Available environments are:"
-    for env in $REPO_ROOT/secrets/*enc;
-    do
-        echo "    - " $(basename $env | awk -F\. '{print $1}')
-    done
-    echo "---------"
-    read -r -p "Enter env name to use: " response
-    echo $response
-    if test -f "$REPO_ROOT/.git/hooks/pre-push"; then
-        echo "$REPO_ROOT/.git/hooks/pre-push already exists. Please add the following line to the file manually."
-        echo ""
-        echo "ENV=$response $REPO_ROOT/cicd/pre-push.sh hook"
-    else
-        echo "ENV=$response $REPO_ROOT/cicd/pre-push.sh hook" > $REPO_ROOT/.git/hooks/pre-push
-        chmod u+x $REPO_ROOT/.git/hooks/pre-push
-    fi
-}
-
 EXPECTED_JAYPORECI_VERSION=latest
 CMD="${@:-helptext}" 
 
