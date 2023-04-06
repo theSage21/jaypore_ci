@@ -53,6 +53,7 @@ class Const(NamedTuple):
     version: Version = get_version()
     repo_root: str = os.environ.get("REPO_ROOT")
     repo_sha: str = os.environ.get("REPO_SHA")
+    env: str = os.environ.get("ENV")
 
 
 const = Const()
