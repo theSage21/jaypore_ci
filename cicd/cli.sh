@@ -24,28 +24,20 @@ run() {
     python /jaypore_ci/run/$JAYPORE_CODE_DIR/cicd.py
 }
 
-
-hook() {
-    cd /jaypore_ci/repo
-    SHA=$(git rev-parse HEAD)
-    JAYPORE_CODE_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-    JAYPORE_CODE_DIR=$(basename $JAYPORE_CODE_DIR)
-    # We will mount the current dir into /jaypore_ci/repo
-    # Then we will copy things over to /jaypore_ci/run
-    # Then we will run git clean to remove anything that is not in git
-    # Then we call the actual cicd code
-    #
-    # We also pass docker.sock and the docker executable to the run so that
-    # jaypore_ci can create docker containers
-    mkdir -p /tmp/jayporeci__cidfiles &> /dev/null
+build(){
     echo '----------------------------------------------'
     echo "Jaypore CI"
     echo "Building image    : "
     docker build \
         --build-arg JAYPORECI_VERSION=$EXPECTED_JAYPORECI_VERSION \
         -t im_jayporeci__pipe__$SHA \
-        -f $REPO_ROOT/$JAYPORE_CODE_DIR/Dockerfile \
+        -f $REPO_ROOT/cicd/Dockerfile \
         $REPO_ROOT
+}
+
+
+hook() {
+    mkdir -p /tmp/jayporeci__cidfiles &> /dev/null
     echo "Running container : "
     docker run \
         -d \
