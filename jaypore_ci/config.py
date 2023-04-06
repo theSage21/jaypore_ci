@@ -50,9 +50,6 @@ def get_version() -> Version:
 
 
 class Const(NamedTuple):
-    expected_version: Version = Version.parse(
-        os.environ.get("EXPECTED_JAYPORECI_VERSION")
-    )
     version: Version = get_version()
     repo_root: str = os.environ.get("REPO_ROOT")
     repo_sha: str = os.environ.get("REPO_SHA")

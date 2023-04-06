@@ -24,4 +24,4 @@ run     rm -rf jaypore_ci dist
 run     ls -alR .
 add     cicd/cli.sh /cli.sh
 workdir /jaypore_ci/run/
-entrypoint ["/bin/bash", "/cli.sh"]
+entrypoint ["/usr/local/bin/python", "-m", "jaypore_ci.cli"]

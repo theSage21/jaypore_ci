@@ -34,42 +34,6 @@ __all__ = ["Pipeline", "Job"]
 FIN_STATUSES = (Status.FAILED, Status.PASSED, Status.TIMEOUT, Status.SKIPPED)
 PREFIX = "JAYPORE_"
 
-# Check if we need to upgrade Jaypore CI
-def ensure_version_is_correct() -> None:
-    """
-    Ensure that the version of Jaypore CI that is running, the code inside
-    cicd.py, and pre-push.sh are at compatible versions.
-
-    If versions do not match then this function will print out instructions on
-    what to do in order to upgrade.
-
-    Downgrades are not allowed, you need to re-install that specific version.
-    """
-    if (
-        const.expected_version is not None
-        and const.version is not None
-        and const.expected_version != const.version
-    ):
-        print("Expected : ", const.expected_version)
-        print("Got      : ", const.version)
-        if const.version > const.expected_version:
-            print(
-                "Your current version is higher than the expected one. Please "
-                "re-install Jaypore CI in this repo as downgrades are not "
-                "supported."
-            )
-        if const.version < const.expected_version:
-            print("--- Upgrade Instructions ---")
-            for version in sorted(version_map.keys()):
-                if version < const.version or version > const.expected_version:
-                    continue
-                for line in version_map[version]["instructions"]:
-                    print(line)
-            print("--- -------------------- ---")
-        raise BadConfig(
-            "Version mismatch between arjoonn/jci:<tag> docker container and pre-push.sh script"
-        )
-
 
 class Job:  # pylint: disable=too-many-instance-attributes
     """
