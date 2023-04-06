@@ -24,20 +24,9 @@ run() {
     python /jaypore_ci/run/$JAYPORE_CODE_DIR/cicd.py
 }
 
-__build__(){
-    echo '----------------------------------------------'
-    echo "Jaypore CI"
-    echo "Building image    : "
-    docker build \
-        --build-arg JAYPORECI_VERSION=$EXPECTED_JAYPORECI_VERSION \
-        -t im_jayporeci__pipe__$SHA \
-        -f $REPO_ROOT/cicd/Dockerfile \
-        $REPO_ROOT
-}
-
 
 hook() {
-    __build__
+    python3 -m jaypore_ci.cli build
     mkdir -p /tmp/jayporeci__cidfiles &> /dev/null
     echo "Running container : "
     docker run \

@@ -54,6 +54,8 @@ class Const(NamedTuple):
         os.environ.get("EXPECTED_JAYPORECI_VERSION")
     )
     version: Version = get_version()
+    repo_root: str = os.environ.get("REPO_ROOT")
+    repo_sha: str = os.environ.get("REPO_SHA")
 
 
 const = Const()
