@@ -58,7 +58,7 @@ hook() {
         --cidfile /tmp/jayporeci__cidfiles/$SHA \
         --workdir /jaypore_ci/run \
         im_jayporeci__pipe__$SHA \
-        bash -c "ENV=$ENV bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/pre-push.sh run"
+        bash -c "ENV=$ENV bash /jaypore_ci/repo/$JAYPORE_CODE_DIR/cli.sh run"
     echo '----------------------------------------------'
 }
 
@@ -82,29 +82,29 @@ activate(){
     if test -f "$REPO_ROOT/.git/hooks/pre-push"; then
         echo "$REPO_ROOT/.git/hooks/pre-push already exists. Please add the following line to the file manually."
         echo ""
-        echo "ENV=$response $REPO_ROOT/cicd/pre-push.sh hook"
+        echo "ENV=$response $REPO_ROOT/cicd/cli.sh hook"
     else
-        echo "ENV=$response $REPO_ROOT/cicd/pre-push.sh hook" > $REPO_ROOT/.git/hooks/pre-push
+        echo "ENV=$response $REPO_ROOT/cicd/cli.sh hook" > $REPO_ROOT/.git/hooks/pre-push
         chmod u+x $REPO_ROOT/.git/hooks/pre-push
     fi
 }
 
 helptext(){
     echo "
-    Jaypore CI: pre-push.sh
+    Jaypore CI: cli.sh
     =======================
 
-    This pre-push.sh script has a few functions that can be used to run Jaypore CI.
+    This cli.sh script has a few functions that can be used to run Jaypore CI.
     You can use it like:
 
-        $ bash cicd/pre-push.sh <cmd>
+        $ bash cicd/cli.sh <cmd>
 
     The available commands are as follows:
 
         hook
         ----
 
-            $ bash cicd/pre-push.sh hook
+            $ bash cicd/cli.sh hook
 
         This command is usually put inside the `.git/hooks/pre-push` file
         and is used to indicate that the pre-push hook has been triggered.
@@ -113,7 +113,7 @@ helptext(){
         run
         ---
 
-            $ bash cicd/pre-push.sh run
+            $ bash cicd/cli.sh run
 
         This command runs the actual `cicd/cicd.py` file using python. It is
         usually automatically invoked inside the docker container created by
@@ -129,8 +129,8 @@ helptext(){
         helptext
         --------
 
-            $ bash cicd/pre-push.sh helptext
-            $ bash cicd/pre-push.sh
+            $ bash cicd/cli.sh helptext
+            $ bash cicd/cli.sh
 
         Show this help document and exit. If no command is specified this
         command is the default one.
