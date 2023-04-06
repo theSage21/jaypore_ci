@@ -43,6 +43,11 @@ def _build():
     )
 
 
+# ---------------
+# Cli subcommands
+# ---------------
+
+
 @click.group()
 def cli():
     "Jaypore CI"
