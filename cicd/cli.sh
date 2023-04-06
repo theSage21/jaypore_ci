@@ -26,8 +26,7 @@ run() {
 
 
 hook() {
-    echo $PWD
-    ls -al
+    cd /jaypore_ci/repo
     SHA=$(git rev-parse HEAD)
     JAYPORE_CODE_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     JAYPORE_CODE_DIR=$(basename $JAYPORE_CODE_DIR)
