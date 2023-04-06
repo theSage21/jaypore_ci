@@ -27,7 +27,6 @@ run() {
 
 hook() {
     SHA=$(git rev-parse HEAD)
-    REPO_ROOT=$(git rev-parse --show-toplevel)
     JAYPORE_CODE_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
     JAYPORE_CODE_DIR=$(basename $JAYPORE_CODE_DIR)
     # We will mount the current dir into /jaypore_ci/repo
@@ -66,7 +65,6 @@ hook() {
 activate(){
     echo "Which environment would you like to use?"
     echo "Keys are available for:"
-    REPO_ROOT=$(git rev-parse --show-toplevel)
     for env in $REPO_ROOT/secrets/*key;
     do
         echo "    - " $(basename $env | awk -F\. '{print $1}')
@@ -136,6 +134,14 @@ helptext(){
         command is the default one.
     "
 }
+if [ -z ${REPO_ROOT+x} ]; then
+    echo "REPO_ROOT : Not found"
+    echo "Stopping"
+    exit 1
+else
+    echo "REPO_ROOT : $REPO_ROOT"
+    echo "---"
+fi
 EXPECTED_JAYPORECI_VERSION=latest
 CMD="${@:-helptext}" 
 

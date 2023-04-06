@@ -22,4 +22,6 @@ run     ls -alR dist
 run     python3 -m pip install dist/jaypore_ci-*.whl
 run     rm -rf jaypore_ci dist
 run     ls -alR .
+add     cicd/cli.sh /cli.sh
 workdir /jaypore_ci/run/
+entrypoint /cli.sh
