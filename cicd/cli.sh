@@ -134,6 +134,9 @@ helptext(){
         command is the default one.
     "
 }
+
+EXPECTED_JAYPORECI_VERSION=latest
+CMD="${@:-helptext}" 
 if [ -z ${REPO_ROOT+x} ]; then
     echo "REPO_ROOT : Not found"
     echo "Stopping"
@@ -142,8 +145,8 @@ else
     echo "REPO_ROOT : $REPO_ROOT"
     echo "---"
 fi
-EXPECTED_JAYPORECI_VERSION=latest
-CMD="${@:-helptext}" 
+echo "CMD : $CMD"
+echo "EXPECTED_JAYPORECI_VERSION : $EXPECTED_JAYPORECI_VERSION"
 
 # --------- runner
 ("$CMD")
