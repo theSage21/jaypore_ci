@@ -104,7 +104,7 @@ helptext(){
 
             $ bash cicd/cli.sh hook
 
-        This command is usually put inside the `.git/hooks/pre-push` file
+        This command is usually put inside the '.git/hooks/pre-push' file
         and is used to indicate that the pre-push hook has been triggered.
         It will create a docker container and run Jaypore CI inside that.
 
@@ -113,9 +113,9 @@ helptext(){
 
             $ bash cicd/cli.sh run
 
-        This command runs the actual `cicd/cicd.py` file using python. It is
+        This command runs the actual 'cicd/cicd.py' file using python. It is
         usually automatically invoked inside the docker container created by
-        the `hook` command.
+        the 'hook' command.
 
         activate
         --------
@@ -136,17 +136,17 @@ helptext(){
 }
 
 EXPECTED_JAYPORECI_VERSION=latest
-CMD="${@:-helptext}" 
+echo "EXPECTED_JAYPORECI_VERSION : $EXPECTED_JAYPORECI_VERSION"
 if [ -z ${REPO_ROOT+x} ]; then
     echo "REPO_ROOT : Not found"
     echo "Stopping"
     exit 1
 else
     echo "REPO_ROOT : $REPO_ROOT"
-    echo "---"
 fi
+CMD="${@:-helptext}" 
 echo "CMD : $CMD"
-echo "EXPECTED_JAYPORECI_VERSION : $EXPECTED_JAYPORECI_VERSION"
+echo "-------"
 
 # --------- runner
 ("$CMD")
