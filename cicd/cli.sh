@@ -24,7 +24,7 @@ run() {
     python /jaypore_ci/run/$JAYPORE_CODE_DIR/cicd.py
 }
 
-build(){
+__build__(){
     echo '----------------------------------------------'
     echo "Jaypore CI"
     echo "Building image    : "
@@ -37,6 +37,7 @@ build(){
 
 
 hook() {
+    __build__
     mkdir -p /tmp/jayporeci__cidfiles &> /dev/null
     echo "Running container : "
     docker run \
