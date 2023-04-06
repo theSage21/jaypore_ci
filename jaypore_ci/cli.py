@@ -97,5 +97,25 @@ def hook():
     _run()
 
 
+@cli.command()
+def activate():
+    """
+    When a repository is freshly cloned the git hooks are not set so this
+    command is used to set the git hooks for that repo.
+    """
+    print(
+        """
+        echo "
+        docker run \\
+            -e ENV=ci \\
+            -e REPO_SHA=$(git rev-parse HEAD) \\
+            -e REPO_ROOT=$(git rev-parse --show-toplevel) \\
+            -v /var/run/docker.sock:/var/run/docker.sock \\
+            -v $(git rev-parse --show-toplevel):/jaypore_ci/repo:ro \\
+            jci hook
+    """
+    )
+
+
 if __name__ == "__main__":
     cli()
