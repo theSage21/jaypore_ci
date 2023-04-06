@@ -12,3 +12,5 @@ Documentation is at : https://www.jayporeci.in
 
 - Install : `curl https://www.jayporeci.in/setup.sh  > setup.sh && bash setup.sh -y`
 - Trigger : `git push origin`
+
+...
