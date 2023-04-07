@@ -116,24 +116,37 @@ def hook():
     _run()
 
 
+_hook_cmd = """
+
+        export ENV=ci
+        export REPO_SHA=$(git rev-parse HEAD)
+        export REPO_ROOT=$(git rev-parse --show-toplevel)
+        docker build -t jci $REPO_ROOT
+        docker run \
+            -e ENV \
+            -e REPO_SHA \
+            -e REPO_ROOT \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v $REPO_ROOT:/jaypore_ci/repo:ro \
+            -v /tmp/jayporeci__src__$REPO_SHA:/jaypore_ci/run \
+            -d \
+            arjoonn/jci:{const.version} hook
+    """
+
+
 @cli.command()
-def activate():
+def hook_cmd():
+    f"""
+    Please add the following to your *.git/hooks/pre-push* file in order to
+    trigger the CI system.
+
+    .. code-block:: bash
+    {_hook_cmd}
+
+    .. note::
+        Please make sure that you change the ENV value to what you need.
     """
-    When a repository is freshly cloned the git hooks are not set so this
-    command is used to set the git hooks for that repo.
-    """
-    print(
-        """
-        echo "
-        docker run \\
-            -e ENV=ci \\
-            -e REPO_SHA=$(git rev-parse HEAD) \\
-            -e REPO_ROOT=$(git rev-parse --show-toplevel) \\
-            -v /var/run/docker.sock:/var/run/docker.sock \\
-            -v $(git rev-parse --show-toplevel):/jaypore_ci/repo:ro \\
-            jci hook
-    """
-    )
+    print(_hook_cmd)
 
 
 if __name__ == "__main__":

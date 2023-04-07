@@ -141,18 +141,7 @@ EOF
             echo "$REPO_ROOT/.git/hooks/pre-push.old" >> $REPO_ROOT/.git/hooks/pre-push
         fi
     fi
-    echo "
-        export REPO_SHA=\$(git rev-parse HEAD)
-        export REPO_ROOT=\$(git rev-parse --show-toplevel)
-        docker run \
-            -e ENV=$ENV \
-            -e REPO_SHA \
-            -e REPO_ROOT \
-            -v /var/run/docker.sock:/var/run/docker.sock \
-            -v /tmp/jayporeci__src__\$REPO_SHA:/jaypore_ci/run \
-            -v \$REPO_ROOT:/jaypore_ci/repo:ro \
-            jci hook
-    " >> $LOCAL_HOOK
+    docker run arjoonn/jci hook_cmd >> $LOCAL_HOOK
     chmod u+x $LOCAL_HOOK
 }
 (main)

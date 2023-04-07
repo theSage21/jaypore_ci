@@ -12,6 +12,23 @@ version_map = {
                 f"{NEW}: Old networks will also be removed automatically for "
                 "jobs that are older than a week."
             ),
+            (
+                f"{CHANGE}: The command to be used inside *.git/hooks/pre-push* "
+                "has changed. You can now directly use docker run to trigger the "
+                "CI system. Read more at :meth:`~jaypore_ci.cli.hook_cmd`."
+            ),
+            (
+                f"{CHANGE}: We no longer need *cicd/pre-push.sh* and "
+                "*cicd/Dockerfile* to be created in every project. Jaypore CI "
+                "will work without those."
+            ),
+            (
+                f"{CHANGE}: The cicd/cicd.py file has to be renamed to "
+                "cicd/config/main.py . With this change we can now run as many "
+                "parallel pipelines as we need by creating multiple python files "
+                "in the cicd/config folder. Read more about this in `Multiple "
+                "pipelines`"
+            ),
         ],
         "instructions": [],
     },

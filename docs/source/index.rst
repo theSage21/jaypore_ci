@@ -43,18 +43,11 @@ repository so if you want you can do the installation manually as well.
 you can call your folders/files anything but you'll need to make sure they
 match everywhere.
     
-1. Create a directory called *cicd* in the root of your repo.
-2. Create a file *cicd/pre-push.sh*
-3. Create a file *cicd/cicd.py*
-4. Update your repo's pre-push git hook so that it runs the *cicd/pre-push.sh* file when you push.
-    1. Git hook should call `cicd/pre-push.sh`
-    2. After setting environment variables `cicd/pre-push.sh` calls
-           `cicd/cicd.py` inside a docker container having JayporeCI installed.
-           You can use `arjoonn/jci` if you don't have anything else ready.
-    3. `cicd/cicd.py` will run your jobs within other docker containers.
+1. Create a file *cicd/config/main.py* in your repo.
+2. Add the activation command to your *.git/hooks/pre-push* file.
 
 
-Your entire config is inside `cicd/cicd.py`. Edit it to whatever you like! A basic config would look like this:
+Your entire config is inside `cicd/config/main.py`. Edit it to whatever you like! A basic config would look like this:
 
 .. code-block:: python
 
@@ -395,6 +388,17 @@ If you want to use github instead of gitea, it's very simple to use.
 .. literalinclude:: examples/github_remote.py
   :language: python
   :linenos:
+
+Multiple pipelines
+------------------
+
+You might want to run parallel pipelines for independent things. For example,
+one pipeline can run the build-lint-test-release jobs with complex dependencies
+and another pipeline can start notifying the correct people to review the PR /
+start manual actions needed to do a release etc.
+
+To have multiple pipelines you would create multiple python files inside the
+*cicd/config* folder. All pipelines will be run in parallel.
 
 
 Contributing
