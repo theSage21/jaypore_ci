@@ -101,10 +101,7 @@ def _build():
         pull=True,
     )
     for log in logs:
-        if "stream" in log:
-            print(log["stream"].rstrip())
-        else:
-            print(log)
+        print(log["stream"].rstrip() if "stream" in log else log)
     tell("Copy repo code")
     # Copy the clean files to a shared volume so that jobs can use that.
     logs = client.containers.run(
