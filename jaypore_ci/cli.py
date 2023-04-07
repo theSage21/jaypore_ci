@@ -51,10 +51,7 @@ def _build():
             f"""
             FROM    arjoonn/jci:{const.version}
             COPY    ./ /jaypore_ci/repo/
-            RUN     cp -r /jaypore_ci/repo/. /jaypore_ci/run
-            RUN     cd /jaypore_ci/run/
-            RUN     git clean -fdx
-            RUN     rm -rf /jaypore_ci/repo
+            RUN     cd /jaypore_ci/repo/ && git clean -fdx
             """
         )
     client.images.build(
