@@ -63,6 +63,7 @@ def _build():
             FROM    arjoonn/jci:{const.version}
             COPY    ./ /jaypore_ci/repo/
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
+            ENTRYPOINT ["/bin/bash"]
             """
         )
     # Build the image
@@ -77,7 +78,6 @@ def _build():
     client.containers.run(
         image=im_tag,
         command="cp -r /jaypore_ci/repo/. /jaypore_ci/run",
-        entrypoint="/bin/bash",
         volumes=[
             f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
         ],
