@@ -100,7 +100,7 @@ def _build():
         stdout=True,
         stderr=True,
     )
-    print(cp.logs())
+    print(cp)
     tell("Repo image built", im_tag)
 
 
