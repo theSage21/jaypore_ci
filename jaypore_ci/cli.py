@@ -134,7 +134,6 @@ def hook():
     print("━━━━━━━━━━━┓")
     print("Jaypore CI ┃")
     print((("━━━━━━━━━━━┻" + ("━" * __MAX_WIDTH__))[:__MAX_WIDTH__]) + "━┓")
-    print(("━" * (__MAX_WIDTH__ + 1)) + "┓")
     _build()
     _run()
     print(("━" * (__MAX_WIDTH__ + 1)) + "┛")
