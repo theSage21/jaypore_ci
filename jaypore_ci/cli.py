@@ -52,7 +52,7 @@ def _run():
     env["ENV"] = const.env
     # Run job with environment set
     for pipe in Path("/jaypore_ci/run/cicd/config").glob("*.py"):
-        tell("Running pipeline", pipe.name)
+        tell("Run pipeline", pipe.name)
         container = client.containers.run(
             image=f"im_jayporeci__pipe__{const.repo_sha}",
             command=f"python3 {pipe}",
