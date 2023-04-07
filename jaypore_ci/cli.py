@@ -36,7 +36,7 @@ def _run():
             environment={"REPO_SHA": const.repo_sha, **env},
             volumes=[
                 f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
-                "/var/run/docker.sock/var/run/docker.sock",
+                "/var/run/docker.sock:/var/run/docker.sock",
             ],
             working_dir="/jaypore_ci/run",
             detach=True,
