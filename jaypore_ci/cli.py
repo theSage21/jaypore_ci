@@ -12,7 +12,6 @@ from jaypore_ci.config import const
 def _run():
     print("Reading environment variables.")
     client = docker.from_env()
-
     # Get environment from secrets
     env = {}
     if const.env:
