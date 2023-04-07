@@ -2,6 +2,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+ENV=${USER:ci}
 RUNNING_IN_CI="${RUNNING_IN_CI:-no}"
 ASSUME_YES="no"
 while getopts ":y" opt; do
@@ -12,6 +13,7 @@ while getopts ":y" opt; do
   esac
 done
 
+echo "ENV           : $ENV"
 echo "RUNNING_IN_CI : $RUNNING_IN_CI"
 echo "ASSUME_YES    : $ASSUME_YES"
 
@@ -119,7 +121,7 @@ EOF
                 (bash $REPO_ROOT/secrets/bin/edit_env.sh $USER)
             fi
         fi
-        ENV_PREFIX='ENV=$USER '
+        ENV_PREFIX="ENV=$ENV "
     fi
     # ----------------==
     echo "Creating git hook for pre-push"
@@ -143,7 +145,7 @@ EOF
         export REPO_SHA=\$(git rev-parse HEAD)
         export REPO_ROOT=\$(git rev-parse --show-toplevel)
         docker run \
-            -e ENV=$USER \
+            -e ENV=$ENV \
             -e REPO_SHA \
             -e REPO_ROOT \
             -v /var/run/docker.sock:/var/run/docker.sock \
