@@ -41,6 +41,11 @@ with jci.Pipeline() as p:
             depends_on=["JciEnv"],
         )
 
+    with p.stage("Debug", image=jcienv):
+        p.job(
+            "PublishDocs",
+            f"bash cicd/build_and_publish_docs.sh {p.remote.branch}",
+        )
     if should.release:
         with p.stage("Publish", image=jcienv):
             p.job("DockerHubJcienv", "bash cicd/build_and_push_docker.sh jcienv")
