@@ -134,18 +134,23 @@ _hook_cmd = """
     """
 
 
-@cli.command()
-def hook_cmd():
-    f"""
+def wrapdoc(fn):
+    fn.__doc__ = f"""
     Please add the following to your *.git/hooks/pre-push* file in order to
     trigger the CI system.
 
-    .. code-block:: bash
-    {_hook_cmd}
-
     .. note::
         Please make sure that you change the ENV value to what you need.
+
+    .. code-block:: bash
+    {_hook_cmd}
     """
+    return fn
+
+
+@cli.command()
+@wrapdoc
+def hook_cmd():
     print(_hook_cmd)
 
 
