@@ -302,7 +302,6 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         )
 
     def __enter__(self):
-        ensure_version_is_correct()
         self.executor.setup()
         self.remote.setup()
         return self
