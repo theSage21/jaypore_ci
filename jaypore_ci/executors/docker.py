@@ -158,6 +158,9 @@ class Docker(Executor):
         ex_kwargs = deepcopy(job.executor_kwargs)
         env = job.get_env()
         env.update(ex_kwargs.pop("environment", {}))
+        env["REPO_SHA"] = const.repo_sha
+        env["REPO_ROOT"] = const.repo_root
+        env["ENV"] = const.env
         trigger = {
             "detach": True,
             "environment": env,
