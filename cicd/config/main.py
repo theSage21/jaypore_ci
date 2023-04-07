@@ -46,6 +46,7 @@ with jci.Pipeline() as p:
             "PublishDocs",
             f"bash cicd/build_and_publish_docs.sh {p.remote.branch}",
         )
+
     if should.release:
         with p.stage("Publish", image=jcienv):
             p.job("DockerHubJcienv", "bash cicd/build_and_push_docker.sh jcienv")

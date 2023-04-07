@@ -77,6 +77,7 @@ def _build():
     client.containers.run(
         image=im_tag,
         command="cp -r /jaypore_ci/repo/. /jaypore_ci/run",
+        entrypoint=["/bin/bash"],
         volumes=[
             f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
         ],
