@@ -79,9 +79,7 @@ def _build():
     client.containers.run(
         im_tag,
         command="cp -r /jaypore_ci/repo/. /jaypore_ci/run",
-        volumes=[
-            f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
-        ],
+        volumes=[f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run"],
         remove=True,
         stdout=True,
         stderr=True,
