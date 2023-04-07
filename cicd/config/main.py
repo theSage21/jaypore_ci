@@ -42,10 +42,7 @@ with jci.Pipeline() as p:
         )
 
     with p.stage("Debug", image=jcienv):
-        p.job(
-            "PublishDocs",
-            f"bash cicd/build_and_publish_docs.sh {p.remote.branch}",
-        )
+        p.job("PublishDocs", f"bash cicd/build_and_publish_docs.sh {p.remote.branch}")
 
     if should.release:
         with p.stage("Publish", image=jcienv):
