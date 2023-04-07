@@ -95,13 +95,14 @@ def _build():
     logs = client.containers.run(
         im_tag,
         # command="echo startcopy && cp -r /jaypore_ci/repo/. /jaypore_ci/run && ls /jaypore_ci/run && echo endcopy",
-        command="ls /jaypore_ci/repo",
+        command="ls -R /jaypore_ci",
         volumes=[f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run"],
         working_dir="/jaypore_ci",
         remove=False,
         stdout=True,
         stderr=True,
     )
+    print(logs.decode())
     tell("Repo image built", im_tag)
 
 
