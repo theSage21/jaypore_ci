@@ -20,9 +20,8 @@ def tell(msg, detail=""):
         msg[:FIRST_COL],
         "|" if msg.strip() else "",
         detail[:SECOND_COL],
-        "┃",
     ]
-    print(" ".join(lines)[:__MAX_WIDTH__])
+    print(" ".join(lines)[:__MAX_WIDTH__], "┃")
 
 
 def _run():
