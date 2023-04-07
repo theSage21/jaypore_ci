@@ -102,7 +102,7 @@ def _build():
     )
     for log in logs:
         if "stream" in log:
-            print(log["stream"])
+            print(log["stream"].rstrip())
         else:
             print(log)
     tell("Copy repo code")
