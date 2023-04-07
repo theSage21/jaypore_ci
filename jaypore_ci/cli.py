@@ -13,12 +13,13 @@ __MAX_WIDTH__ = 75
 def tell(msg, detail=""):
     "Inform a user about something"
     FIRST_COL = 30
+    SECOND_COL = __MAX_WIDTH__ - FIRST_COL
     msg = msg + (" " * FIRST_COL)
-    detail = str(detail) + (" " * __MAX_WIDTH__)
+    detail = str(detail) + (" " * SECOND_COL)
     print(
         msg[:FIRST_COL],
         "|" if msg.strip() else "",
-        detail[:__MAX_WIDTH__],
+        detail[:SECOND_COL],
         "┃",
     )
 
