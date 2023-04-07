@@ -7,9 +7,21 @@ import click
 
 from jaypore_ci.config import const
 
+__MAX_WIDTH__ = 75
+
+
+def tell(msg, detail=""):
+    "Inform a user about something"
+    print(
+        (msg + " " * 30)[:30],
+        "|" if detail else "",
+        (str(detail) + " " * __MAX_WIDTH__)[:__MAX_WIDTH__],
+        "┃",
+    )
+
 
 def _run():
-    print("Reading environment variables.")
+    tell("Reading env vars")
     client = docker.from_env()
     # Get environment from secrets
     env = {}
@@ -36,7 +48,7 @@ def _run():
     env["ENV"] = const.env
     # Run job with environment set
     for pipe in Path("/jaypore_ci/run/cicd/config").glob("*.py"):
-        print(f"Running pipeline: {pipe.name}", end="")
+        tell("Running pipeline", pipe.name)
         container = client.containers.run(
             image=f"im_jayporeci__pipe__{const.repo_sha}",
             command=f"python3 {pipe}",
@@ -49,11 +61,11 @@ def _run():
             working_dir="/jaypore_ci/run",
             detach=True,
         )
-        print("\t: ", container.id)
+        tell("", container.id)
 
 
 def _build():
-    print(f"Building docker image for SHA: {const.repo_sha}")
+    tell("Build docker image", f"sha: {const.repo_sha}")
     client = docker.from_env()
     # Copy repo to build so that we can add an extra dockerfile
     shutil.copytree("/jaypore_ci/repo", "/jaypore_ci/build")
@@ -74,7 +86,7 @@ def _build():
         tag=im_tag,
         pull=True,
     )
-    print("Copying code to cache folder")
+    tell("Copy code to cache")
     # Copy the clean files to a shared volume so that jobs can use that.
     client.containers.run(
         im_tag,
@@ -84,7 +96,7 @@ def _build():
         stdout=True,
         stderr=True,
     )
-    print("Build complete: ", im_tag)
+    tell("Build complete", im_tag)
 
 
 # ---------------
@@ -115,8 +127,10 @@ def run():
 
 @cli.command()
 def hook():
+    print(("━" * (__MAX_WIDTH__ + 1)) + "┓")
     _build()
     _run()
+    print(("━" * (__MAX_WIDTH__ + 1)) + "┛")
 
 
 _hook_cmd = """
