@@ -76,7 +76,7 @@ def _build():
     with open("/jaypore_ci/build/cicd/Dockerfile", "w", encoding="utf-8") as fl:
         fl.write(
             f"""
-            FROM    arjoonn/jci:{const.version}
+            FROM    {const.image}
             RUN     touch /jaypore_ci && rm -rf /jaypore_ci
             COPY    ./ /jaypore_ci/repo/
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
@@ -159,7 +159,6 @@ _hook_cmd = """
         export ENV=ci
         export REPO_SHA=$(git rev-parse HEAD)
         export REPO_ROOT=$(git rev-parse --show-toplevel)
-        docker build -t jci $REPO_ROOT
         docker run \
             -e ENV \
             -e REPO_SHA \
@@ -168,7 +167,7 @@ _hook_cmd = """
             -v $REPO_ROOT:/jaypore_ci/repo:ro \
             -v /tmp/jayporeci__src__$REPO_SHA:/jaypore_ci/run \
             -d \
-            arjoonn/jci:{const.version} hook
+            {const.image} hook
     """
 
 
