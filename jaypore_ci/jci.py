@@ -286,8 +286,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         This is mainly here so that during testing we can override this and
         provide a different way to get the pipe id
         """
-        with open(f"/jaypore_ci/cidfiles/{self.repo.sha}", "r", encoding="utf-8") as fl:
-            return fl.read().strip()
+        return const.repo_sha
 
     def logging(self):
         """

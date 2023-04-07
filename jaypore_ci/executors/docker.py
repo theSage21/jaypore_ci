@@ -166,7 +166,6 @@ class Docker(Executor):
                     [
                         "/var/run/docker.sock:/var/run/docker.sock",
                         "/usr/bin/docker:/usr/bin/docker:ro",
-                        "/tmp/jayporeci__cidfiles:/jaypore_ci/cidfiles:ro",
                         f"/tmp/jayporeci__src__{self.pipeline.remote.sha}:/jaypore_ci/run",
                     ]
                     + (ex_kwargs.pop("volumes", []))
