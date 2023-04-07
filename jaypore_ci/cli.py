@@ -28,7 +28,7 @@ def _run():
         if line.startswith("JAYPORE_")
     }
     # Run job with environment set
-    for pipe in Path("/jaypore_ci/repo/cicd/config").glob("*.py"):
+    for pipe in Path("/jaypore_ci/run/cicd/config").glob("*.py"):
         client.containers.run(
             image=f"im_jayporeci__pipe__{const.repo_sha}",
             command=f"python3 {pipe}",
@@ -45,6 +45,7 @@ def _run():
 
 def _build():
     client = docker.from_env()
+    # Copy repo to build so that we can add an extra dockerfile
     shutil.copytree("/jaypore_ci/repo", "/jaypore_ci/build")
     with open("/jaypore_ci/build/cicd/Dockerfile", "w", encoding="utf-8") as fl:
         fl.write(
@@ -54,6 +55,7 @@ def _build():
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
             """
         )
+    # Build the image
     im_tag = f"im_jayporeci__pipe__{const.repo_sha}"
     client.images.build(
         path="/jaypore_ci/build",
@@ -61,6 +63,7 @@ def _build():
         tag=im_tag,
         pull=True,
     )
+    # Copy the clean files to a shared volume so that jobs can use that.
     client.containers.run(
         image=im_tag,
         command="cp -r /jaypore_ci/repo/. /jaypore_ci/run",
