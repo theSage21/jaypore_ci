@@ -78,7 +78,7 @@ def _build():
     # Copy the clean files to a shared volume so that jobs can use that.
     client.containers.run(
         image=im_tag,
-        command="cp -r /jaypore_ci/repo/. /jaypore_ci/run",
+        command=["cp", "-r", "/jaypore_ci/repo/.", "/jaypore_ci/run"],
         volumes=[
             f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
         ],
