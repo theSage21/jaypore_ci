@@ -31,7 +31,7 @@ def _run():
     for pipe in Path("/jaypore_ci/repo/cicd/config").glob("*.py"):
         client.containers.run(
             image=f"im_jayporeci__pipe__{const.repo_sha}",
-            command="python3 /jaypore_ci/repo/cicd/main.py",
+            command=f"python3 {pipe}",
             name=f"jayporeci__pipe__{pipe.name[:-3]}__{const.repo_sha}",
             environment={"REPO_SHA": const.repo_sha, **env},
             volumes=[
