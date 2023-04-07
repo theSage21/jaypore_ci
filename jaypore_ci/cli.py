@@ -101,7 +101,7 @@ def _build():
         pull=True,
     )
     for log in logs:
-        print(log["stream"])
+        print(log)
     tell("Copy repo code")
     # Copy the clean files to a shared volume so that jobs can use that.
     logs = client.containers.run(
