@@ -1,4 +1,5 @@
 import shutil
+import json
 import subprocess
 from pathlib import Path
 
@@ -101,7 +102,7 @@ def _build():
         pull=True,
     )
     for log in logs:
-        print(log)
+        print(json.loads(log)["stream"], end="")
     tell("Copy repo code")
     # Copy the clean files to a shared volume so that jobs can use that.
     logs = client.containers.run(
