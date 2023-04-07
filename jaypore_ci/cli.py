@@ -33,7 +33,12 @@ def _run():
             image=f"im_jayporeci__pipe__{const.repo_sha}",
             command=f"python3 {pipe}",
             name=f"jayporeci__pipe__{pipe.name[:-3]}__{const.repo_sha}",
-            environment={"REPO_SHA": const.repo_sha, **env},
+            environment={
+                "REPO_SHA": const.repo_sha,
+                "REPO_ROOT": const.repo_root,
+                "ENV": const.env,
+                **env,
+            },
             volumes=[
                 f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
                 "/var/run/docker.sock:/var/run/docker.sock",
