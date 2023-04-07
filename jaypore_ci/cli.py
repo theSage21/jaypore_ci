@@ -77,11 +77,14 @@ def _build():
     print("Copying code to cache folder")
     # Copy the clean files to a shared volume so that jobs can use that.
     client.containers.run(
-        image=im_tag,
-        command=["cp", "-r", "/jaypore_ci/repo/.", "/jaypore_ci/run"],
+        im_tag,
+        command="cp -r /jaypore_ci/repo/. /jaypore_ci/run",
         volumes=[
             f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
         ],
+        remove=True,
+        stdout=True,
+        stderr=True,
     )
     print("Build complete: ", im_tag)
 
