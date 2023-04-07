@@ -1,5 +1,4 @@
 import shutil
-import json
 import subprocess
 from pathlib import Path
 
@@ -80,8 +79,8 @@ def _build():
             FROM    arjoonn/jci:{const.version}
             RUN     touch /jaypore_ci && rm -rf /jaypore_ci
             COPY    ./ /jaypore_ci/repo/
-            RUN     ls -R /jaypore_ci/repo
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
+            RUN     ls /jaypore_ci
             ENTRYPOINT ["/bin/bash", "-l", "-c"]
             """
         )
