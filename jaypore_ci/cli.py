@@ -11,6 +11,7 @@ from jaypore_ci.config import const
 
 def _run():
     client = docker.from_env()
+
     # Get environment from secrets
     env = {
         line.split("=", 1)[0]: line.split("=", 1)[1]
