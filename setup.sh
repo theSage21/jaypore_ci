@@ -62,20 +62,17 @@ main (){
     # ----------------==
     if should_continue;
     then
-        echo "Creating cicd.py and pre-push.sh"
+        echo "Creating pipelines"
     else
         exit 0
     fi
-    mkdir $REPO_ROOT/$CICD_ROOT || echo 'Moving on..'
-    cat     > $REPO_ROOT/$CICD_ROOT/cicd.py << EOF
+    mkdir -p $REPO_ROOT/$CICD_ROOT/config || echo 'Moving on..'
+    cat     > $REPO_ROOT/$CICD_ROOT/config/main.py << EOF
 from jaypore_ci import jci
 
 with jci.Pipeline() as p:
     p.job("Black", "black --check .")
 EOF
-    getfile /pre-push.sh $REPO_ROOT/cicd/pre-push.sh
-    getfile /Dockerfile $REPO_ROOT/cicd/Dockerfile
-    chmod u+x $REPO_ROOT/cicd/pre-push.sh
     # ----------------==
     ENV_PREFIX=''
     echo "Creating 'secrets' folder for environment variables."
@@ -110,19 +107,19 @@ EOF
         echo "Adding gitignore so that key and plaintext files are never committed"
         echo "*.key" >> .gitignore
         echo "*.plaintext" >> .gitignore
-        echo "Creating new age-key at: $REPO_ROOT/secrets/ci.key"
-        age-keygen > $REPO_ROOT/secrets/ci.key
-        echo "You can now use (bash secrets/bin/edit_env.sh ci) to edit environment variables."
+        echo "Creating new age-key at: $REPO_ROOT/secrets/$USER.key"
+        age-keygen > $REPO_ROOT/secrets/$USER.key
+        echo "You can now use (bash secrets/bin/edit_env.sh $USER) to edit environment variables."
         echo "Editing secrets now"
         if [ "$RUNNING_IN_CI" = "yes" ]; then
-            echo "Skip setting env file. Running in CI"
+            echo "Skip setting env file."
         else
             if should_continue
             then
-                (bash $REPO_ROOT/secrets/bin/edit_env.sh ci)
+                (bash $REPO_ROOT/secrets/bin/edit_env.sh $USER)
             fi
         fi
-        ENV_PREFIX='ENV=ci '
+        ENV_PREFIX='ENV=$USER '
     fi
     # ----------------==
     echo "Creating git hook for pre-push"
@@ -131,11 +128,8 @@ EOF
             echo "$LOCAL_HOOK has already been moved once."
             echo $LOCAL_HOOK
             echo $LOCAL_HOOK.local
-            echo "Please link"
-            echo "  Jaypore hook : $REPO_ROOT/cicd/pre-push.sh"
-            echo "with"
-            echo "  Existing hook: $LOCAL_HOOK"
-            echo "manually by editing the existing hook file"
+            echo "--------------------------------------"
+            echo "Please add hook command to .git/hooks/pre-push manually"
             echo "--------------------------------------"
             echo "Stopping."
             exit 1
@@ -145,7 +139,18 @@ EOF
             echo "$REPO_ROOT/.git/hooks/pre-push.old" >> $REPO_ROOT/.git/hooks/pre-push
         fi
     fi
-    echo "$ENV_PREFIX$REPO_ROOT/cicd/pre-push.sh hook" >> $REPO_ROOT/.git/hooks/pre-push
+    echo "
+        export REPO_SHA=\$(git rev-parse HEAD)
+        export REPO_ROOT=\$(git rev-parse --show-toplevel)
+        docker run \
+            -e ENV=$USER \
+            -e REPO_SHA \
+            -e REPO_ROOT \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v /tmp/jayporeci__src__\$REPO_SHA:/jaypore_ci/run \
+            -v \$REPO_ROOT:/jaypore_ci/repo:ro \
+            jci hook
+    " >> $LOCAL_HOOK
     chmod u+x $LOCAL_HOOK
 }
 (main)
