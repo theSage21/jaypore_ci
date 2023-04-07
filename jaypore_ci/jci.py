@@ -11,9 +11,8 @@ from contextlib import contextmanager
 import structlog
 import pendulum
 
-from jaypore_ci.exceptions import BadConfig
 from jaypore_ci.config import const
-from jaypore_ci.changelog import version_map
+from jaypore_ci.changelog import version_map  # pylint: disable=unused-import
 from jaypore_ci import remotes, executors, reporters, repos, clean
 from jaypore_ci.interfaces import (
     Remote,
