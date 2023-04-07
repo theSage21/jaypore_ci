@@ -74,6 +74,7 @@ def _build():
         tag=im_tag,
         pull=True,
     )
+    print("Copying code to cache folder")
     # Copy the clean files to a shared volume so that jobs can use that.
     client.containers.run(
         image=im_tag,
