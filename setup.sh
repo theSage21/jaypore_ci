@@ -109,16 +109,16 @@ EOF
         echo "Adding gitignore so that key and plaintext files are never committed"
         echo "*.key" >> .gitignore
         echo "*.plaintext" >> .gitignore
-        echo "Creating new age-key at: $REPO_ROOT/secrets/$USER.key"
-        age-keygen > $REPO_ROOT/secrets/$USER.key
-        echo "You can now use (bash secrets/bin/edit_env.sh $USER) to edit environment variables."
+        echo "Creating new age-key at: $REPO_ROOT/secrets/$ENV.key"
+        age-keygen > $REPO_ROOT/secrets/$ENV.key
+        echo "You can now use (bash secrets/bin/edit_env.sh $ENV) to edit environment variables."
         echo "Editing secrets now"
         if [ "$RUNNING_IN_CI" = "yes" ]; then
             echo "Skip setting env file."
         else
             if should_continue
             then
-                (bash $REPO_ROOT/secrets/bin/edit_env.sh $USER)
+                (bash $REPO_ROOT/secrets/bin/edit_env.sh $ENV)
             fi
         fi
         ENV_PREFIX="ENV=$ENV "
