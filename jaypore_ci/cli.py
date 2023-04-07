@@ -16,12 +16,13 @@ def tell(msg, detail=""):
     SECOND_COL = __MAX_WIDTH__ - FIRST_COL
     msg = msg + (" " * FIRST_COL)
     detail = str(detail) + (" " * SECOND_COL)
-    print(
+    lines = [
         msg[:FIRST_COL],
         "|" if msg.strip() else "",
         detail[:SECOND_COL],
         "┃",
-    )
+    ]
+    print(" ".join(lines)[:__MAX_WIDTH__])
 
 
 def _run():
