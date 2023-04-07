@@ -78,16 +78,12 @@ def _build():
     # Copy the clean files to a shared volume so that jobs can use that.
     client.containers.run(
         im_tag,
-        command="bash -c 'cp -r /jaypore_ci/repo/. /jaypore_ci/run && ls /jaypore_ci/run'",
+        command="bash -c 'echo startcopy && cp -r /jaypore_ci/repo/. /jaypore_ci/run && ls /jaypore_ci/run && echo endcopy'",
         volumes=[f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run"],
         remove=True,
         stdout=True,
         stderr=True,
     )
-    print("Copy done")
-    import os
-
-    os.system(f"ls /tmp/jayporeci__src__{const.repo_sha}")
     print("Build complete: ", im_tag)
 
 
