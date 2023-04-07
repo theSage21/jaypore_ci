@@ -54,11 +54,19 @@ def _build():
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
             """
         )
+    im_tag = f"im_jayporeci__pipe__{const.repo_sha}"
     client.images.build(
         path="/jaypore_ci/build",
         dockerfile="cicd/Dockerfile",
-        tag=f"im_jayporeci__pipe__{const.repo_sha}",
+        tag=im_tag,
         pull=True,
+    )
+    client.containers.run(
+        image=im_tag,
+        command="cp -r /jaypore_ci/repo/. /jaypore_ci/run",
+        volumes=[
+            f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
+        ],
     )
 
 
