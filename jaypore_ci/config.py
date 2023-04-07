@@ -57,5 +57,3 @@ class Const(NamedTuple):
 
 
 const = Const()
-assert const.repo_root is not None, "REPO_ROOT needs to be set in .git/hooks/pre-push"
-assert const.repo_sha is not None, "REPO_SHA needs to be set in .git/hooks/pre-push"

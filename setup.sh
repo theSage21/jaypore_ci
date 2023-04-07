@@ -123,25 +123,10 @@ EOF
         fi
         ENV_PREFIX="ENV=$ENV "
     fi
-    # ----------------==
-    echo "Creating git hook for pre-push"
-    if test -f "$LOCAL_HOOK"; then
-        if test -f "$LOCAL_HOOK.local"; then
-            echo "$LOCAL_HOOK has already been moved once."
-            echo $LOCAL_HOOK
-            echo $LOCAL_HOOK.local
-            echo "--------------------------------------"
-            echo "Please add hook command to .git/hooks/pre-push manually"
-            echo "--------------------------------------"
-            echo "Stopping."
-            exit 1
-        else
-            echo "$LOCAL_HOOK exists. Moving to separate file"
-            mv $LOCAL_HOOK $REPO_ROOT/.git/hooks/pre-push.old
-            echo "$REPO_ROOT/.git/hooks/pre-push.old" >> $REPO_ROOT/.git/hooks/pre-push
-        fi
-    fi
-    docker run arjoonn/jci hook_cmd >> $LOCAL_HOOK
-    chmod u+x $LOCAL_HOOK
+    echo "
+    Please update .git/hooks/pre-push using:
+
+        docker run arjoonn/jci hook_cmd >> .git/hooks/pre-push
+    "
 }
 (main)
