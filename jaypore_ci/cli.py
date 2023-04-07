@@ -10,27 +10,33 @@ from jaypore_ci.config import const
 
 
 def _run():
+    print("Reading environment variables.")
     client = docker.from_env()
 
     # Get environment from secrets
-    env = {
-        line.split("=", 1)[0]: line.split("=", 1)[1]
-        for line in subprocess.check_output(
-            (
-                "bash -c '"
-                "source /jaypore_ci/repo/secrets/bin/set_env.sh "
-                f"{const.env} && env'"
-            ),
-            shell=True,
+    env = {}
+    if const.env:
+        env.update(
+            {
+                line.split("=", 1)[0]: line.split("=", 1)[1]
+                for line in subprocess.check_output(
+                    (
+                        "bash -c '"
+                        "source /jaypore_ci/repo/secrets/bin/set_env.sh "
+                        f"{const.env} && env'"
+                    ),
+                    shell=True,
+                )
+                .decode()
+                .strip()
+                .split("\n")
+                if line.startswith("JAYPORE_")
+            }
         )
-        .decode()
-        .strip()
-        .split("\n")
-        if line.startswith("JAYPORE_")
-    }
     # Run job with environment set
     for pipe in Path("/jaypore_ci/run/cicd/config").glob("*.py"):
-        client.containers.run(
+        print(f"Running pipeline: {pipe.name}", end="")
+        container = client.containers.run(
             image=f"im_jayporeci__pipe__{const.repo_sha}",
             command=f"python3 {pipe}",
             name=f"jayporeci__pipe__{pipe.name[:-3]}__{const.repo_sha}",
@@ -47,9 +53,11 @@ def _run():
             working_dir="/jaypore_ci/run",
             detach=True,
         )
+        print("\t: ", container.id)
 
 
 def _build():
+    print(f"Building docker image for SHA: {const.repo_sha}")
     client = docker.from_env()
     # Copy repo to build so that we can add an extra dockerfile
     shutil.copytree("/jaypore_ci/repo", "/jaypore_ci/build")
@@ -77,6 +85,7 @@ def _build():
             f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
         ],
     )
+    print("Build complete: ", im_tag)
 
 
 # ---------------
