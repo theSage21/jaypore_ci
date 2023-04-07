@@ -25,7 +25,7 @@ def tell(msg, detail=""):
 
 
 def _run():
-    tell("Reading env vars")
+    tell(f"Read secrets/{const.env}.enc")
     client = docker.from_env()
     # Get environment from secrets
     env = {}
@@ -69,7 +69,7 @@ def _run():
 
 
 def _build():
-    tell("Build docker image", f"sha: {const.repo_sha}")
+    tell("Build repo image", f"sha: {const.repo_sha}")
     client = docker.from_env()
     # Copy repo to build so that we can add an extra dockerfile
     shutil.copytree("/jaypore_ci/repo", "/jaypore_ci/build")
@@ -90,7 +90,7 @@ def _build():
         tag=im_tag,
         pull=True,
     )
-    tell("Copy code to cache")
+    tell("Copy repo code")
     # Copy the clean files to a shared volume so that jobs can use that.
     client.containers.run(
         im_tag,
@@ -100,7 +100,7 @@ def _build():
         stdout=True,
         stderr=True,
     )
-    tell("Build complete", im_tag)
+    tell("Repo image built", im_tag)
 
 
 # ---------------
