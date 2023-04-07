@@ -15,20 +15,6 @@ build() {
     sphinx-build docs/source/ docs/build
     sphinx-build docs/source/ docs/build -b coverage
 
-    # Create pre-push for repo
-    PREPUSH=docs/build/pre-push.sh
-    cp cicd/pre-push.sh $PREPUSH
-    sed -i '$ d' $PREPUSH
-    # add expected version of Jci
-    echo "" >> $PREPUSH
-    echo "# Change the version in the next line to whatever you want if you" >> $PREPUSH
-    echo "# would like to upgrade to a different version of JayporeCI." >> $PREPUSH
-    echo -n "EXPECTED_JAYPORECI_" >> $PREPUSH
-    grep version pyproject.toml | python3 -c 'print(input().upper().replace(" ", "").replace("\"", ""))' >> $PREPUSH
-
-    echo "" >> $PREPUSH
-    echo '("$CMD")' >> $PREPUSH
-
     # Copy other files
     cp cicd/Dockerfile docs/build
     cp setup.sh docs/build
