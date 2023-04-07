@@ -10,6 +10,7 @@ from tqdm import tqdm
 
 from jaypore_ci import clean
 from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
+from jaypore_ci.config import const
 from jaypore_ci.logging import logger
 
 
