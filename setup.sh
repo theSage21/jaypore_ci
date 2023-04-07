@@ -2,7 +2,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-ENV=${USER:ci}
+ENV="${USER:-ci}"
 RUNNING_IN_CI="${RUNNING_IN_CI:-no}"
 ASSUME_YES="no"
 while getopts ":y" opt; do
