@@ -79,7 +79,7 @@ def _build():
             FROM    arjoonn/jci:{const.version}
             COPY    ./ /jaypore_ci/repo/
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
-            ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
+            ENTRYPOINT ["/bin/bash", "-l", "-c"]
             """
         )
     # Build the image
@@ -97,7 +97,7 @@ def _build():
         command="echo startcopy && cp -r /jaypore_ci/repo/. /jaypore_ci/run && ls /jaypore_ci/run && echo endcopy",
         volumes=[f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run"],
         working_dir="/jaypore_ci",
-        remove=True,
+        remove=False,
         stdout=True,
         stderr=True,
     )
