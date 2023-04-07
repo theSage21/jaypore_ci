@@ -52,7 +52,7 @@ def _run():
     env["ENV"] = const.env
     # Run job with environment set
     for pipe in Path("/jaypore_ci/run/cicd/config").glob("*.py"):
-        tell("Run pipeline", pipe.name)
+        tell("Start pipeline", pipe.name)
         container = client.containers.run(
             image=f"im_jayporeci__pipe__{const.repo_sha}",
             command=f"python3 {pipe}",
@@ -92,7 +92,7 @@ def _build():
     )
     tell("Copy repo code")
     # Copy the clean files to a shared volume so that jobs can use that.
-    client.containers.run(
+    cp = client.containers.run(
         im_tag,
         command="bash -c 'echo startcopy && cp -r /jaypore_ci/repo/. /jaypore_ci/run && ls /jaypore_ci/run && echo endcopy'",
         volumes=[f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run"],
@@ -100,6 +100,7 @@ def _build():
         stdout=True,
         stderr=True,
     )
+    print(cp.logs())
     tell("Repo image built", im_tag)
 
 
