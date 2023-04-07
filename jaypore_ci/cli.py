@@ -32,6 +32,9 @@ def _run():
                 if line.startswith("JAYPORE_")
             }
         )
+    env["REPO_SHA"] = const.repo_sha
+    env["REPO_ROOT"] = const.repo_root
+    env["ENV"] = const.env
     # Run job with environment set
     for pipe in Path("/jaypore_ci/run/cicd/config").glob("*.py"):
         print(f"Running pipeline: {pipe.name}", end="")
@@ -39,12 +42,7 @@ def _run():
             image=f"im_jayporeci__pipe__{const.repo_sha}",
             command=f"python3 {pipe}",
             name=f"jayporeci__pipe__{pipe.name[:-3]}__{const.repo_sha}",
-            environment={
-                "REPO_SHA": const.repo_sha,
-                "REPO_ROOT": const.repo_root,
-                "ENV": const.env,
-                **env,
-            },
+            environment=env,
             volumes=[
                 f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
                 "/var/run/docker.sock:/var/run/docker.sock",
