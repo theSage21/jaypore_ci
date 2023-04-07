@@ -79,6 +79,7 @@ def _build():
             FROM    arjoonn/jci:{const.version}
             RUN     touch /jaypore_ci && rm -rf /jaypore_ci
             COPY    ./ /jaypore_ci/repo/
+            RUN     ls -R /jaypore_ci/repo
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
             ENTRYPOINT ["/bin/bash", "-l", "-c"]
             """
@@ -100,7 +101,7 @@ def _build():
         pull=True,
     )
     for log in logs:
-        print(log)
+        print(log["stream"])
     tell("Copy repo code")
     # Copy the clean files to a shared volume so that jobs can use that.
     logs = client.containers.run(
