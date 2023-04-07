@@ -84,6 +84,7 @@ def _build():
         stdout=True,
         stderr=True,
     )
+    print("Copy done")
     import os
 
     os.system(f"ls /tmp/jayporeci__src__{const.repo_sha}")
