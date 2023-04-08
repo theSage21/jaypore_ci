@@ -15,7 +15,7 @@ run     tar xf ./age.tar.gz && mv ./age/age /bin && mv ./age/age-keygen /bin && 
 run     apt update && apt install -y wget curl zip vim
 run     chmod u+x /bin/sops /bin/age /bin/age-keygen
 
-from jcienv as jci
+from jcienv as jcilib
 add     jaypore_ci/ /app/jaypore_ci
 run     poetry build
 run     ls -alR dist
@@ -23,4 +23,6 @@ run     python3 -m pip install dist/jaypore_ci-*.whl
 run     rm -rf jaypore_ci dist
 run     ls -alR .
 workdir /jaypore_ci/run/
+
+from jcilib as jci
 entrypoint ["/usr/local/bin/python", "-m", "jaypore_ci.cli"]
