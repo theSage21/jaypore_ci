@@ -80,7 +80,8 @@ def _build():
             RUN     touch /jaypore_ci && rm -rf /jaypore_ci
             COPY    ./ /jaypore_ci/repo/
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
-            RUN     ls -alR /jaypore_ci
+            RUN     apt-get install tree
+            RUN     tree /jaypore_ci
             ENTRYPOINT ["/bin/bash", "-l", "-c"]
             """
         )
