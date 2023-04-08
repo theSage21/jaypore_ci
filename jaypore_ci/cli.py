@@ -83,14 +83,6 @@ def _build():
             ENTRYPOINT ["/bin/bash", "-c"]
             """
         )
-    with open("/jaypore_ci/build/cicd/copy_tree.sh", "w", encoding="utf-8") as fl:
-        fl.write(
-            """
-            echo $PWD
-            ls /jaypore_ci
-            cp -r  /jaypore_ci/repo/. /jaypore_ci/run
-            """
-        )
     # Build the image
     im_tag = f"im_jayporeci__pipe__{const.repo_sha}"
     _, logs = client.images.build(
@@ -105,7 +97,7 @@ def _build():
     # Copy the clean files to a shared volume so that jobs can use that.
     logs = client.containers.run(
         im_tag,
-        command="'ls -alR /jaypore_ci/repo'",
+        command="'cp -r /jaypore_ci/repo/. /jaypore_ci/run'",
         volumes=[
             f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
         ],
