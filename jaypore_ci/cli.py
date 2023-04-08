@@ -18,7 +18,7 @@ def tell(msg, detail=""):
     detail = str(detail) + (" " * SECOND_COL)
     lines = [
         msg[:FIRST_COL],
-        "|" if msg.strip() else "",
+        "┃" if msg.strip() else "│",
         detail[:SECOND_COL],
     ]
     print(" ".join(lines)[:__MAX_WIDTH__], "┃")
@@ -64,6 +64,7 @@ def _run():
             ],
             working_dir="/jaypore_ci/run",
             detach=True,
+            remove=False,
         )
         tell("", container.id)
 
@@ -103,7 +104,7 @@ def _build():
         ],
         working_dir="/jaypore_ci",
         name=f"jayporeci__copytocache__{const.repo_sha}",
-        remove=False,
+        remove=True,
         stdout=True,
         stderr=True,
     )
