@@ -54,7 +54,8 @@ class Const(NamedTuple):
     repo_root: str = os.environ.get("REPO_ROOT")
     repo_sha: str = os.environ.get("REPO_SHA")
     env: str = os.environ.get("ENV")
-    image: str = f"arjoonn/jci:{version}"
+    # image: str = f"arjoonn/jci:{version}"
+    image: str = "jci"
 
 
 const = Const()

@@ -94,14 +94,12 @@ def _build():
         )
     # Build the image
     im_tag = f"im_jayporeci__pipe__{const.repo_sha}"
-    _, logs = client.images.build(
+    client.images.build(
         path="/jaypore_ci/build",
         dockerfile="cicd/Dockerfile",
         tag=im_tag,
-        # pull=True,
+        pull=const.image != "jci",  # are we in debug mode?
     )
-    for log in logs:
-        print(log["stream"].rstrip() if "stream" in log else log)
     tell("Copy repo code")
     # Copy the clean files to a shared volume so that jobs can use that.
     logs = client.containers.run(
