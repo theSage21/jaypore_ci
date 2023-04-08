@@ -80,7 +80,7 @@ def _build():
             RUN     touch /jaypore_ci && rm -rf /jaypore_ci
             COPY    ./ /jaypore_ci/repo/
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
-            RUN     ls /jaypore_ci
+            RUN     ls -alR /jaypore_ci
             ENTRYPOINT ["/bin/bash", "-l", "-c"]
             """
         )
@@ -94,12 +94,14 @@ def _build():
         )
     # Build the image
     im_tag = f"im_jayporeci__pipe__{const.repo_sha}"
-    client.images.build(
+    _, logs = client.images.build(
         path="/jaypore_ci/build",
         dockerfile="cicd/Dockerfile",
         tag=im_tag,
         pull=const.image != "jci",  # are we in debug mode?
     )
+    for log in logs:
+        print(log["stream"].rstrip() if "stream" in log else log)
     tell("Copy repo code")
     # Copy the clean files to a shared volume so that jobs can use that.
     logs = client.containers.run(
@@ -112,7 +114,6 @@ def _build():
         stdout=True,
         stderr=True,
     )
-    print(logs.decode())
     tell("Repo image built", im_tag)
 
 
