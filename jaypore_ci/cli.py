@@ -98,7 +98,7 @@ def _build():
         path="/jaypore_ci/build",
         dockerfile="cicd/Dockerfile",
         tag=im_tag,
-        pull=True,
+        # pull=True,
     )
     for log in logs:
         print(log["stream"].rstrip() if "stream" in log else log)
