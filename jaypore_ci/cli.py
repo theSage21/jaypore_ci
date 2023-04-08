@@ -105,7 +105,7 @@ def _build():
     # Copy the clean files to a shared volume so that jobs can use that.
     logs = client.containers.run(
         im_tag,
-        command="'echo hi'",
+        command="'ls -alR /jaypore_ci/repo'",
         volumes=[
             f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
         ],
