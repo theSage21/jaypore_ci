@@ -80,9 +80,7 @@ def _build():
             RUN     touch /jaypore_ci && rm -rf /jaypore_ci
             COPY    ./ /jaypore_ci/repo/
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
-            RUN     apt-get install tree
-            RUN     tree /jaypore_ci
-            ENTRYPOINT ["/bin/bash", "-l", "-c"]
+            ENTRYPOINT ["/bin/bash", "-c"]
             """
         )
     with open("/jaypore_ci/build/cicd/copy_tree.sh", "w", encoding="utf-8") as fl:
@@ -111,10 +109,11 @@ def _build():
         command="ls -alR /jaypore_ci/repo",
         volumes=[f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run"],
         working_dir="/jaypore_ci",
-        remove=False,
+        remove=True,
         stdout=True,
         stderr=True,
     )
+    print(logs.decode())
     tell("Repo image built", im_tag)
 
 
