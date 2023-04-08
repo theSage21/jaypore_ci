@@ -106,7 +106,9 @@ def _build():
     logs = client.containers.run(
         im_tag,
         command="ls -alR /jaypore_ci",
-        volumes=[f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run"],
+        volumes=[
+            f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
+        ],
         working_dir="/jaypore_ci",
         name=f"jayporeci__copytocache__{const.repo_sha}",
         remove=False,
