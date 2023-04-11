@@ -77,20 +77,16 @@ def _build():
     with open("/jaypore_ci/build/cicd/Dockerfile", "w", encoding="utf-8") as fl:
         fl.write(
             f"""
-            FROM    {const.image}
+            FROM    jcilib
             RUN     touch /jaypore_ci && rm -rf /jaypore_ci
             COPY    ./ /jaypore_ci/repo/
             RUN     cd /jaypore_ci/repo/ && git clean -fdx
-            ENTRYPOINT ["/bin/bash", "-c"]
             """
         )
     # Build the image
     im_tag = f"im_jayporeci__pipe__{const.repo_sha}"
     client.images.build(
-        path="/jaypore_ci/build",
-        dockerfile="cicd/Dockerfile",
-        tag=im_tag,
-        pull=const.image != "jci",  # are we in debug mode?
+        path="/jaypore_ci/build", dockerfile="cicd/Dockerfile", tag=im_tag, pull=False
     )
     tell("Copy repo code", im_tag)
     # Copy the clean files to a shared volume so that jobs can use that.
@@ -158,7 +154,7 @@ _hook_cmd = """
             -v $REPO_ROOT:/jaypore_ci/repo:ro \
             -v /tmp/jayporeci__src__$REPO_SHA:/jaypore_ci/run \
             -d \
-            {const.image} hook
+            jci hook
     """
 
 
