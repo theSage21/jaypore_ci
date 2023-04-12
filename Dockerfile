@@ -20,7 +20,6 @@ run     chmod u+x /bin/sops /bin/age /bin/age-keygen
 
 # Install docker
 
-run     apt-get remove docker docker-engine docker.io containerd runc
 run     apt-get update && apt install -y wget curl zip vim ca-certificates gnupg
 run     mkdir -m 0755 -p /etc/apt/keyrings
 run     curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg

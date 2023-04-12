@@ -2,10 +2,10 @@ import shutil
 import subprocess
 from pathlib import Path
 
-import docker
 import click
 
 from jaypore_ci.config import const
+from jaypore_ci import docker
 
 __MAX_WIDTH__ = 75
 
@@ -26,7 +26,6 @@ def tell(msg, detail=""):
 
 def _run():
     tell(f"Read secrets/{const.env}.enc")
-    client = docker.from_env()
     # Get environment from secrets
     env = {}
     if const.env:
@@ -53,7 +52,7 @@ def _run():
     # Run job with environment set
     for pipe in Path("/jaypore_ci/run/cicd/config").glob("*.py"):
         tell("Start pipeline", pipe.name)
-        container = client.containers.run(
+        container = docker.run(
             image=f"im_jayporeci__pipe__{const.repo_sha}",
             command=f"python3 {pipe}",
             name=f"jayporeci__pipe__{pipe.name[:-3]}__{const.repo_sha}",
@@ -62,16 +61,13 @@ def _run():
                 f"/tmp/jayporeci__src__{const.repo_sha}:/jaypore_ci/run",
                 "/var/run/docker.sock:/var/run/docker.sock",
             ],
-            working_dir="/jaypore_ci/run",
-            detach=True,
-            remove=False,
+            workdir="/jaypore_ci/run",
         )
-        tell("", container.id)
+        tell("", container)
 
 
 def _build():
     tell("Build repo image", f"sha: {const.repo_sha}")
-    client = docker.from_env()
     # Copy repo to build so that we can add an extra dockerfile
     shutil.copytree("/jaypore_ci/repo", "/jaypore_ci/build")
     with open("/jaypore_ci/build/cicd/Dockerfile", "w", encoding="utf-8") as fl:
@@ -85,12 +81,10 @@ def _build():
         )
     # Build the image
     im_tag = f"im_jayporeci__pipe__{const.repo_sha}"
-    client.images.build(
-        path="/jaypore_ci/build", dockerfile="cicd/Dockerfile", tag=im_tag, pull=False
-    )
+    docker.build(path="/jaypore_ci/build", dockerfile="cicd/Dockerfile", tag=im_tag)
     tell("Copy repo code", im_tag)
     # Copy the clean files to a shared volume so that jobs can use that.
-    logs = client.containers.run(
+    logs = docker.run(
         im_tag,
         command="bash -c 'cp -r /jaypore_ci/repo/. /jaypore_ci/run'",
         volumes=[
