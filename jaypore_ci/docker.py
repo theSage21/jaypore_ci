@@ -46,3 +46,29 @@ def build(*, tag: str, path: str = ".", dockerfile: str = None) -> str:
         cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, shell=True
     )
     return proc.stdout.decode()
+
+
+def ps(*, f: Dict[str, str] = None):
+    cmd = ["docker", "ps"]
+    if f:
+        cmd += [arg for key, value in f.items() for arg in ["-f", f"{key}={value}"]]
+    proc = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, shell=True
+    )
+    return proc.stdout.decode()
+
+
+def network_ls(*, f: Dict[str, List[str]] = None):
+    cmd = ["docker", "network", "ls"]
+    if f:
+        for key, val in f.items():
+            if isinstance(val, (list, tuple)):
+                for v in val:
+                    cmd += ["-f", f"{name}={v}"]
+            else:
+                cmd += ["-f", f"{name}={val}"]
+
+    proc = subprocess.run(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, check=False, shell=True
+    )
+    return proc.stdout.decode()

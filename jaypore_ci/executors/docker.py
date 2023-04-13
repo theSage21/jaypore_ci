@@ -4,11 +4,10 @@ A docker executor for Jaypore CI.
 from copy import deepcopy
 
 import pendulum
-import docker
 from rich import print as rprint
 from tqdm import tqdm
 
-from jaypore_ci import clean
+from jaypore_ci import clean, docker
 from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
 from jaypore_ci.config import const
 from jaypore_ci.logging import logger
@@ -29,8 +28,6 @@ class Docker(Executor):
         super().__init__()
         self.pipe_id = None
         self.pipeline = None
-        self.docker = docker.from_env()
-        self.client = docker.APIClient()
         self.__execution_order__ = []
 
     def logging(self):
@@ -64,7 +61,7 @@ class Docker(Executor):
         a_week_back = pendulum.now().subtract(days=7)
         pipe_ids_removed = set()
         for container in tqdm(
-            self.docker.containers.list(filters={"status": "exited"}),
+            docker.ps(f={"status": "exited"}),
             desc="Removing jobs older than a week",
         ):
             if "jayporeci_" not in container.name:
@@ -77,8 +74,12 @@ class Docker(Executor):
             if finished_at <= a_week_back:
                 container.remove(v=True)
         for network in tqdm(
-            self.docker.networks.list(
-                names=[self.get_net(pipe_id=pipe_id) for pipe_id in pipe_ids_removed]
+            docker.network_ls(
+                f={
+                    "name": [
+                        self.get_net(pipe_id=pipe_id) for pipe_id in pipe_ids_removed
+                    ]
+                }
             ),
             desc="Removing related networks",
         ):
