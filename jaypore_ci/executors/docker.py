@@ -7,7 +7,7 @@ import pendulum
 from rich import print as rprint
 from tqdm import tqdm
 
-from jaypore_ci import clean, docker
+from jaypore_ci import clean, docker, sub
 from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
 from jaypore_ci.config import const
 from jaypore_ci.logging import logger
@@ -61,7 +61,7 @@ class Docker(Executor):
         a_week_back = pendulum.now().subtract(days=7)
         pipe_ids_removed = set()
         for container in tqdm(
-            docker.ps(f={"status": "exited"}),
+            sub.run("docker ps -f status=exited").stdout.decode().split(),
             desc="Removing jobs older than a week",
         ):
             if "jayporeci_" not in container.name:
@@ -73,17 +73,16 @@ class Docker(Executor):
             finished_at = pendulum.parse(container.attrs["State"]["FinishedAt"])
             if finished_at <= a_week_back:
                 container.remove(v=True)
-        for network in tqdm(
-            docker.network_ls(
-                f={
-                    "name": [
-                        self.get_net(pipe_id=pipe_id) for pipe_id in pipe_ids_removed
-                    ]
-                }
-            ),
-            desc="Removing related networks",
-        ):
-            network.remove()
+        pipes = "\n".join(
+            [f"-f name={self.get_net(pipe_id=pipe_id)}" for pipe_id in pipe_ids_removed]
+        )
+        net_ids = (
+            sub.run(f"docker network ls {pipes} --format 'table {{.ID}}'")
+            .stdout.decode()
+            .split("\n")
+        )[1:]
+        net_ids = " ".join(net_ids)
+        sub.run(f"docker network rm {net_ids}")
 
     def get_net(self, *, pipe_id=None):
         """
@@ -101,14 +100,19 @@ class Docker(Executor):
         """
         assert self.pipe_id is not None, "Cannot create network if pipe is not set"
         for _ in range(3):
-            if len(self.docker.networks.list(names=[self.get_net()])) != 0:
+            if (
+                len(
+                    sub.run(f"docker network ls -f name={self.get_net()}")
+                    .stdout.decode()
+                    .split("\n")
+                )
+                != 1
+            ):
                 self.logging().info("Found network", network_name=self.get_net())
                 return
             self.logging().info(
                 "Create network",
-                subprocess=self.docker.networks.create(
-                    name=self.get_net(), driver="bridge"
-                ),
+                subprocess=sub.run(f"docker network create -d bridge {self.get_net()}"),
             )
         raise TriggerFailed("Cannot create network")
 
