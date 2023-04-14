@@ -1,6 +1,7 @@
 """
 A docker executor for Jaypore CI.
 """
+import json
 from copy import deepcopy
 
 import pendulum
@@ -60,19 +61,24 @@ class Docker(Executor):
     def delete_old_containers(self):
         a_week_back = pendulum.now().subtract(days=7)
         pipe_ids_removed = set()
+        containers_to_remove = set()
         for container in tqdm(
-            sub.run("docker ps -f status=exited").stdout.decode().split(),
+            sub.run("docker ps -f status=exited --format json").stdout.decode().split(),
             desc="Removing jobs older than a week",
         ):
-            if "jayporeci_" not in container.name:
+            container = json.loads(container)
+            if "jayporeci_" not in container["Names"]:
                 continue
-            if "__job__" in container.name:
+            if "__job__" in container["Names"]:
                 pipe_ids_removed.add(
-                    container.name.split("__job__")[1].split("__", 1)[0]
+                    container["Names"].split("__job__")[1].split("__", 1)[0]
                 )
-            finished_at = pendulum.parse(container.attrs["State"]["FinishedAt"])
+            finished_at = pendulum.parse(container["CreatedAt"])
             if finished_at <= a_week_back:
-                container.remove(v=True)
+                containers_to_remove.add(container["ID"])
+        containers_to_remove = " ".join(containers_to_remove)
+        sub.run(f"docker container rm -v {containers_to_remove}")
+        # Remove networks
         pipes = "\n".join(
             [f"-f name={self.get_net(pipe_id=pipe_id)}" for pipe_id in pipe_ids_removed]
         )
