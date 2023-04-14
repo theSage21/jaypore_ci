@@ -168,6 +168,16 @@ Pipeline config
     - Jobs inherit keyword arguments from Pipelines, then stages, then whatever
       is specified at the job level.
 
+      
+.. mermaid::
+
+    flowchart TD
+      A(REPO- holds information about the project) --> B(PIPELINE)
+      %% flowchart LR
+      B <-->C(EXECUTOR- runs the job)
+      B --->D(REPORTER- responsible for creating output in Text/Markdown Reporter)
+      D -->E(REMOTE- report is publish in Gitmore/gitea/github/email)
+
 
 Secrets and environment variables
 *********************************
