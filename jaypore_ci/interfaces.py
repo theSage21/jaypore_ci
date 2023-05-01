@@ -59,31 +59,45 @@ class RemoteInfo(NamedTuple):
             ssh+git://git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
 
             git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
-            git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
 
             https://gitea.arjoonn.com/midpath/jaypore_ci.git
             http://gitea.arjoonn.com/midpath/jaypore_ci.git
         """
-        original = remote
-        if (
-            ("ssh://" in remote or "ssh+git://" in remote or "://" not in remote)
-            and "@" in remote
-            and remote.endswith(".git")
-        ):
-            _, remote = remote.split("@")
-            netloc, path = remote.split(":")
-            owner, repo = path.split("/")
-            return RemoteInfo(
-                netloc=netloc,
-                owner=owner,
-                repo=repo.replace(".git", ""),
-                original=original,
-            )
+        if cls._is_remote_ssh(remote):
+            return cls._parse_ssh_remote(remote)
+
+        assert (
+            "https://" in remote or "http://" in remote
+        ) and ".git" in remote, (
+            f"Only https, http & ssh remotes are supported. (Remote: {remote})"
+        )
+
         url = urlparse(remote)
         return RemoteInfo(
             netloc=url.netloc,
             owner=Path(url.path).parts[1],
             repo=Path(url.path).parts[2].replace(".git", ""),
+            original=remote,
+        )
+
+    @classmethod
+    def _is_remote_ssh(cls, remote: str) -> bool:
+        return (
+            ("ssh://" in remote or "ssh+git://" in remote or "://" not in remote)
+            and "@" in remote
+            and remote.endswith(".git")
+        )
+
+    @classmethod
+    def _parse_ssh_remote(cls, remote: str) -> "RemoteInfo":
+        original = remote
+        _, remote = remote.split("@")
+        netloc, path = remote.split(":")
+        owner, repo = path.split("/")
+        return RemoteInfo(
+            netloc=netloc,
+            owner=owner,
+            repo=repo.replace(".git", ""),
             original=original,
         )
 
@@ -96,21 +110,28 @@ class Repo:
     def __init__(self, sha: str, branch: str, remote: str, commit_message: str):
         self.sha: str = sha
         self.branch: str = branch
-        self.remote: str = remote
+        self.remote: RemoteInfo = RemoteInfo.parse(remote)
         self.commit_message: str = commit_message
-
-    def files_changed(self, target: str) -> List[str]:
-        """
-        Returns list of file paths that have changed between current sha and
-        target.
-        """
-        raise NotImplementedError()
 
     @classmethod
     def from_env(cls) -> "Repo":
         """
         Creates a :class:`~jaypore_ci.interfaces.Repo` instance
         from the environment and git repo on disk.
+        """
+        raise NotImplementedError()
+
+    @classmethod
+    def _get_remote_url(cls) -> str:
+        """
+        Returns remote URL from the repo on disk.
+        """
+        raise NotImplementedError()
+
+    def files_changed(self, target: str) -> List[str]:
+        """
+        Returns list of file paths that have changed between current sha and
+        target.
         """
         raise NotImplementedError()
 
@@ -159,8 +180,8 @@ class Remote:
     """
 
     def __init__(self, *, sha, branch):
-        self.sha = sha
         self.branch = branch
+        self.sha = sha
 
     def publish(self, report: str, status: str):
         """

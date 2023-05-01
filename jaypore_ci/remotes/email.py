@@ -68,9 +68,6 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
         """
         Creates a remote instance from the environment.
         """
-        remote = urlparse(repo.remote)
-        owner = Path(remote.path).parts[1]
-        name = Path(remote.path).parts[2].replace(".git", "")
         return cls(
             host=os.environ.get("JAYPORE_EMAIL_HOST", "smtp.gmail.com"),
             port=int(os.environ.get("JAYPORE_EMAIL_PORT", 465)),
@@ -80,7 +77,7 @@ class Email(Remote):  # pylint: disable=too-many-instance-attributes
             email_from=os.environ.get(
                 "JAYPORE_EMAIL_FROM", os.environ["JAYPORE_EMAIL_ADDR"]
             ),
-            subject=f"JCI [{owner}/{name}] [{repo.branch} {repo.sha[:8]}]",
+            subject=f"JCI [{repo.remote.owner}/{repo.remote.repo}] [{repo.branch} {repo.sha[:8]}]",
             branch=repo.branch,
             sha=repo.sha,
         )

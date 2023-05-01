@@ -29,11 +29,10 @@ class Gitea(Remote):  # pylint: disable=too-many-instance-attributes
         """
         os.environ["JAYPORE_COMMIT_BRANCH"] = repo.branch
         os.environ["JAYPORE_COMMIT_SHA"] = repo.sha
-        rem = RemoteInfo.parse(repo.remote)
         return cls(
-            root=f"https://{rem.netloc}",
-            owner=rem.owner,
-            repo=rem.repo,
+            root=f"https://{repo.remote.netloc}",
+            owner=repo.remote.owner,
+            repo=repo.remote.repo,
             branch=repo.branch,
             token=os.environ["JAYPORE_GITEA_TOKEN"],
             sha=repo.sha,
