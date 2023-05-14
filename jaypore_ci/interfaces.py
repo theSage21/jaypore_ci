@@ -38,8 +38,8 @@ class Status(Enum):
 
 class RemoteInfo(NamedTuple):
     """
-    Holds information about the remote irrespective of if the remote was ssh or
-    https.
+    Holds information about the remote.
+    Can be ssh / https.
     """
 
     netloc: str
@@ -58,7 +58,6 @@ class RemoteInfo(NamedTuple):
             ssh://git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
             ssh+git://git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
 
-            git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
             git@gitea.arjoonn.com:arjoonn/jaypore_ci.git
 
             https://gitea.arjoonn.com/midpath/jaypore_ci.git
@@ -91,6 +90,7 @@ class RemoteInfo(NamedTuple):
 class Repo:
     """
     Contains information about the current VCS repo.
+    Currently only supports Git.
     """
 
     def __init__(self, sha: str, branch: str, remote: str, commit_message: str):
