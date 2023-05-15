@@ -276,10 +276,12 @@ class Platform:
         """
 
     @classmethod
-    def from_env(cls, *, repo: "Repo"):
+    def from_env(cls, *, repo: "Repo") -> "Platform":
         """
-        This function should create a Remote instance from the given environment.
-        It can read git information / look at environment variables etc.
+        This function should create a :class:`~jayporeci.definitions.Platform"
+        instance from the given :class:`~jayporeci.definitions.Repo`
+
+        It can read git information from disk / look at environment variables etc.
         """
         raise NotImplementedError()
 
