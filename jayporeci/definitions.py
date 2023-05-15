@@ -31,12 +31,12 @@ class Status(Enum):
 class Stage(NamedTuple):
     """
     A :class:`~jayporeci.definitions.Job` always belongs to a stage.
-    Stages are executed in order of their definition.
+    Stages are executed in order of their declaration.
     """
 
     name: str
     pipeline: "Pipeline"
-    kwargs: Dict[Any, Any]
+    kwargs: Dict[Any, Any] = None
 
 
 class Job(NamedTuple):
@@ -56,7 +56,7 @@ class Job(NamedTuple):
     status: Status
     image: str
     stage: Stage
-    kwargs: Dict[Any, Any]
+    kwargs: Dict[Any, Any] = None
 
 
 class Edge(NamedTuple):
@@ -69,7 +69,7 @@ class Edge(NamedTuple):
     kind: str
     frm: Job
     to: Job
-    kwargs: Dict[Any, Any]
+    kwargs: Dict[Any, Any] = None
 
 
 class Pipeline(NamedTuple):
@@ -77,23 +77,10 @@ class Pipeline(NamedTuple):
     A pipeline is a set of jobs and edges.
     """
 
-    jobs: Set[Job]
-    edges: Set[Edge]
-    kwargs: Dict[Any, Any]
-
-    def job(
-        self,
-        name: str,
-        cmd: str,
-    ) -> "Pipeline":
-        """
-        Creates a :class:`~jayporeci.definitions.Job` instance based on the
-        pipeline/stage that it is being defined in. See
-
-        :class:`~jayporeci.definitions.Job` for details on what parameters can be
-        passed to this function.
-        """
-        return self
+    repo: "Repo"
+    jobs: Set[Job] = None
+    edges: Set[Edge] = None
+    kwargs: Dict[Any, Any] = None
 
 
 class Scheduler(NamedTuple):
@@ -102,8 +89,10 @@ class Scheduler(NamedTuple):
     performs a walk on the graph defined by the pipeline using the executor.
     """
 
-    pipeline: Pipeline
-    executor: Executor
+    pipeline: "Pipeline"
+    executor: "Executor"
+    platform: "Platform"
+    executor: "Executor"
 
     def __enter__(self):
         self.executor.setup()
@@ -116,6 +105,20 @@ class Scheduler(NamedTuple):
             self.executor.teardown()
             self.remote.teardown()
         return False
+
+    def job(
+        self,
+        name: str,
+        cmd: str,
+    ) -> "Scheduler":
+        """
+        Creates a :class:`~jayporeci.definitions.Job` instance based on the
+        pipeline/stage that it is being defined in. See
+
+        :class:`~jayporeci.definitions.Job` for details on what parameters can be
+        passed to this function.
+        """
+        return self
 
 
 # ---- ======================
