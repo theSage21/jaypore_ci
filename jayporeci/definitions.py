@@ -83,27 +83,29 @@ class Pipeline(NamedTuple):
     kwargs: Dict[Any, Any] = None
 
 
-class Scheduler(NamedTuple):
+class Scheduler:
     """
     A Scheduler takes a pipeline along with an instance of an executor and
     performs a walk on the graph defined by the pipeline using the executor.
     """
 
-    pipeline: "Pipeline"
-    executor: "Executor"
-    platform: "Platform"
-    executor: "Executor"
+    def __init__(self, *, pipeline, executor, platform, reporter) -> "Scheduler":
+        self.pipeline: "Pipeline" = pipeline
+        self.executor: "Executor" = executor
+        self.platform: "Platform" = platform
+        self.reporter: "Reporter" = reporter
+        self.__run_on_exit__ = True
 
     def __enter__(self):
         self.executor.setup()
-        self.remote.setup()
-        return self.pipeline
+        self.platform.setup()
+        return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if Pipeline.__run_on_exit__:
+        if self.__run_on_exit__:
             self.run()
             self.executor.teardown()
-            self.remote.teardown()
+            self.platform.teardown()
         return False
 
     def job(
@@ -119,6 +121,24 @@ class Scheduler(NamedTuple):
         passed to this function.
         """
         return self
+
+    def run(self) -> None:
+        """
+        Run the scheduler.
+
+        This is called automatically when the context
+        of the scheduler declaration finishes.
+
+        It is usually a simple loop of:
+
+            - Given (self.pipeline, self.executor)
+            - Issue new executor command
+            - Loop
+
+        The scheduler will try to do a complete "walk" of the pipeline, based
+        on how jobs are declared and connected.
+        """
+        pass
 
 
 # ---- ======================
