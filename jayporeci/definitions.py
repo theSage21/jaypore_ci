@@ -4,6 +4,18 @@ from urllib.parse import urlparse
 from typing import NamedTuple, Dict, Any, List, Tuple
 
 
+class Const(NamedTuple):
+    """
+    Constants that do not change.
+    They are defined here in order to be DRY.
+    """
+
+    jci: str = "JayporeCI"
+
+
+const = Const()
+
+
 class Status(Enum):
     """
     Used to define status of :class:`~jayporeci.definitions.Job`s and
