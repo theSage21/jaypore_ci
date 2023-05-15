@@ -6,11 +6,10 @@ from copy import deepcopy
 
 import pendulum
 from rich import print as rprint
-from tqdm import tqdm
 
-from jaypore_ci import clean, docker, sub
-from jaypore_ci.interfaces import Executor, TriggerFailed, JobStatus
-from jaypore_ci.config import const
+from jayporeci import docker, sub
+from jayporeci.interfaces import Executor, TriggerFailed, JobStatus
+from jayporeci.config import const
 
 from . import definitions as defs
 
@@ -67,9 +66,8 @@ class Docker(Executor):
         a_week_back = pendulum.now().subtract(days=7)
         pipe_ids_removed = set()
         containers_to_remove = set()
-        for container in tqdm(
-            sub.run("docker ps -f status=exited --format json").stdout.decode().split(),
-            desc="Removing jobs older than a week",
+        for container in (
+            sub.run("docker ps -f status=exited --format json").stdout.decode().split()
         ):
             container = json.loads(container)
             if "jayporeci_" not in container["Names"]:
