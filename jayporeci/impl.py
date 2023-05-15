@@ -26,29 +26,18 @@ class SimpleScheduler(defs.Scheduler):
             for job in stage.jobs or set():
                 assert job.name not in seen, f"Job name taken: {job.name}"
                 seen.add(job.name)
+        return True
 
     def stage(self, name: str, **kwargs: Dict[Any, Any]):
         """
         Create a stage for the pipelines.
         """
         name = self.clean_name(name)
-        stage = defs.Stage(name, kwargs)
+        stage = defs.Stage(name, tuple(kwargs.items()))
         stages = [] if self.pipeline.stages is None else list(self.pipeline.stages)
         self.pipeline = self.pipeline._replace(stages=tuple(list(stages) + [stage]))
         assert self.names_are_globally_unique()
-
-    def dependency_source_exists(self, name) -> bool:
-        """
-        Ensure that a given dependency source exists.
-        """
-        stages = self.pipeline.stages or []
-        if not stages:
-            return False
-        stage = stages[-1]
-        for job in stage.jobs or []:
-            if job.name == name:
-                return True
-        return False
+        return stage
 
     def job(
         self,
@@ -68,23 +57,50 @@ class SimpleScheduler(defs.Scheduler):
         stages = self.pipeline.stages
         stage = stages[-1]
         # --- create job
-        job = defs.Job(name, command, kwargs=kwargs)
+        job = defs.Job(
+            name,
+            command,
+            kwargs.pop("is_service", False),
+            kwargs.pop("state", defs.Status.PENDING),
+            kwargs.pop("image", None),
+            tuple(kwargs.items()),
+        )
         if stage.jobs is None:
-            stage = stage._replace(jobs={job})
+            stage = stage._replace(jobs=tuple([job]))
+        else:
+            stage = stage._replace(jobs=tuple(list(stage.jobs) + [job]))
         # --- assign edges in stage
         if after is not None:
             if isinstance(after, str):
                 after = [after]
             after = [self.clean_name(dep_name) for dep_name in after]
             for dep_name in after:
-                assert self.dependency_source_exists(
+                assert stage.has_job(
                     dep_name
-                ), f"Dependency not found: {dep_name}"
+                ), f"Dependency not found: {dep_name}: {stage}"
             for dep_name in after:
                 stage = stage.add_edge(
                     frm_name=dep_name, to_name=job.name, kind=defs.EdgeKind.ALL_SUCCESS
                 )
         # --- assign in right location
         stages = list(stages[:-1]) + [stage]
-        self.pipeline._replace(stages=tuple(stages))
+        self.pipeline = self.pipeline._replace(stages=tuple(stages))
         assert self.names_are_globally_unique()
+
+
+class DockerExecutor(defs.Executor):
+    pass
+
+
+class CliPlatform(defs.Platform):
+    pass
+
+
+class TextReporter(defs.Reporter):
+    pass
+
+
+class GitRepo(defs.Repo):
+    @classmethod
+    def from_env(cls) -> "GitRepo":
+        return cls("", "", "", "")

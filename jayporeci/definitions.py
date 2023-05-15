@@ -10,10 +10,10 @@ class Status(Enum):
     :class:`~jayporeci.definitions.Pipeline`s.
     """
 
-    PENDING = "p"
-    RUNNING = "r"
-    SUCCESS = "s"
-    FAILURE = "f"
+    PENDING = 0
+    RUNNING = 5
+    SUCCESS = 10
+    FAILURE = 15
 
     def is_terminal(self):
         return self in (Status.SUCCESS, Status.FAILURE)
@@ -35,9 +35,21 @@ class Stage(NamedTuple):
     """
 
     name: str
-    jobs: Tuple[Job] = None
-    edges: Tuple[Edge] = None
-    kwargs: Dict[Any, Any] = None
+    jobs: Tuple["Job"] = None
+    edges: Tuple["Edge"] = None
+    kwargs: Tuple[Tuple[Any, Any]] = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        return False
+
+    def has_job(self, name):
+        for job in self.jobs or []:
+            if job.name == name:
+                return True
+        return False
 
     def add_edge(
         self,
@@ -45,7 +57,7 @@ class Stage(NamedTuple):
         frm_name: str,
         to_name: str,
         kind: "EdgeKind",
-        kwargs: Dict[Any, Any] = None,
+        kwargs: Tuple[Tuple[Any, Any]] = None,
     ) -> "Stage":
         frm = None
         for job in self.jobs or []:
@@ -60,7 +72,7 @@ class Stage(NamedTuple):
                 break
         assert to is not None, f"Job not found: {to_name}"
         edges = set([] if self.edges is None else self.edges)
-        edges.add(Edge(kind=kind, frm=frm, to=to, kwargs=kwargs))
+        edges.add(Edge(kind=kind, frm=frm, to=to, kwargs=kwargs or tuple()))
         return self._replace(edges=tuple(edges))
 
 
@@ -77,10 +89,9 @@ class Job(NamedTuple):
     name: str
     command: str
     is_service: bool
-    pipeline: "Pipeline"
     state: "JobState"
     image: str
-    kwargs: Dict[Any, Any] = None
+    kwargs: Tuple[Tuple[Any, Any]] = None
 
 
 class EdgeKind(Enum):
@@ -97,7 +108,7 @@ class Edge(NamedTuple):
     kind: EdgeKind
     frm: Job
     to: Job
-    kwargs: Dict[Any, Any] = None
+    kwargs: Tuple[Tuple[Any, Any]] = None
 
 
 class Pipeline(NamedTuple):
@@ -107,7 +118,7 @@ class Pipeline(NamedTuple):
 
     repo: "Repo"
     stages: Tuple[Stage] = None
-    kwargs: Dict[Any, Any] = None
+    kwargs: Tuple[Tuple[Any, Any]] = None
 
 
 class Scheduler:
@@ -124,15 +135,11 @@ class Scheduler:
         self.__run_on_exit__ = True
 
     def __enter__(self):
-        self.executor.setup()
-        self.platform.setup()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self.__run_on_exit__:
             self.run()
-            self.executor.teardown()
-            self.platform.teardown()
         return False
 
     def job(self) -> "Scheduler":
@@ -299,10 +306,6 @@ class Platform:
     Something that allows us to show other people the status of the CI job.
     It could be gitea / github / gitlab / email.
     """
-
-    def __init__(self, *, sha, branch):
-        self.sha = sha
-        self.branch = branch
 
     def publish(self, report: str, status: str):
         """
