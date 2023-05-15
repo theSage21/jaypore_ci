@@ -59,7 +59,8 @@ class SimpleScheduler(defs.Scheduler):
         **kwargs: Dict[Any, Any],
     ):
         """
-        Define a job and link it with the provided dependencies.
+        Define a :class:`~jayporeci.definitions.Job` and link it with the jobs
+        that it depends on.
         """
         name = self.clean_name(name)
         if self.pipeline.stages is None:
