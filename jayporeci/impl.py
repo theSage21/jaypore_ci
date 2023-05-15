@@ -58,6 +58,9 @@ class SimpleScheduler(defs.Scheduler):
         after: Union[List[str], str] = None,
         **kwargs: Dict[Any, Any],
     ):
+        """
+        Define a job and link it with the provided dependencies.
+        """
         name = self.clean_name(name)
         if self.pipeline.stages is None:
             self.stage("Jaypore CI")
