@@ -1,7 +1,7 @@
 from .impl import (
     SimpleScheduler,
     DockerExecutor,
-    CliPlatform,
+    ConsolePlatform,
     TextReporter,
     GitRepo,
 )
@@ -22,9 +22,10 @@ def run():
     how the objects fit together.
     """
 
+    repo = GitRepo.from_env()
     sch = SimpleScheduler(
-        pipeline=Pipeline(repo=GitRepo.from_env()),
-        platform=CliPlatform(),
+        pipeline=Pipeline(repo=repo),
+        platform=ConsolePlatform(repo=repo),
         reporter=TextReporter(),
         executor=DockerExecutor(),
     )
