@@ -1,7 +1,7 @@
 from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
-from typing import NamedTuple, Set, Dict, Any, List, Tuple
+from typing import NamedTuple, Dict, Any, List, Tuple
 
 
 class Status(Enum):
@@ -35,9 +35,33 @@ class Stage(NamedTuple):
     """
 
     name: str
-    jobs: Set[Job] = None
-    edges: Set[Edge] = None
+    jobs: Tuple[Job] = None
+    edges: Tuple[Edge] = None
     kwargs: Dict[Any, Any] = None
+
+    def add_edge(
+        self,
+        *,
+        frm_name: str,
+        to_name: str,
+        kind: "EdgeKind",
+        kwargs: Dict[Any, Any] = None,
+    ) -> "Stage":
+        frm = None
+        for job in self.jobs or []:
+            if job.name == frm_name:
+                frm = job
+                break
+        assert frm is not None, f"Job not found: {frm_name}"
+        to = None
+        for job in self.jobs or []:
+            if job.name == to_name:
+                to = job
+                break
+        assert to is not None, f"Job not found: {to_name}"
+        edges = set([] if self.edges is None else self.edges)
+        edges.add(Edge(kind=kind, frm=frm, to=to, kwargs=kwargs))
+        return self._replace(edges=tuple(edges))
 
 
 class Job(NamedTuple):
@@ -59,6 +83,10 @@ class Job(NamedTuple):
     kwargs: Dict[Any, Any] = None
 
 
+class EdgeKind(Enum):
+    ALL_SUCCESS = "all"
+
+
 class Edge(NamedTuple):
     """
     An edge connects two jobs and always has a kind.
@@ -66,7 +94,7 @@ class Edge(NamedTuple):
     determine if the edge can be followed.
     """
 
-    kind: str
+    kind: EdgeKind
     frm: Job
     to: Job
     kwargs: Dict[Any, Any] = None

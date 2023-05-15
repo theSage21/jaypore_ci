@@ -1,11 +1,11 @@
-from jayporeci.definitions import (
-    Pipeline,
-    Executor,
-    Platform,
-    Reporter,
-    Repo,
-    Scheduler,
+from .impl import (
+    SimpleScheduler,
+    DockerExecutor,
+    CliPlatform,
+    TextReporter,
+    GitRepo,
 )
+from .definitions import Pipeline
 
 
 def run():
@@ -22,10 +22,10 @@ def run():
     how the objects fit together.
     """
 
-    sch = Scheduler(
-        pipeline=Pipeline(repo=Repo.from_env()),
-        platform=Platform(),
-        reporter=Reporter(),
-        executor=Executor(),
+    sch = SimpleScheduler(
+        pipeline=Pipeline(repo=GitRepo.from_env()),
+        platform=CliPlatform(),
+        reporter=TextReporter(),
+        executor=DockerExecutor(),
     )
     return sch

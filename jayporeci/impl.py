@@ -1,3 +1,4 @@
+from typing import Dict, List, Union, Tuple, Any
 from . import definitions as defs
 
 
@@ -12,7 +13,7 @@ class SimpleScheduler(defs.Scheduler):
         """
         allowed_alphabet = "abcdefghijklmnopqrstuvwxyz1234567890"
         allowed_alphabet += allowed_alphabet.upper()
-        return "".join(l if l in allowed_alphabet else "-" for l in given)
+        return "".join(l if l in allowed_alphabet else "-" for l in name)
 
     def names_are_globally_unique(self) -> bool:
         """
@@ -36,12 +37,25 @@ class SimpleScheduler(defs.Scheduler):
         self.pipeline = self.pipeline._replace(stages=tuple(list(stages) + [stage]))
         assert self.names_are_globally_unique()
 
+    def dependency_source_exists(self, name) -> bool:
+        """
+        Ensure that a given dependency source exists.
+        """
+        stages = self.pipeline.stages or []
+        if not stages:
+            return False
+        stage = stages[-1]
+        for job in stage.jobs or []:
+            if job.name == name:
+                return True
+        return False
+
     def job(
         self,
         name: str,
         command: str,
         *,
-        after: List[str] = None,
+        after: Union[List[str], str] = None,
         **kwargs: Dict[Any, Any],
     ):
         name = self.clean_name(name)
@@ -51,9 +65,22 @@ class SimpleScheduler(defs.Scheduler):
         stage = stages[-1]
         # --- create job
         job = defs.Job(name, command, kwargs=kwargs)
-        # --- assign in right location
         if stage.jobs is None:
             stage = stage._replace(jobs={job})
+        # --- assign edges in stage
+        if after is not None:
+            if isinstance(after, str):
+                after = [after]
+            after = [self.clean_name(dep_name) for dep_name in after]
+            for dep_name in after:
+                assert self.dependency_source_exists(
+                    dep_name
+                ), f"Dependency not found: {dep_name}"
+            for dep_name in after:
+                stage = stage.add_edge(
+                    frm_name=dep_name, to_name=job.name, kind=defs.EdgeKind.ALL_SUCCESS
+                )
+        # --- assign in right location
         stages = list(stages[:-1]) + [stage]
         self.pipeline._replace(stages=tuple(stages))
-        assert self.names_are_globally_unique(name)
+        assert self.names_are_globally_unique()
