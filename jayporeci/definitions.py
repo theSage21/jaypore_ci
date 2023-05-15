@@ -1,9 +1,14 @@
+"""
+This module holds definitions that are used throughtout Jaypore CI.
+
+It also holds configuration information that is obtained from the environment.
+"""
 import os
 from enum import Enum
 import importlib.metadata
 from pathlib import Path
 from urllib.parse import urlparse
-from typing import NamedTuple, Dict, Any, List, Tuple
+from typing import NamedTuple, Any, List, Tuple
 
 import tomllib
 
