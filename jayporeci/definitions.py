@@ -1,7 +1,7 @@
 from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
-from typing import NamedTuple, Set, Dict, Any, List
+from typing import NamedTuple, Set, Dict, Any, List, Tuple
 
 
 class Status(Enum):
@@ -35,7 +35,8 @@ class Stage(NamedTuple):
     """
 
     name: str
-    pipeline: "Pipeline"
+    jobs: Set[Job] = None
+    edges: Set[Edge] = None
     kwargs: Dict[Any, Any] = None
 
 
@@ -53,9 +54,8 @@ class Job(NamedTuple):
     command: str
     is_service: bool
     pipeline: "Pipeline"
-    status: Status
+    state: "JobState"
     image: str
-    stage: Stage
     kwargs: Dict[Any, Any] = None
 
 
@@ -78,8 +78,7 @@ class Pipeline(NamedTuple):
     """
 
     repo: "Repo"
-    jobs: Set[Job] = None
-    edges: Set[Edge] = None
+    stages: Tuple[Stage] = None
     kwargs: Dict[Any, Any] = None
 
 
@@ -108,11 +107,7 @@ class Scheduler:
             self.platform.teardown()
         return False
 
-    def job(
-        self,
-        name: str,
-        cmd: str,
-    ) -> "Scheduler":
+    def job(self) -> "Scheduler":
         """
         Creates a :class:`~jayporeci.definitions.Job` instance based on the
         pipeline/stage that it is being defined in. See
@@ -138,7 +133,6 @@ class Scheduler:
         The scheduler will try to do a complete "walk" of the pipeline, based
         on how jobs are declared and connected.
         """
-        pass
 
 
 # ---- ======================
@@ -226,6 +220,7 @@ class Repo:
 
 
 class JobState(NamedTuple):
+    status: Status
     is_running: bool
     exit_code: int
     logs: str
