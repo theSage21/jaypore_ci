@@ -353,7 +353,7 @@ class Pipeline:  # pylint: disable=too-many-instance-attributes
         *,
         depends_on: List[str] = None,
         **kwargs,
-    ) -> Job:
+    ) -> "Pipeline":
         """
         Creates a :class:`~jaypore_ci.jci.Job` instance based on the
         pipeline/stage that it is being defined in. See
