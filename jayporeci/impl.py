@@ -3,6 +3,14 @@ from . import definitions as defs
 
 
 class SimpleScheduler(defs.Scheduler):
+    """
+    The main scheduler for Jaypore CI.
+
+    It will run stages in the sequence of their declaration.
+    Within each stage it will run jobs in parallel unless they depend on
+    something.
+    """
+
     @classmethod
     def clean_name(cls, name: str) -> str:
         """
@@ -30,7 +38,10 @@ class SimpleScheduler(defs.Scheduler):
 
     def stage(self, name: str, **kwargs: Dict[Any, Any]):
         """
-        Create a stage for the pipelines.
+        Create a :class:`~jayporeci.definitions.Stage` within which jobs can be
+        defined.
+        Any extra keyword arguments will be passed on to jobs inside this
+        stage.
         """
         name = self.clean_name(name)
         stage = defs.Stage(name, tuple(kwargs.items()))
