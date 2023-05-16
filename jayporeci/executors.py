@@ -2,26 +2,32 @@
 A docker executor for Jaypore CI.
 """
 import json
+import subprocess
 from copy import deepcopy
 
 import pendulum
 from rich import print as rprint
 
-from jayporeci import docker, sub
 from jayporeci.interfaces import Executor, TriggerFailed, JobStatus
 from jayporeci.config import const
 
 from . import definitions as defs
 
 
-class DockerExecutor(defs.Executor):
-    pass
-
-
-class Docker(Executor):
+def run(args, **kwargs):
     """
-    Run jobs via docker. To communicate with docker we use the `Python docker
-    sdk <https://docker-py.readthedocs.io/en/stable/client.html>`_.
+    Add common options for subprocess calls.
+    """
+    kwargs["shell"] = True
+    kwargs["stdout"] = subprocess.PIPE
+    kwargs["stderr"] = subprocess.STDOUT
+    kwargs["check"] = False
+    return subprocess.run(args, **kwargs)
+
+
+class DockerExecutor(defs.Executor):
+    """
+    Run jobs via docker.
 
     Using this executor will:
         - Create a separate network for each run
@@ -35,26 +41,6 @@ class Docker(Executor):
         self.pipeline = None
         self.__execution_order__ = []
 
-    def logging(self):
-        """
-        Returns a logging instance that has executor specific
-        information bound to it.
-        """
-        return logger.bind(pipe_id=self.pipe_id, network_name=self.get_net())
-
-    def set_pipeline(self, pipeline):
-        """
-        Set executor's pipeline to the given one.
-
-        This will clean up old networks and create new ones.
-        """
-        if self.pipe_id is not None:
-            self.delete_network()
-            self.delete_all_jobs()
-        self.pipe_id = pipeline.pipe_id
-        self.pipeline = pipeline
-        self.create_network()
-
     def teardown(self):
         self.delete_network()
         self.delete_all_jobs()
@@ -63,11 +49,11 @@ class Docker(Executor):
         self.delete_old_containers()
 
     def delete_old_containers(self):
-        a_week_back = pendulum.now().subtract(days=7)
+        too_old = pendulum.now().subtract(days=defs.const.retain_old_jobs_n_days)
         pipe_ids_removed = set()
         containers_to_remove = set()
         for container in (
-            sub.run("docker ps -f status=exited --format json").stdout.decode().split()
+            run("docker ps -f status=exited --format json").stdout.decode().split()
         ):
             container = json.loads(container)
             if "jayporeci_" not in container["Names"]:
@@ -77,21 +63,21 @@ class Docker(Executor):
                     container["Names"].split("__job__")[1].split("__", 1)[0]
                 )
             finished_at = pendulum.parse(container["CreatedAt"])
-            if finished_at <= a_week_back:
+            if finished_at <= too_old:
                 containers_to_remove.add(container["ID"])
         containers_to_remove = " ".join(containers_to_remove)
-        sub.run(f"docker container rm -v {containers_to_remove}")
+        run(f"docker container rm -v {containers_to_remove}")
         # Remove networks
         pipes = "\n".join(
             [f"-f name={self.get_net(pipe_id=pipe_id)}" for pipe_id in pipe_ids_removed]
         )
         net_ids = (
-            sub.run(f"docker network ls {pipes} --format 'table {{.ID}}'")
+            run(f"docker network ls {pipes} --format 'table {{.ID}}'")
             .stdout.decode()
             .split("\n")
         )[1:]
         net_ids = " ".join(net_ids)
-        sub.run(f"docker network rm {net_ids}")
+        run(f"docker network rm {net_ids}")
 
     def get_net(self, *, pipe_id=None):
         """
@@ -111,7 +97,7 @@ class Docker(Executor):
         for _ in range(3):
             if (
                 len(
-                    sub.run(f"docker network ls -f name={self.get_net()}")
+                    run(f"docker network ls -f name={self.get_net()}")
                     .stdout.decode()
                     .split("\n")
                 )
@@ -121,7 +107,7 @@ class Docker(Executor):
                 return
             self.logging().info(
                 "Create network",
-                subprocess=sub.run(f"docker network create -d bridge {self.get_net()}"),
+                subprocess=run(f"docker network create -d bridge {self.get_net()}"),
             )
         raise TriggerFailed("Cannot create network")
 

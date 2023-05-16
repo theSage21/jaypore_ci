@@ -73,6 +73,8 @@ class Const(NamedTuple):
     repo_sha: str = os.environ.get("REPO_SHA")
     env: str = os.environ.get("ENV")
     # image: str = f"arjoonn/jci:{version}"
+    # ---
+    retain_old_jobs_n_days: int = 7
 
 
 const = Const()
