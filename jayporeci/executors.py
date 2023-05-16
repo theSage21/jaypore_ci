@@ -4,12 +4,11 @@ A docker executor for Jaypore CI.
 import json
 import subprocess
 from copy import deepcopy
+from typing import NamedTuple
 
 import pendulum
 from rich import print as rprint
 
-from jayporeci.interfaces import Executor, TriggerFailed, JobStatus
-from jayporeci.config import const
 
 from . import definitions as defs
 
@@ -25,6 +24,37 @@ def run(args, **kwargs):
     return subprocess.run(args, **kwargs)
 
 
+class Names(NamedTuple):
+    """
+    Names for things:
+
+        - jayporeci__net__<sha>
+        - jayporeci__jci__<sha>
+        - jayporeci__job__<sha>__<jobname>
+    """
+
+    name: str
+    sha: str
+    job: str = None
+    kind: str = None
+    prefix: str = "jayporeci"
+    sep: str = "__"
+
+    @classmethod
+    def parse(cls, name):
+        if not name.startswith(f"{cls.prefix}{cls.sep}"):
+            return None
+        _, kind, *parts = name.split(cls.sep)
+        if len(parts) == 1:
+            return cls(name=name, sha=parts[0])
+        if len(parts) == 2:
+            return cls(name=name, sha=parts[0], job=parts[1])
+        return None
+
+    def get_related(self, kind):
+        return self.sep.join([self.prefix, kind, self.sha])
+
+
 class DockerExecutor(defs.Executor):
     """
     Run jobs via docker.
@@ -37,40 +67,35 @@ class DockerExecutor(defs.Executor):
 
     def __init__(self):
         super().__init__()
-        self.pipe_id = None
-        self.pipeline = None
         self.__execution_order__ = []
 
     def teardown(self):
-        self.delete_network()
-        self.delete_all_jobs()
+        self.delete_run_network()
+        self.delete_run_jobs()
 
     def setup(self):
         self.delete_old_containers()
 
     def delete_old_containers(self):
         too_old = pendulum.now().subtract(days=defs.const.retain_old_jobs_n_days)
-        pipe_ids_removed = set()
-        containers_to_remove = set()
+        names_to_remove = set()
         for container in (
             run("docker ps -f status=exited --format json").stdout.decode().split()
         ):
             container = json.loads(container)
-            if "jayporeci_" not in container["Names"]:
+            name = Names.parse(container["Names"])
+            if name is None:
                 continue
-            if "__job__" in container["Names"]:
-                pipe_ids_removed.add(
-                    container["Names"].split("__job__")[1].split("__", 1)[0]
-                )
             finished_at = pendulum.parse(container["CreatedAt"])
             if finished_at <= too_old:
-                containers_to_remove.add(container["ID"])
-        containers_to_remove = " ".join(containers_to_remove)
-        run(f"docker container rm -v {containers_to_remove}")
+                names_to_remove.add(name)
+        spaced_names = " ".join(cname.name for cname in names_to_remove)
+        run(f"docker container rm -v {spaced_names}")
         # Remove networks
-        pipes = "\n".join(
-            [f"-f name={self.get_net(pipe_id=pipe_id)}" for pipe_id in pipe_ids_removed]
-        )
+        net_ids = [
+            cname.sep.join([cname.prefix, cname.sha]) for cname in names_to_remove
+        ]
+        pipes = " ".join([f"-f name={net_id}" for net_id in net_ids])
         net_ids = (
             run(f"docker network ls {pipes} --format 'table {{.ID}}'")
             .stdout.decode()
@@ -78,13 +103,6 @@ class DockerExecutor(defs.Executor):
         )[1:]
         net_ids = " ".join(net_ids)
         run(f"docker network rm {net_ids}")
-
-    def get_net(self, *, pipe_id=None):
-        """
-        Return a network name based on what the curent pipeline is.
-        """
-        pipe_id = pipe_id if pipe_id is not None else self.pipe_id
-        return f"jayporeci__net__{pipe_id}" if pipe_id is not None else None
 
     def create_network(self):
         """
