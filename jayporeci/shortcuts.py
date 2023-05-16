@@ -27,6 +27,6 @@ def run():
         pipeline=Pipeline(repo=repo),
         platform=ConsolePlatform(repo=repo),
         reporter=TextReporter(),
-        executor=DockerExecutor(),
+        executor=DockerExecutor(sha=repo.sha),
     )
     return sch

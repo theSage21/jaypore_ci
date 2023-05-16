@@ -75,7 +75,7 @@ class Name(NamedTuple):
             raw = cls.sep.join([cls.prefix, kind, sha])
         return Name(kind=kind, sha=sha, job=job, raw=raw)
 
-    def get_related(self, kind):
+    def get_related(self, kind: NameKind) -> str:
         return self.sep.join([self.prefix, kind, self.sha])
 
 
@@ -177,66 +177,47 @@ class DockerExecutor(defs.Executor):
         name = Name.create(kind=NameKind.NET, sha=self.sha)
         run(f"docker network rm {name.raw}")
 
-    def run(self, job: "Job") -> str:
+    def run(self, job: defs.Job) -> str:
         """
         Run the given job and return a docker container ID.
         In case something goes wrong it will raise TriggerFailed
         """
-        assert self.pipe_id is not None, "Cannot run job if pipe id is not set"
-        ex_kwargs = deepcopy(job.executor_kwargs)
-        env = job.get_env()
-        env.update(ex_kwargs.pop("environment", {}))
-        env["REPO_SHA"] = const.repo_sha
-        env["REPO_ROOT"] = const.repo_root
-        env["ENV"] = const.env
-        trigger = {
-            "detach": True,
-            "environment": env,
-            "volumes": list(
-                set(
-                    [
-                        "/var/run/docker.sock:/var/run/docker.sock",
-                        "/usr/bin/docker:/usr/bin/docker:ro",
-                        f"/tmp/jayporeci__src__{self.pipeline.remote.sha}:/jaypore_ci/run",
-                    ]
-                    + (ex_kwargs.pop("volumes", []))
-                )
-            ),
-            "name": self.get_job_name(job),
-            "network": self.get_net(),
-            "image": job.image,
-            "command": job.command if not job.is_service else None,
-        }
-        for key, value in ex_kwargs.items():
-            if key in trigger:
-                self.logging().warning(
-                    f"Overwriting existing value of `{key}` for job trigger.",
-                    old_value=trigger[key],
-                    new_value=value,
-                )
-            trigger[key] = value
+        # Build env
+        env = {}
+        env["REPO_SHA"] = self.sha
+        env["ENV"] = defs.const.env
+        cmd = ["docker", "run", "--detach"]
+        for key, val in env.items():
+            cmd += ["-e", f"{key}={val}"]
+        cmd += [
+            "-v",
+            "/var/run/docker.sock:/var/run/docker.sock",
+            "-v",
+            f"/tmp/jayporeci__src__{self.sha}:/jayporeci/run",
+        ]
+        name = Name.create(kind=NameKind.JOB, sha=self.sha, job=job.name)
+        cmd += [
+            "--name",
+            name.raw,
+            "--network",
+            name.get_related(NameKind.NET),
+        ]
         if not job.is_service:
-            trigger["working_dir"] = "/jaypore_ci/run"
-        if not job.is_service:
-            assert job.command
-        rprint(trigger)
-        try:
-            container = self.docker.containers.run(**trigger)
-            self.__execution_order__.append(
-                (self.get_job_name(job, tail=True), container.id, "Run")
-            )
-            return container.id
-        except docker.errors.APIError as e:
-            self.logging().exception(e)
-            raise TriggerFailed(e) from e
+            cmd += ["--workdir", "/jayporeci/run"]
+        cmd += [job.image, job.command if not job.is_service else None]
+        rprint(cmd)
+        container_id = run(cmd).stdout.decode().strip()
+        self.__execution_order__.append((name.job, container_id, "Run"))
+        return container_id
 
-    def get_status(self, run_id: str) -> JobStatus:
+    def get_status(self, container_id: str) -> defs.JobState:
         """
         Given a run_id, it will get the status for that run.
         """
-        inspect = self.client.inspect_container(run_id)
-        status = JobStatus(
-            is_running=inspect["State"]["Running"],
+        inspect = run(f"docker inspect {container_id}").stdout.decode().strip()
+        inspect = json.loads(inspect)
+        status = defs.JobState(
+            is_running=inspect["State"]["Status"] == "running",
             exit_code=int(inspect["State"]["ExitCode"]),
             logs="",
             started_at=pendulum.parse(inspect["State"]["StartedAt"]),
@@ -245,8 +226,7 @@ class DockerExecutor(defs.Executor):
             else None,
         )
         # --- logs
-        self.logging().debug("Check status", status=status)
-        logs = self.docker.containers.get(run_id).logs().decode()
+        logs = run(f"docker logs {container_id}").stdout.decode().strip()
         return status._replace(logs=logs)
 
     def get_execution_order(self):
