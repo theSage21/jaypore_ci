@@ -3,6 +3,7 @@ A docker executor for Jaypore CI.
 """
 import json
 import subprocess
+from enum import Enum
 from copy import deepcopy
 from typing import NamedTuple
 
@@ -24,19 +25,30 @@ def run(args, **kwargs):
     return subprocess.run(args, **kwargs)
 
 
-class Names(NamedTuple):
+class NameKind(Enum):
+    NET = "net"
+    JOB = "job"
+    JCI = "jci"
+
+    @classmethod
+    def parse(cls, kind) -> "NameKind":
+        kind = {"net": NameKind.NET, "job": NameKind.JOB, "jci": NameKind.JCI}.get(kind)
+        return kind
+
+
+class Name(NamedTuple):
     """
-    Names for things:
+    Name for things:
 
         - jayporeci__net__<sha>
         - jayporeci__jci__<sha>
         - jayporeci__job__<sha>__<jobname>
     """
 
-    name: str
+    raw: str
     sha: str
     job: str = None
-    kind: str = None
+    kind: NameKind = None
     prefix: str = "jayporeci"
     sep: str = "__"
 
@@ -45,11 +57,23 @@ class Names(NamedTuple):
         if not name.startswith(f"{cls.prefix}{cls.sep}"):
             return None
         _, kind, *parts = name.split(cls.sep)
+        kind = NameKind.parse(kind)
         if len(parts) == 1:
-            return cls(name=name, sha=parts[0])
+            return cls(name=name, sha=parts[0], kind=kind)
         if len(parts) == 2:
-            return cls(name=name, sha=parts[0], job=parts[1])
+            return cls(name=name, sha=parts[0], job=parts[1], kind=kind)
         return None
+
+    @classmethod
+    def create(cls, *, kind: NameKind, sha: str, job: str = None) -> "Name":
+        raw = None
+        if kind == NameKind.NET:
+            raw = cls.sep.join([cls.prefix, kind, sha])
+        if kind == NameKind.JOB:
+            raw = cls.sep.join([cls.prefix, kind, sha, job])
+        if kind == NameKind.JCI:
+            raw = cls.sep.join([cls.prefix, kind, sha])
+        return Name(kind=kind, sha=sha, job=job, raw=raw)
 
     def get_related(self, kind):
         return self.sep.join([self.prefix, kind, self.sha])
@@ -58,15 +82,19 @@ class Names(NamedTuple):
 class DockerExecutor(defs.Executor):
     """
     Run jobs via docker.
+    This executor requires a `sha` to be given to it and it will run everything
+    by isolating it within this `SHA` value.
 
     Using this executor will:
-        - Create a separate network for each run
-        - Run jobs as part of the network
-        - Clean up all jobs when the pipeline exits.
+        - Create a separate namespace for each run.
+        - Run jobs as part of the namespace.
+        - Create and use networks within this namespace.
+        - Clean up everything when the pipeline exits.
     """
 
-    def __init__(self):
+    def __init__(self, sha: str):
         super().__init__()
+        self.sha = sha
         self.__execution_order__ = []
 
     def teardown(self):
@@ -83,18 +111,17 @@ class DockerExecutor(defs.Executor):
             run("docker ps -f status=exited --format json").stdout.decode().split()
         ):
             container = json.loads(container)
-            name = Names.parse(container["Names"])
-            if name is None:
+            name = Name.parse(container["Names"])
+            if name is None or name.sha == self.sha:
+                # Non-Jaypore CI containers and containers for this sha
                 continue
             finished_at = pendulum.parse(container["CreatedAt"])
             if finished_at <= too_old:
                 names_to_remove.add(name)
-        spaced_names = " ".join(cname.name for cname in names_to_remove)
+        spaced_names = " ".join(name.raw for name in names_to_remove)
         run(f"docker container rm -v {spaced_names}")
         # Remove networks
-        net_ids = [
-            cname.sep.join([cname.prefix, cname.sha]) for cname in names_to_remove
-        ]
+        net_ids = [name.sep.join([name.prefix, name.sha]) for name in names_to_remove]
         pipes = " ".join([f"-f name={net_id}" for net_id in net_ids])
         net_ids = (
             run(f"docker network ls {pipes} --format 'table {{.ID}}'")
@@ -111,62 +138,44 @@ class DockerExecutor(defs.Executor):
         If it fails to do so in 3 attempts it will raise an
         exception and fail.
         """
-        assert self.pipe_id is not None, "Cannot create network if pipe is not set"
+        name = Name.create(kind=NameKind.NET, sha=self.sha)
         for _ in range(3):
             if (
                 len(
-                    run(f"docker network ls -f name={self.get_net()}")
+                    run(f"docker network ls -f name={name.raw}")
                     .stdout.decode()
                     .split("\n")
                 )
                 != 1
             ):
-                self.logging().info("Found network", network_name=self.get_net())
+                # self.logging().info("Found network", network_name=self.get_net())
                 return
-            self.logging().info(
-                "Create network",
-                subprocess=run(f"docker network create -d bridge {self.get_net()}"),
-            )
-        raise TriggerFailed("Cannot create network")
+            run(f"docker network create -d bridge {name.raw}")
+            # self.logging().info( "Create network",)
+        raise Exception("Cannot create network")
 
-    def delete_all_jobs(self):
+    def delete_run_jobs(self):
         """
         Deletes all jobs associated with the pipeline for this
         executor.
 
         It will stop any jobs that are still running.
         """
-        assert self.pipe_id is not None, "Cannot delete jobs if pipe is not set"
-        job = None
-        for job in self.pipeline.jobs.values():
-            if job.run_id is not None and not job.run_id.startswith("pyrun_"):
-                container = self.docker.containers.get(job.run_id)
-                container.stop(timeout=1)
-                self.logging().info("Stop job:", run_id=job.run_id)
-                job.check_job(with_update_report=False)
-        if job is not None:
-            job.check_job()
-        self.logging().info("All jobs stopped")
+        names_to_remove = set()
+        for container in run("docker ps --format json").stdout.decode().split():
+            container = json.loads(container)
+            name = Name.parse(container["Names"])
+            if name.sha == self.sha:
+                names_to_remove.add(name)
+        names = " ".join(name.raw for name in names_to_remove)
+        run(f"docker stop -t 5 {names}")
 
-    def delete_network(self):
+    def delete_run_network(self):
         """
-        Delete the network for this executor.
+        Delete the network for this executor run.
         """
-        assert self.pipe_id is not None, "Cannot delete network if pipe is not set"
-        try:
-            net = self.docker.networks.get(self.get_net())
-            net.remove()
-        except docker.errors.NotFound:
-            self.logging().error("Delete network: Not found", netid=self.get_net())
-
-    def get_job_name(self, job, tail=False):
-        """
-        Generates a clean job name slug.
-        """
-        name = clean.name(job.name)
-        if tail:
-            return name
-        return f"jayporeci__job__{self.pipe_id}__{name}"
+        name = Name.create(kind=NameKind.NET, sha=self.sha)
+        run(f"docker network rm {name.raw}")
 
     def run(self, job: "Job") -> str:
         """
