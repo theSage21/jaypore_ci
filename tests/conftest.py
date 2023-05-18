@@ -13,5 +13,5 @@ def ex(n=1):
 
 
 @pytest.fixture(scope="function", params=factories.configs(), ids=str)
-def configs(request):
+def config(request):
     yield request.param

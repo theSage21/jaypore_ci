@@ -17,12 +17,12 @@ def configs():
             reporter=TextReporter(),
             executor=DockerExecutor(sha=repo.sha),
         )
-        sch.__run_on_exit__ = False
-        with SC() as sch:
+        SC.__run_on_exit__ = False
+        with SC as sch:
             for stage in range(10):
                 known_jobs = set()
                 with sch.stage(f"Stage:{stage}"):
-                    for job in range(10):
+                    for job in range(30):
                         ex = random.choice([0, 1])
                         af = random.choice(range(len(known_jobs))) if known_jobs else 0
                         af = random.sample(known_jobs, af) if af else None
