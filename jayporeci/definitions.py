@@ -75,6 +75,10 @@ class Const(NamedTuple):
     # image: str = f"arjoonn/jci:{version}"
     # ---
     retain_old_jobs_n_days: int = 7
+    # -- paths
+    repo_cpath: str = "/jayporeci/repo"
+    run_cpath: str = "/jayporeci/run"
+    tmp_hpath: str = "/tmp/jayporeci__src__{repo_sha}"
 
 
 const = Const()
@@ -249,6 +253,7 @@ class Scheduler:
         The scheduler will try to do a complete "walk" of the pipeline, based
         on how jobs are declared and connected.
         """
+        raise NotImplementedError()
 
 
 # ---- ======================

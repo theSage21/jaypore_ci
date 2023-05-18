@@ -97,3 +97,24 @@ class SimpleScheduler(defs.Scheduler):
         stages = list(stages[:-1]) + [stage]
         self.pipeline = self.pipeline._replace(stages=tuple(stages))
         assert self.names_are_globally_unique()
+
+    def run(self):
+        for stage in self.pipeline.stages or []:
+            jobs = stage.jobs or []
+            # --- generate triggering order
+            children = {job: set() for job in jobs}
+            has_no_parent = set(jobs)
+            for edge in stage.edges or []:
+                assert edge.kind == EdgeKind.ALL_SUCCESS
+                children[edge.frm].add(edge.to)
+                if edge.to in has_no_parent:
+                    has_no_parent.remove(edge.to)
+            walk = []
+            this_layer = list(has_no_parent)
+            while this_layer:
+                next_layer = set()
+                for job in this_layer:
+                    walk.append(job)
+                    next_layer |= children[job]
+                this_layer = next_layer
+            # --- now issue orders to execute them
