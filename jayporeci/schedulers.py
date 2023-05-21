@@ -69,12 +69,12 @@ class SimpleScheduler(defs.Scheduler):
         stage = stages[-1]
         # --- create job
         job = defs.Job(
-            name,
-            command,
-            kwargs.pop("is_service", False),
-            kwargs.pop("state", defs.Status.PENDING),
-            kwargs.pop("image", None),
-            tuple(kwargs.items()),
+            name=name,
+            command=command,
+            is_service=kwargs.pop("is_service", False),
+            state=kwargs.pop("state", defs.Status.PENDING),
+            image=kwargs.pop("image", None),
+            kwargs=tuple(kwargs.items()),
         )
         if stage.jobs is None:
             stage = stage._replace(jobs=tuple([job]))

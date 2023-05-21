@@ -13,6 +13,9 @@ from typing import NamedTuple, Any, List, Tuple
 import tomllib
 
 
+KwargType = Tuple[Tuple[Any, Any]]
+
+
 class Version(NamedTuple):
     """
     Semantic versioning for Jaypore CI
@@ -21,7 +24,7 @@ class Version(NamedTuple):
     major: int
     minor: int
     patch: int
-    trail: str = None
+    trail: str | None = None
 
     def __repr__(self):
         if self.trail:
@@ -33,8 +36,7 @@ class Version(NamedTuple):
 
     @classmethod
     def parse(cls, inp: str) -> "Version":
-        if inp is None or inp == "":
-            return None
+        assert inp is not None and inp != ""
         trail = None
         major, minor, patch = inp.split(".")
         major = major[1:] if major[0].lower() == "v" else major
@@ -53,12 +55,9 @@ def get_version() -> Version:
     try:
         return Version.parse(importlib.metadata.version(__package__ or __name__))
     except importlib.metadata.PackageNotFoundError:
-        try:
-            with open((Path(__file__) / "../../pyproject.toml").resolve(), "rb") as fl:
-                data = tomllib.load(fl)
-            return Version.parse(data["tool"]["poetry"]["version"])
-        except FileNotFoundError:
-            return None
+        with open((Path(__file__) / "../../pyproject.toml").resolve(), "rb") as fl:
+            data = tomllib.load(fl)
+        return Version.parse(data["tool"]["poetry"]["version"])
 
 
 class Const(NamedTuple):
@@ -69,9 +68,9 @@ class Const(NamedTuple):
 
     jci: str = "JayporeCI"
     version: Version = get_version()
-    repo_root: str = os.environ.get("REPO_ROOT")
-    repo_sha: str = os.environ.get("REPO_SHA")
-    env: str = os.environ.get("ENV")
+    repo_root: str = os.environ["REPO_ROOT"]
+    repo_sha: str = os.environ["REPO_SHA"]
+    env: str = os.environ["ENV"]
     # image: str = f"arjoonn/jci:{version}"
     # ---
     retain_old_jobs_n_days: int = 7
@@ -120,9 +119,9 @@ class Stage(NamedTuple):
     """
 
     name: str
-    jobs: Tuple["Job"] = None
-    edges: Tuple["Edge"] = None
-    kwargs: Tuple[Tuple[Any, Any]] = None
+    jobs: Tuple["Job"] | None = None
+    edges: Tuple["Edge"] | None = None
+    kwargs: KwargType | None = None
 
     def __enter__(self):
         return self
@@ -142,7 +141,7 @@ class Stage(NamedTuple):
         frm_name: str,
         to_name: str,
         kind: "EdgeKind",
-        kwargs: Tuple[Tuple[Any, Any]] = None,
+        kwargs: KwargType | None = None,
     ) -> "Stage":
         frm = None
         for job in self.jobs or []:
@@ -176,7 +175,7 @@ class Job(NamedTuple):
     is_service: bool
     state: "JobState"
     image: str
-    kwargs: Tuple[Tuple[Any, Any]] = None
+    kwargs: KwargType | None = None
 
 
 class EdgeKind(Enum):
@@ -193,7 +192,7 @@ class Edge(NamedTuple):
     kind: EdgeKind
     frm: Job
     to: Job
-    kwargs: Tuple[Tuple[Any, Any]] = None
+    kwargs: KwargType | None = None
 
 
 class Pipeline(NamedTuple):
@@ -202,8 +201,8 @@ class Pipeline(NamedTuple):
     """
 
     repo: "Repo"
-    stages: Tuple[Stage] = None
-    kwargs: Tuple[Tuple[Any, Any]] = None
+    stages: Tuple[Stage] | None = None
+    kwargs: KwargType | None = None
 
 
 class Scheduler:
@@ -212,7 +211,14 @@ class Scheduler:
     performs a walk on the graph defined by the pipeline using the executor.
     """
 
-    def __init__(self, *, pipeline, executor, platform, reporter) -> "Scheduler":
+    def __init__(
+        self,
+        *,
+        pipeline: "Pipeline",
+        executor: "Executor",
+        platform: "Platform",
+        reporter: "Reporter",
+    ):
         self.pipeline: "Pipeline" = pipeline
         self.executor: "Executor" = executor
         self.platform: "Platform" = platform

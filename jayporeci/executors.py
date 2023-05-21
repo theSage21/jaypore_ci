@@ -32,8 +32,7 @@ class NameKind(Enum):
 
     @classmethod
     def parse(cls, kind) -> "NameKind":
-        kind = {"net": NameKind.NET, "job": NameKind.JOB, "jci": NameKind.JCI}.get(kind)
-        return kind
+        return {"net": NameKind.NET, "job": NameKind.JOB, "jci": NameKind.JCI}[kind]
 
 
 class Name(NamedTuple):
@@ -47,8 +46,8 @@ class Name(NamedTuple):
 
     raw: str
     sha: str
-    job: str = None
-    kind: NameKind = None
+    kind: NameKind
+    job: str | None = None
     prefix: str = "jayporeci"
     sep: str = "__"
 
@@ -65,7 +64,7 @@ class Name(NamedTuple):
         return None
 
     @classmethod
-    def create(cls, *, kind: NameKind, sha: str, job: str = None) -> "Name":
+    def create(cls, *, kind: NameKind, sha: str, job: str | None = None) -> "Name":
         raw = None
         if kind == NameKind.NET:
             raw = cls.sep.join([cls.prefix, kind, sha])
