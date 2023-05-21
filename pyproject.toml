@@ -24,7 +24,26 @@ pytest-profiling = "^1.7.0"
 hypothesis = "^6.68.2"
 sphinx-rtd-theme = "^1.2.0"
 sphinxcontrib-mermaid = "^0.8.1"
+pyright = "^1.1.309"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pyright]
+
+include = ["jayporeci", "tests", "cicd"]
+exclude = [
+    "**/__pycache__",
+]
+defineConstant = { DEBUG = true }
+
+reportMissingImports = true
+reportMissingTypeStubs = false
+
+pythonVersion = "3.11"
+pythonPlatform = "Linux"
+
+executionEnvironments = [
+  { root = "jayporeci" }
+]
