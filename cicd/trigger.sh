@@ -9,10 +9,12 @@ main() {
     export REPO_SHA=$(git rev-parse HEAD)
     export REPO_ROOT=$(git rev-parse --show-toplevel)
     export ENV=ci
+    # --- build all images
     for TARGET in jcienv jcilib jci;
     do
         docker build -t $TARGET --target $TARGET $REPO_ROOT
     done
+    # --- Run CI
 
     docker run \
         -t \

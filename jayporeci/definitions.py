@@ -75,6 +75,7 @@ class Const(NamedTuple):
     # image: str = f"arjoonn/jci:{version}"
     # ---
     retain_old_jobs_n_days: int = 7
+    max_cli_width = 75
     # -- paths
     repo_cpath: str = "/jayporeci/repo"
     run_cpath: str = "/jayporeci/run"
