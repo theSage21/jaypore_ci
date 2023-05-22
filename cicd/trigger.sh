@@ -16,16 +16,16 @@ main() {
     done
     # --- Run CI
 
-    docker run \
+    # Docker run using this image
+    docker run\
         -t \
         -e ENV \
         -e REPO_SHA \
         -e REPO_ROOT \
         -v /var/run/docker.sock:/var/run/docker.sock \
-        -v $REPO_ROOT:/jayporeci/repo:ro \
         -v /tmp/jayporeci__src__$REPO_SHA:/jayporeci/run \
         -f - \
-        jci hook
+        jayporeci__run__$REPO_SHA hook
 }
 
 (main)
