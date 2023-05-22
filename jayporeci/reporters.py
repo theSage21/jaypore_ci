@@ -26,39 +26,36 @@ class TextReporter(defs.Reporter):
         # with open(f"/jaypore_ci/run/{jobname}.txt", "r", encoding="utf-8") as fl:
         # return fl.read()
 
-    def render(self, pipeline: defs.Pipeline) -> str:
+    def render(self, pipeline: defs.Pipeline, sha: str) -> str:
         """
         Returns a human readable report for a given pipeline.
         """
-        max_name = max(len(job.name) for job in pipeline.jobs.values())
+        max_name = max(len(job.name) for stage in pipeline.stages for job in stage.jobs)
         max_name = max(max_name, len(defs.const.jci))
         max_report = 10
         name = (defs.const.jci + " " * max_name)[:max_name]
         graph = [
             "",
             "```{defs.const.jci}",
-            f"╔ {pipeline.get_status_dot()} : {name} [sha {pipeline.remote.sha[:10]}]",
+            f"╔ {pipeline.get_status().get_dot()} : {name} [sha {sha[:10]}]",
         ]
         closer = "┗" + ("━" * (len(" O : ") + max_name + 1 + 1 + 8 + 1)) + "┛"
         for stage in pipeline.stages:
             nodes, edges = set(), set()
-            for job in pipeline.jobs.values():
-                if job.stage != stage:
-                    continue
+            for job in stage.jobs:
+                # if job.stage != stage:
+                # continue
                 nodes.add(job.name)
-                edges |= {(p, job.name) for p in job.parents}
+                # edges |= {(p, job.name) for p in job.parents}
             if not nodes:
                 continue
             graph += [f"┏━ {stage}", "┃"]
-            for n in sorted(
-                nodes, key=lambda x: (len(pipeline.jobs[x].parents), x)
-            ):  # Fewer parents first
-                n = pipeline.jobs[n]
+            for n in stage.jobs:
                 name = (n.name + " " * max_name)[:max_name]
-                status = __ST_MAP__.get(n.status, "🟡")
-                run_id = f"{n.run_id}"[:8] if n.run_id is not None else ""
+                status = n.state.status.get_dot()
+                run_id = f"{n.state.run_id}"[:8] if n.state.run_id is not None else ""
                 graph += [
-                    f"┃ {status} : {name} [{run_id:<8}] {cls.get_job_duration(n)}"
+                    f"┃ {status} : {name} [{run_id:<8}] {self.get_job_duration(n)}"
                 ]
                 try:
                     report = self.get_job_report(n.name)
@@ -67,8 +64,8 @@ class TextReporter(defs.Reporter):
                 except FileNotFoundError:
                     report = " " * max_report
                 graph[-1] += f" {report}"
-                if n.parents:
-                    graph[-1] += f" ❮-- {n.parents}"
+                # if n.parents:
+                # graph[-1] += f" ❮-- {n.parents}"
             graph += [closer]
         graph += ["```"]
         graph = "\n".join(graph)

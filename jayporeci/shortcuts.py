@@ -24,7 +24,7 @@ def run():
 
     repo = GitRepo.from_env()
     sch = SimpleScheduler(
-        pipeline=Pipeline(repo=repo),
+        pipeline=Pipeline.create(repo=repo),
         platform=ConsolePlatform(repo=repo),
         reporter=TextReporter(),
         executor=DockerExecutor(sha=repo.sha),

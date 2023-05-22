@@ -8,7 +8,8 @@ from enum import Enum
 import importlib.metadata
 from pathlib import Path
 from urllib.parse import urlparse
-from typing import NamedTuple, Any, List, Tuple
+from typing import NamedTuple, Any, List, Tuple, Dict, Union
+from pendulum import Date, DateTime, Duration, Time
 
 import tomllib
 
@@ -119,9 +120,16 @@ class Stage(NamedTuple):
     """
 
     name: str
-    jobs: Tuple["Job"] | None = None
-    edges: Tuple["Edge"] | None = None
-    kwargs: KwargType | None = None
+    jobs: Tuple["Job"]
+    edges: Tuple["Edge"]
+    kwargs: KwargType
+
+    @classmethod
+    def create(cls, *, name: str, **kwargs) -> "Stage":
+        jobs = kwargs.pop("jobs", tuple())
+        edges = kwargs.pop("edges", tuple())
+        kwargs = tuple(kwargs.items())
+        return cls(name=name, jobs=jobs, edges=edges, kwargs=kwargs)
 
     def __enter__(self):
         return self
@@ -136,12 +144,7 @@ class Stage(NamedTuple):
         return False
 
     def add_edge(
-        self,
-        *,
-        frm_name: str,
-        to_name: str,
-        kind: "EdgeKind",
-        kwargs: KwargType | None = None,
+        self, *, frm_name: str, to_name: str, kind: "EdgeKind", **kwargs: Any
     ) -> "Stage":
         frm = None
         for job in self.jobs or []:
@@ -156,7 +159,7 @@ class Stage(NamedTuple):
                 break
         assert to is not None, f"Job not found: {to_name}"
         edges = set([] if self.edges is None else self.edges)
-        edges.add(Edge(kind=kind, frm=frm, to=to, kwargs=kwargs or tuple()))
+        edges.add(Edge(kind=kind, frm=frm, to=to, kwargs=tuple(kwargs.items() or [])))
         return self._replace(edges=tuple(edges))
 
 
@@ -175,7 +178,18 @@ class Job(NamedTuple):
     is_service: bool
     state: "JobState"
     image: str
-    kwargs: KwargType | None = None
+    kwargs: KwargType
+
+    @classmethod
+    def create(cls, **kwargs: Any) -> "Job":
+        return cls(
+            name=kwargs.pop("name"),
+            command=kwargs.pop("command"),
+            is_service=kwargs.pop("is_service"),
+            state=kwargs.pop("state"),
+            image=kwargs.pop("image"),
+            kwargs=tuple(kwargs.items()),
+        )
 
 
 class EdgeKind(Enum):
@@ -192,7 +206,7 @@ class Edge(NamedTuple):
     kind: EdgeKind
     frm: Job
     to: Job
-    kwargs: KwargType | None = None
+    kwargs: KwargType
 
 
 class Pipeline(NamedTuple):
@@ -201,8 +215,33 @@ class Pipeline(NamedTuple):
     """
 
     repo: "Repo"
-    stages: Tuple[Stage] | None = None
-    kwargs: KwargType | None = None
+    stages: Tuple[Stage]
+    kwargs: KwargType
+
+    @classmethod
+    def create(cls, *, repo: "Repo", **kwargs: Any) -> "Pipeline":
+        return cls(
+            repo=repo,
+            stages=kwargs.pop("stages", tuple()),
+            kwargs=tuple(kwargs.items()),
+        )
+
+    def get_status(self):
+        has_running = False
+        has_terminal = False
+        for stage in self.stages:
+            for job in stage.jobs:
+                if job.status == Status.RUNNING:
+                    has_running = True
+                if job.status == Status.FAILURE:
+                    return Status.FAILURE
+                if job.status.is_terminal():
+                    has_terminal = True
+        if has_running:
+            return Status.RUNNING
+        if has_terminal:
+            return Status.SUCCESS
+        return Status.PENDING
 
 
 class Scheduler:
@@ -341,12 +380,13 @@ class Repo:
 
 
 class JobState(NamedTuple):
+    run_id: str
     status: Status
     is_running: bool
     exit_code: int
     logs: str
-    started_at: str
-    finished_at: str
+    started_at: Union[Date, DateTime, Duration, Time]
+    finished_at: Union[Date, DateTime, Duration, Time] | None
 
 
 class Executor:
@@ -393,7 +433,7 @@ class Platform:
     It could be gitea / github / gitlab / email.
     """
 
-    def publish(self, report: str, status: str):
+    def publish(self, report: str, status: "Status"):
         """
         Publish this report somewhere.
         """

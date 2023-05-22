@@ -30,7 +30,7 @@ class GitRepo(defs.Repo):
         )
 
     @classmethod
-    def from_env(cls) -> "Git":
+    def from_env(cls) -> "GitRepo":
         """
         Gets repo status from the environment and git repo on disk.
         """

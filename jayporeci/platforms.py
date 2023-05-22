@@ -6,7 +6,7 @@ class ConsolePlatform(Platform):
     A mock remote implementation.
     """
 
-    def __init__(self, repo: Repo) -> "ConsolePlatform":
+    def __init__(self, repo: Repo):
         self.repo = repo
 
     @classmethod

@@ -47,7 +47,7 @@ class Name(NamedTuple):
     raw: str
     sha: str
     kind: NameKind
-    job: str | None = None
+    job_name: str | None = None
     prefix: str = "jayporeci"
     sep: str = "__"
 
@@ -60,22 +60,24 @@ class Name(NamedTuple):
         if len(parts) == 1:
             return cls(name=name, sha=parts[0], kind=kind)
         if len(parts) == 2:
-            return cls(name=name, sha=parts[0], job=parts[1], kind=kind)
+            return cls(name=name, sha=parts[0], job_name=parts[1], kind=kind)
         return None
 
     @classmethod
-    def create(cls, *, kind: NameKind, sha: str, job: str | None = None) -> "Name":
+    def create(cls, *, kind: NameKind, sha: str, job_name: str | None = None) -> "Name":
         raw = None
         if kind == NameKind.NET:
-            raw = cls.sep.join([cls.prefix, kind, sha])
+            raw = cls.sep.join([cls.prefix, str(kind), sha])
         if kind == NameKind.JOB:
-            raw = cls.sep.join([cls.prefix, kind, sha, job])
+            assert job_name is not None
+            raw = cls.sep.join([cls.prefix, str(kind), sha, job_name])
         if kind == NameKind.JCI:
-            raw = cls.sep.join([cls.prefix, kind, sha])
-        return Name(kind=kind, sha=sha, job=job, raw=raw)
+            raw = cls.sep.join([cls.prefix, str(kind), sha])
+        assert raw is not None
+        return Name(kind=kind, sha=sha, job_name=job_name, raw=raw)
 
     def get_related(self, kind: NameKind) -> str:
-        return self.sep.join([self.prefix, kind, self.sha])
+        return self.sep.join([self.prefix, str(kind), self.sha])
 
 
 class DockerExecutor(defs.Executor):
@@ -194,7 +196,7 @@ class DockerExecutor(defs.Executor):
             "-v",
             f"/tmp/jayporeci__src__{self.sha}:/jayporeci/run",
         ]
-        name = Name.create(kind=NameKind.JOB, sha=self.sha, job=job.name)
+        name = Name.create(kind=NameKind.JOB, sha=self.sha, job_name=job.name)
         cmd += [
             "--name",
             name.raw,
@@ -203,21 +205,30 @@ class DockerExecutor(defs.Executor):
         ]
         if not job.is_service:
             cmd += ["--workdir", "/jayporeci/run"]
-        cmd += [job.image, job.command if not job.is_service else None]
+        cmd += [job.image]
+        if job.command:
+            cmd += [job.command]
         rprint(cmd)
         container_id = run(cmd).stdout.decode().strip()
-        self.__execution_order__.append((name.job, container_id, "Run"))
+        self.__execution_order__.append((name.job_name, container_id, "Run"))
         return container_id
 
-    def get_status(self, container_id: str) -> defs.JobState:
+    def get_status(self, run_id: str) -> defs.JobState:
         """
         Given a run_id, it will get the status for that run.
         """
-        inspect = run(f"docker inspect {container_id}").stdout.decode().strip()
+        inspect = run(f"docker inspect {run_id}").stdout.decode().strip()
         inspect = json.loads(inspect)
-        status = defs.JobState(
-            is_running=inspect["State"]["Status"] == "running",
-            exit_code=int(inspect["State"]["ExitCode"]),
+        is_running = inspect["State"]["Status"] == "running"
+        exit_code = int(inspect["State"]["ExitCode"])
+        status = defs.Status.RUNNING
+        if not is_running:
+            status = defs.Status.SUCCESS if exit_code == 0 else defs.Status.FAILURE
+        state = defs.JobState(
+            run_id=run_id,
+            is_running=is_running,
+            exit_code=exit_code,
+            status=status,
             logs="",
             started_at=pendulum.parse(inspect["State"]["StartedAt"]),
             finished_at=pendulum.parse(inspect["State"]["FinishedAt"])
@@ -225,8 +236,8 @@ class DockerExecutor(defs.Executor):
             else None,
         )
         # --- logs
-        logs = run(f"docker logs {container_id}").stdout.decode().strip()
-        return status._replace(logs=logs)
+        logs = run(f"docker logs {run_id}").stdout.decode().strip()
+        return state._replace(logs=logs)
 
     def get_execution_order(self):
         return {name: i for i, (name, *_) in enumerate(self.__execution_order__)}

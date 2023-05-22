@@ -1,4 +1,4 @@
-from typing import Dict, List, Union, Any
+from typing import Dict, List, Union, Any, Tuple
 from . import definitions as defs
 
 
@@ -36,7 +36,7 @@ class SimpleScheduler(defs.Scheduler):
                 seen.add(job.name)
         return True
 
-    def stage(self, name: str, **kwargs: Dict[Any, Any]):
+    def stage(self, name: str, **kwargs: Any):
         """
         Create a :class:`~jayporeci.definitions.Stage` within which jobs can be
         defined.
@@ -44,7 +44,7 @@ class SimpleScheduler(defs.Scheduler):
         stage.
         """
         name = self.clean_name(name)
-        stage = defs.Stage(name, tuple(kwargs.items()))
+        stage = defs.Stage.create(name=name, **kwargs)
         stages = [] if self.pipeline.stages is None else list(self.pipeline.stages)
         self.pipeline = self.pipeline._replace(stages=tuple(list(stages) + [stage]))
         assert self.names_are_globally_unique()
@@ -55,7 +55,7 @@ class SimpleScheduler(defs.Scheduler):
         name: str,
         command: str,
         *,
-        after: Union[List[str], str] = None,
+        after: List[str] | str | None = None,
         **kwargs: Dict[Any, Any],
     ):
         """
@@ -65,17 +65,11 @@ class SimpleScheduler(defs.Scheduler):
         name = self.clean_name(name)
         if self.pipeline.stages is None:
             self.stage("Jaypore CI")
-        stages = self.pipeline.stages
+        stages: Tuple[defs.Stage] = self.pipeline.stages or tuple()
+        assert len(stages) > 0
         stage = stages[-1]
         # --- create job
-        job = defs.Job(
-            name=name,
-            command=command,
-            is_service=kwargs.pop("is_service", False),
-            state=kwargs.pop("state", defs.Status.PENDING),
-            image=kwargs.pop("image", None),
-            kwargs=tuple(kwargs.items()),
-        )
+        job = defs.Job.create(name=name, command=command, **kwargs)
         if stage.jobs is None:
             stage = stage._replace(jobs=tuple([job]))
         else:
@@ -94,8 +88,8 @@ class SimpleScheduler(defs.Scheduler):
                     frm_name=dep_name, to_name=job.name, kind=defs.EdgeKind.ALL_SUCCESS
                 )
         # --- assign in right location
-        stages = list(stages[:-1]) + [stage]
-        self.pipeline = self.pipeline._replace(stages=tuple(stages))
+        stages = tuple(list(stages[:-1]) + [stage])
+        self.pipeline = self.pipeline._replace(stages=(stages))
         assert self.names_are_globally_unique()
 
     def run(self):
