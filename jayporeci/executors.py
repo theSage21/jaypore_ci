@@ -5,7 +5,7 @@ import json
 import subprocess
 from enum import Enum
 from copy import deepcopy
-from typing import NamedTuple
+from typing import NamedTuple, Dict, List, Tuple, Any
 
 import pendulum
 from rich import print as rprint
@@ -14,7 +14,7 @@ from rich import print as rprint
 from . import definitions as defs
 
 
-def run(args, **kwargs):
+def run(args: List[str] | str, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """
     Add common options for subprocess calls.
     """
@@ -31,7 +31,7 @@ class NameKind(Enum):
     JCI = "jci"
 
     @classmethod
-    def parse(cls, kind) -> "NameKind":
+    def parse(cls, kind: str) -> "NameKind":
         return {"net": NameKind.NET, "job": NameKind.JOB, "jci": NameKind.JCI}[kind]
 
 
@@ -52,15 +52,15 @@ class Name(NamedTuple):
     sep: str = "__"
 
     @classmethod
-    def parse(cls, name):
+    def parse(cls, name: str) -> "Name" | None:
         if not name.startswith(f"{cls.prefix}{cls.sep}"):
             return None
         _, kind, *parts = name.split(cls.sep)
         kind = NameKind.parse(kind)
         if len(parts) == 1:
-            return cls(name=name, sha=parts[0], kind=kind)
+            return cls(raw=name, sha=parts[0], kind=kind)
         if len(parts) == 2:
-            return cls(name=name, sha=parts[0], job_name=parts[1], kind=kind)
+            return cls(raw=name, sha=parts[0], job_name=parts[1], kind=kind)
         return None
 
     @classmethod
@@ -93,24 +93,22 @@ class DockerExecutor(defs.Executor):
         - Clean up everything when the pipeline exits.
     """
 
-    def __init__(self, sha: str):
+    def __init__(self, sha: str) -> None:
         super().__init__()
         self.sha = sha
-        self.__execution_order__ = []
+        self.__execution_order__: List[Tuple[str | None, str, str]] = []
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.delete_run_network()
         self.delete_run_jobs()
 
-    def setup(self):
+    def setup(self) -> None:
         self.delete_old_containers()
 
-    def delete_old_containers(self):
+    def delete_old_containers(self) -> None:
         too_old = pendulum.now().subtract(days=defs.const.retain_old_jobs_n_days)
         names_to_remove = set()
-        for container in (
-            run("docker ps -f status=exited --format json").stdout.decode().split()
-        ):
+        for container in run("docker ps -f status=exited --format json").stdout.split():
             container = json.loads(container)
             name = Name.parse(container["Names"])
             if name is None or name.sha == self.sha:
@@ -125,14 +123,14 @@ class DockerExecutor(defs.Executor):
         net_ids = [name.sep.join([name.prefix, name.sha]) for name in names_to_remove]
         pipes = " ".join([f"-f name={net_id}" for net_id in net_ids])
         net_ids = (
-            run(f"docker network ls {pipes} --format 'table {{.ID}}'")
-            .stdout.decode()
-            .split("\n")
+            run(f"docker network ls {pipes} --format 'table {{.ID}}'").stdout.split(
+                "\n"
+            )
         )[1:]
         net_ids = " ".join(net_ids)
         run(f"docker network rm {net_ids}")
 
-    def create_network(self):
+    def create_network(self) -> None:
         """
         Will create a docker network.
 
@@ -142,11 +140,7 @@ class DockerExecutor(defs.Executor):
         name = Name.create(kind=NameKind.NET, sha=self.sha)
         for _ in range(3):
             if (
-                len(
-                    run(f"docker network ls -f name={name.raw}")
-                    .stdout.decode()
-                    .split("\n")
-                )
+                len(run(f"docker network ls -f name={name.raw}").stdout.split("\n"))
                 != 1
             ):
                 # self.logging().info("Found network", network_name=self.get_net())
@@ -155,7 +149,7 @@ class DockerExecutor(defs.Executor):
             # self.logging().info( "Create network",)
         raise Exception("Cannot create network")
 
-    def delete_run_jobs(self):
+    def delete_run_jobs(self) -> None:
         """
         Deletes all jobs associated with the pipeline for this
         executor.
@@ -163,15 +157,15 @@ class DockerExecutor(defs.Executor):
         It will stop any jobs that are still running.
         """
         names_to_remove = set()
-        for container in run("docker ps --format json").stdout.decode().split():
+        for container in run("docker ps --format json").stdout.split():
             container = json.loads(container)
             name = Name.parse(container["Names"])
-            if name.sha == self.sha:
+            if name is not None and name.sha == self.sha:
                 names_to_remove.add(name)
         names = " ".join(name.raw for name in names_to_remove)
         run(f"docker stop -t 5 {names}")
 
-    def delete_run_network(self):
+    def delete_run_network(self) -> None:
         """
         Delete the network for this executor run.
         """
@@ -209,7 +203,7 @@ class DockerExecutor(defs.Executor):
         if job.command:
             cmd += [job.command]
         rprint(cmd)
-        container_id = run(cmd).stdout.decode().strip()
+        container_id: str = run(cmd).stdout.strip()
         self.__execution_order__.append((name.job_name, container_id, "Run"))
         return container_id
 
@@ -217,7 +211,7 @@ class DockerExecutor(defs.Executor):
         """
         Given a run_id, it will get the status for that run.
         """
-        inspect = run(f"docker inspect {run_id}").stdout.decode().strip()
+        inspect = run(f"docker inspect {run_id}").stdout.strip()
         inspect = json.loads(inspect)
         is_running = inspect["State"]["Status"] == "running"
         exit_code = int(inspect["State"]["ExitCode"])
@@ -236,8 +230,12 @@ class DockerExecutor(defs.Executor):
             else None,
         )
         # --- logs
-        logs = run(f"docker logs {run_id}").stdout.decode().strip()
+        logs = run(f"docker logs {run_id}").stdout.strip()
         return state._replace(logs=logs)
 
-    def get_execution_order(self):
-        return {name: i for i, (name, *_) in enumerate(self.__execution_order__)}
+    def get_execution_order(self) -> Dict[str, int]:
+        return {
+            name: i
+            for i, (name, *_) in enumerate(self.__execution_order__)
+            if name is not None
+        }

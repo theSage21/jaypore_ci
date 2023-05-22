@@ -36,7 +36,7 @@ class SimpleScheduler(defs.Scheduler):
                 seen.add(job.name)
         return True
 
-    def stage(self, name: str, **kwargs: Any):
+    def stage(self, name: str, **kwargs: Any) -> defs.Stage:
         """
         Create a :class:`~jayporeci.definitions.Stage` within which jobs can be
         defined.
@@ -57,7 +57,7 @@ class SimpleScheduler(defs.Scheduler):
         *,
         after: List[str] | str | None = None,
         **kwargs: Dict[Any, Any],
-    ):
+    ) -> None:
         """
         Define a :class:`~jayporeci.definitions.Job` and link it with the jobs
         that it depends on.
@@ -92,14 +92,14 @@ class SimpleScheduler(defs.Scheduler):
         self.pipeline = self.pipeline._replace(stages=(stages))
         assert self.names_are_globally_unique()
 
-    def run(self):
+    def run(self) -> None:
         for stage in self.pipeline.stages or []:
             jobs = stage.jobs or []
             # --- generate triggering order
             children = {job: set() for job in jobs}
             has_no_parent = set(jobs)
             for edge in stage.edges or []:
-                assert edge.kind == EdgeKind.ALL_SUCCESS
+                assert edge.kind == defs.EdgeKind.ALL_SUCCESS
                 children[edge.frm].add(edge.to)
                 if edge.to in has_no_parent:
                     has_no_parent.remove(edge.to)

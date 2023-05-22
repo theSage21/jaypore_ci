@@ -8,7 +8,7 @@ from .impl import (
 from .definitions import Pipeline
 
 
-def run():
+def run() -> SimpleScheduler:
     """
     A shorthand way to define a combination of
     :class:`~jayporeci.definitions.Pipeline`,

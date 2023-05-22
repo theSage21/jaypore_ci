@@ -8,13 +8,13 @@ from enum import Enum
 import importlib.metadata
 from pathlib import Path
 from urllib.parse import urlparse
-from typing import NamedTuple, Any, List, Tuple, Dict, Union
+from typing import NamedTuple, Any, List, Tuple, Union
 from pendulum import Date, DateTime, Duration, Time
 
 import tomllib
 
 
-KwargType = Tuple[Tuple[Any, Any]]
+KwargTuple = Tuple[Tuple[str, str], ...]
 
 
 class Version(NamedTuple):
@@ -27,12 +27,12 @@ class Version(NamedTuple):
     patch: int
     trail: str | None = None
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         if self.trail:
             return f"{self.major}.{self.minor}.{self.patch}-{self.trail}"
         return f"{self.major}.{self.minor}.{self.patch}"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__repr__()
 
     @classmethod
@@ -100,10 +100,10 @@ class Status(Enum):
     SUCCESS = 10
     FAILURE = 15
 
-    def is_terminal(self):
+    def is_terminal(self) -> bool:
         return self in (Status.SUCCESS, Status.FAILURE)
 
-    def get_dot(self):
+    def get_dot(self) -> str:
         if self == Status.SUCCESS:
             return "🟢"
         if self == Status.FAILURE:
@@ -122,22 +122,21 @@ class Stage(NamedTuple):
     name: str
     jobs: Tuple["Job"]
     edges: Tuple["Edge"]
-    kwargs: KwargType
+    kwargs: KwargTuple
 
     @classmethod
-    def create(cls, *, name: str, **kwargs) -> "Stage":
+    def create(cls, *, name: str, **kwargs: Any) -> "Stage":
         jobs = kwargs.pop("jobs", tuple())
         edges = kwargs.pop("edges", tuple())
-        kwargs = tuple(kwargs.items())
-        return cls(name=name, jobs=jobs, edges=edges, kwargs=kwargs)
+        return cls(name=name, jobs=jobs, edges=edges, kwargs=tuple(kwargs.items()))
 
-    def __enter__(self):
+    def __enter__(self) -> "Stage":
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *_: Any) -> bool:
         return False
 
-    def has_job(self, name):
+    def has_job(self, name: str) -> bool:
         for job in self.jobs or []:
             if job.name == name:
                 return True
@@ -178,7 +177,7 @@ class Job(NamedTuple):
     is_service: bool
     state: "JobState"
     image: str
-    kwargs: KwargType
+    kwargs: KwargTuple
 
     @classmethod
     def create(cls, **kwargs: Any) -> "Job":
@@ -206,7 +205,7 @@ class Edge(NamedTuple):
     kind: EdgeKind
     frm: Job
     to: Job
-    kwargs: KwargType
+    kwargs: KwargTuple
 
 
 class Pipeline(NamedTuple):
@@ -216,7 +215,7 @@ class Pipeline(NamedTuple):
 
     repo: "Repo"
     stages: Tuple[Stage]
-    kwargs: KwargType
+    kwargs: KwargTuple
 
     @classmethod
     def create(cls, *, repo: "Repo", **kwargs: Any) -> "Pipeline":
@@ -226,16 +225,16 @@ class Pipeline(NamedTuple):
             kwargs=tuple(kwargs.items()),
         )
 
-    def get_status(self):
+    def get_status(self) -> Status:
         has_running = False
         has_terminal = False
         for stage in self.stages:
             for job in stage.jobs:
-                if job.status == Status.RUNNING:
+                if job.state.status == Status.RUNNING:
                     has_running = True
-                if job.status == Status.FAILURE:
+                if job.state.status == Status.FAILURE:
                     return Status.FAILURE
-                if job.status.is_terminal():
+                if job.state.status.is_terminal():
                     has_terminal = True
         if has_running:
             return Status.RUNNING
@@ -257,22 +256,22 @@ class Scheduler:
         executor: "Executor",
         platform: "Platform",
         reporter: "Reporter",
-    ):
+    ) -> None:
         self.pipeline: "Pipeline" = pipeline
         self.executor: "Executor" = executor
         self.platform: "Platform" = platform
         self.reporter: "Reporter" = reporter
         self.__run_on_exit__ = True
 
-    def __enter__(self):
+    def __enter__(self) -> "Scheduler":
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, *_: Any) -> bool:
         if self.__run_on_exit__:
             self.run()
         return False
 
-    def job(self) -> "Scheduler":
+    def job(self) -> None:
         """
         Creates a :class:`~jayporeci.definitions.Job` instance based on the
         pipeline/stage that it is being defined in. See
@@ -280,7 +279,7 @@ class Scheduler:
         :class:`~jayporeci.definitions.Job` for details on what parameters can be
         passed to this function.
         """
-        return self
+        raise NotImplementedError()
 
     def run(self) -> None:
         """
@@ -399,9 +398,9 @@ class Executor:
         "Run a job and return it's ID"
         raise NotImplementedError()
 
-    def __init__(self):
-        self.pipe_id = None
-        self.pipeline = None
+    def __init__(self) -> None:
+        self.pipe_id: int | None = None
+        self.pipeline: "Pipeline" | None = None
 
     def set_pipeline(self, pipeline: "Pipeline") -> None:
         """Set the current pipeline to the given one."""
@@ -433,7 +432,7 @@ class Platform:
     It could be gitea / github / gitlab / email.
     """
 
-    def publish(self, report: str, status: "Status"):
+    def publish(self, report: str, status: "Status") -> None:
         """
         Publish this report somewhere.
         """

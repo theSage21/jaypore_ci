@@ -5,7 +5,7 @@ from . import definitions as defs
 
 class TextReporter(defs.Reporter):
     @classmethod
-    def get_job_duration(cls, job):
+    def get_job_duration(cls, job: defs.Job) -> str:
         "Returns how long a job has been running"
         time = " --:--"
         if job.state is not None:

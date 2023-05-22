@@ -8,13 +8,13 @@ class GitRepo(defs.Repo):
     Interact with a given git repository.
     """
 
-    def __init__(self, sha: str, branch: str, remote: str, commit_message: str):
+    def __init__(self, sha: str, branch: str, remote: str, commit_message: str) -> None:
         self.sha: str = sha
         self.branch: str = branch
         self.remote: str = remote
         self.commit_message: str = commit_message
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         sha = f"{self.sha}"[:8]
         return f"GitRepo <{sha}: {self.branch}>"
 
