@@ -24,8 +24,8 @@ main() {
         -e REPO_ROOT \
         -v /var/run/docker.sock:/var/run/docker.sock \
         -v /tmp/jayporeci__src__$REPO_SHA:/jayporeci/run \
-        -f - \
-        jayporeci__run__$REPO_SHA hook
+        --rm -it \
+        jci
 }
 
 (main)

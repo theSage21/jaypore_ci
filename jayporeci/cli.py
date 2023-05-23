@@ -29,25 +29,25 @@ def cli():
     """
     Build and run Jaypore CI pipeline
     """
+    cmd = f""" bash -c '
+            echo "
+                from jci
+                add . /jayporeci/repo
+                " | docker build \
+                -t jayporeci__run__{defs.const.repo_sha} \
+                -f=- \
+                . \
+        '
+        """
+    print(cmd)
     proc = subprocess.run(
-        [
-            "echo",
-            "-e",
-            "'from jci\nadd . /jayporeci/repo'",
-            "|",
-            "docker",
-            "build",
-            "-t",
-            f"jayporeci__run__{defs.const.repo_sha}",
-            "-f",
-            "-",
-            defs.const.repo_root,
-        ],
-        stdout=subprocess.STDOUT,
+        cmd,
+        stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         shell=True,
-        check=True,
+        check=False,
     )
+    print(proc.stdout.decode())
 
 
 if __name__ == "__main__":
