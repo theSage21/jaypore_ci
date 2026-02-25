@@ -1,0 +1,4 @@
+# JCI cron schedules
+# Midnight CI run and prune
+0 0 * * * git jci run
+5 0 * * * git jci prune --commit --older-than=14d

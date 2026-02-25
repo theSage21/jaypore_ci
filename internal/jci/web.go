@@ -19,12 +19,12 @@ type BranchInfo struct {
 
 // CommitInfo holds commit data for the UI
 type CommitInfo struct {
-	Hash       string `json:"hash"`
-	ShortHash  string `json:"shortHash"`
-	Message    string `json:"message"`
-	HasCI      bool   `json:"hasCI"`
-	CIStatus   string `json:"ciStatus"`   // "success", "failed", or ""
-	CIPushed   bool   `json:"ciPushed"`   // whether CI ref is pushed to remote
+	Hash      string `json:"hash"`
+	ShortHash string `json:"shortHash"`
+	Message   string `json:"message"`
+	HasCI     bool   `json:"hasCI"`
+	CIStatus  string `json:"ciStatus"` // "success", "failed", or ""
+	CIPushed  bool   `json:"ciPushed"` // whether CI ref is pushed to remote
 }
 
 // Web starts a web server to view CI results
@@ -105,7 +105,7 @@ func getLocalBranches() ([]string, error) {
 // getRemoteJCIRefs returns a set of commits that have CI refs pushed to remote
 func getRemoteJCIRefs(remote string) map[string]bool {
 	remoteCI := make(map[string]bool)
-	
+
 	// Get remote JCI refs
 	out, err := git("ls-remote", "--refs", remote, "refs/jci/*")
 	if err != nil {
@@ -114,7 +114,7 @@ func getRemoteJCIRefs(remote string) map[string]bool {
 	if out == "" {
 		return remoteCI
 	}
-	
+
 	for _, line := range strings.Split(out, "\n") {
 		parts := strings.Fields(line)
 		if len(parts) >= 2 {

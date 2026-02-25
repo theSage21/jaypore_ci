@@ -1,4 +1,5 @@
 #!/bin/bash
+
 # CI script for git-jci
 # This runs in .jci/<commit>/ directory
 # Environment variables available:
