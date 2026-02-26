@@ -1,0 +1,282 @@
+/* ── Jaypore CI · shared theme ── used by index.html, binaries.html, and stagit pages ── */
+
+:root {
+  --bg:     #fbf9f4;
+  --ink:    #14110f;
+  --muted:  #6f6a65;
+  --line:   #e6dfd2;
+  --accent: #14110f;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 2rem clamp(1rem, 4vw, 3rem) 4rem;
+  font-family: "iA Writer Quattro", "Inter", "SF Pro", system-ui,
+    -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+/* ── centring wrapper (used by stagit pages directly on body, by index.html via <main>) ── */
+body, main {
+  max-width: 1080px;
+  margin-inline: auto;
+}
+
+/* ── headings ── */
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 0.5rem;
+  line-height: 1.25;
+}
+
+h1 { font-size: clamp(2rem, 5vw, 2.8rem); margin-bottom: 0.75rem; }
+h2 { font-size: 1.6rem; }
+h3, h4, h5, h6 { font-size: 1rem; }
+
+img, h1, h2 {
+  vertical-align: middle;
+}
+
+img {
+  border: 0;
+}
+[src="logo.png"], [src="../logo.png"] {
+	width: 80px !important;
+	height: 80px !important;
+}
+
+p {
+  margin: 0 0 1rem;
+}
+
+ul {
+  margin: 0 0 1rem;
+  padding-left: 1.1rem;
+}
+
+li + li {
+  margin-top: 0.3rem;
+}
+
+/* ── links ── */
+a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:hover,
+a:focus-visible {
+  color: var(--muted);
+}
+
+a.d,
+a.h,
+a.i,
+a.line {
+  text-decoration: none;
+}
+
+#blob a {
+  color: var(--muted);
+}
+
+#blob a:hover {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* ── tables ── */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+table thead td {
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  padding-bottom: 0.5rem;
+}
+
+table td {
+  padding: 0.35em 0.5em;
+}
+
+#content table td {
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+#branches tr:hover td,
+#tags tr:hover td,
+#index tr:hover td,
+#log tr:hover td,
+#files tr:hover td {
+  background-color: var(--line);
+}
+
+#index tr td:nth-child(2),
+#tags tr td:nth-child(3),
+#branches tr td:nth-child(3),
+#log tr td:nth-child(2) {
+  white-space: normal;
+}
+
+td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── misc ── */
+.desc {
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  height: 1px;
+  margin: 2rem 0;
+}
+
+a:target {
+  background-color: var(--line);
+}
+
+/* ── code / pre ── */
+code, pre {
+  font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  font-size: 0.92em;
+  background: var(--line);
+  padding: 2px 4px;
+  border-radius: 2px;
+}
+
+pre {
+  padding: 1rem 0px;
+  border-radius: 6px;
+  overflow-x: auto;
+  line-height: 1.55;
+}
+
+/* ── diff colours ── */
+pre a.h   { color: var(--ink); font-weight: 600; }
+
+.A,
+span.i,
+pre a.i   { color: #2d7a3a; }   /* addition  – green, readable on --bg */
+
+.D,
+span.d,
+pre a.d   { color: #b93a3a; }   /* deletion  – red,   readable on --bg */
+
+pre a.h:hover,
+pre a.i:hover,
+pre a.d:hover {
+  text-decoration: none;
+}
+
+/* ── index.html landing-page components ── */
+header {
+  margin-bottom: 3rem;
+}
+
+nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
+}
+
+nav a {
+  color: var(--muted);
+  text-decoration: none;
+  margin-left: 1.25rem;
+}
+
+nav a:hover,
+nav a:focus-visible {
+  color: var(--ink);
+}
+
+.lede {
+  font-size: 1.1rem;
+  color: var(--muted);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border: 1px solid var(--ink);
+  background: transparent;
+  font-weight: 600;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.button:focus-visible,
+.button:hover {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+section + section {
+  margin-top: 3rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--line);
+}
+
+.label {
+  display: block;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.note {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+footer {
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+@keyframes rzp-shimmer {
+  0%   { background-position: -340px 0; }
+  100% { background-position: 340px 0; }
+}
+
+.rzp-skeleton {
+  border-radius: 10px;
+  background: linear-gradient(
+    90deg,
+    var(--line) 25%,
+    var(--bg)   50%,
+    var(--line) 75%
+  );
+  background-size: 340px 100%;
+  animation: rzp-shimmer 1.4s ease-in-out infinite;
+}

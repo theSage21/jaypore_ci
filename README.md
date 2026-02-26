@@ -1,10 +1,8 @@
 # Jaypore CI
 
-A local-first CI system that stores results in git's custom refs.
+> Minimal, Offline, Local CI system.
 
 ## Installation
-
-### From source
 
 ```bash
 go build -o git-jci ./cmd/git-jci
