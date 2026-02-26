@@ -12,7 +12,7 @@ echo "Building Docker image '${IMAGE_NAME}'..."
 # The repo is NOT baked into the image; it is mounted at runtime via -v.
 docker build -t "${IMAGE_NAME}" - <<'DOCKERFILE'
 FROM alpine:latest
-RUN apk add --no-cache git ca-certificates stagit bash
+RUN apk add --no-cache git ca-certificates stagit bash lowdown
 WORKDIR /work
 CMD ["/bin/sh"]
 DOCKERFILE

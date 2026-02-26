@@ -42,6 +42,15 @@ img, h1, h2 {
   vertical-align: middle;
 }
 
+blockquote {
+	margin: 0px;
+	border: 5px solid var(--line);
+	border-top: 0px;
+	border-right: 0px;
+	border-bottom: 0px;
+	border-radius: 2px;
+	padding: 2px 5px;
+}
 img {
   border: 0;
 }
@@ -92,6 +101,7 @@ a.line {
 }
 
 /* ── tables ── */
+
 table {
   width: 100%;
   border-collapse: collapse;
@@ -114,6 +124,7 @@ table td {
 #content table td {
   vertical-align: top;
   white-space: nowrap;
+  border: 1px solid var(--line);
 }
 
 #branches tr:hover td,
@@ -164,9 +175,12 @@ code, pre {
   padding: 2px 4px;
   border-radius: 2px;
 }
+pre code {
+  padding: 0px;
+}
 
 pre {
-  padding: 1rem 0px;
+  padding: 5px 5px;
   border-radius: 6px;
   overflow-x: auto;
   line-height: 1.55;
