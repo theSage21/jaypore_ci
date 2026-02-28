@@ -10,15 +10,6 @@ import (
 	"strings"
 )
 
-// CronEntry represents a single line from .jci/crontab
-// It contains the parsed schedule as well as the command portion.
-type CronEntry struct {
-	Line     int
-	Schedule string
-	Command  string
-	Raw      string
-}
-
 // LoadCronEntries opens .jci/crontab (if it exists) and parses all entries.
 func LoadCronEntries(repoRoot string) ([]CronEntry, error) {
 	cronPath := filepath.Join(repoRoot, ".jci", "crontab")

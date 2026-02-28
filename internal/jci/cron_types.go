@@ -76,13 +76,6 @@ func (job CronJob) shellCommand(repoRoot string) string {
 	return full
 }
 
-func shellEscape(value string) string {
-	if value == "" {
-		return "''"
-	}
-	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
-}
-
 func splitCommandHeadTail(cmd string) (string, string) {
 	parts := strings.Fields(cmd)
 	if len(parts) == 0 {

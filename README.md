@@ -2,6 +2,33 @@
 
 > Jaypore CI: Minimal, Offline, Local CI system.
 
+---
+
+- [Install](#install)
+- [Config](#config)
+- [Environment Vars](#environment-vars)
+- [Example workflow](#example-workflow)
+- [How it works](#how-it-works)
+- [FAQ / Needs / Wants / Todos](#faq-needs-wants-todos)
+- [Examples](#examples)
+    - [Lint, Build, Test, Publish a golang project](#lint-build-test-publish-a-golang-project)
+    - [Pylint, Pytest, Coverage report](#pylint-pytest-coverage-report)
+    - [Build Jekyll and publish to netlify](#build-jekyll-and-publish-to-netlify)
+    - [Build Docusaurus and publish to S3 bucket](#build-docusaurus-and-publish-to-s3-bucket)
+    - [Run a docker compose of redis, postgres, django, and run API tests against it.](#run-a-docker-compose-of-redis-postgres-django-and-run-api-tests-against-it)
+    - [Schedule a midnight build and push status to telegram](#schedule-a-midnight-build-and-push-status-to-telegram)
+    - [Run trufflehog scan on repo every hour](#run-trufflehog-scan-on-repo-every-hour)
+    - [Run lint --fix on pre-commit for python, go, JS in the same repo](#run-lint-fix-on-pre-commit-for-python-go-js-in-the-same-repo)
+    - [Create sub-pipelines for python / js / go and run when changes are there in any folder](#create-sub-pipelines-for-python-js-go-and-run-when-changes-are-there-in-any-folder)
+    - [Set and use Secrets to publish messages to telegram](#set-and-use-secrets-to-publish-messages-to-telegram)
+    - [Send mail on scheduled pipe failures](#send-mail-on-scheduled-pipe-failures)
+    - [Midnight auto-update dependencies and ensure tests are passing after update](#midnight-auto-update-dependencies-and-ensure-tests-are-passing-after-update)
+    - [Build and publish docker images](#build-and-publish-docker-images)
+    - [Run pipelines on this repo, when changes happen in upstream projects](#run-pipelines-on-this-repo-when-changes-happen-in-upstream-projects)
+    - [Run pipelines on another repo, when changes affect downstream projects](#run-pipelines-on-another-repo-when-changes-affect-downstream-projects)
+
+---
+
 ## Install
 
 ```bash
@@ -113,3 +140,22 @@ part of the git repository.
 - [ ] Ecosystem of reusable actions/tasks with versioned catalogs and templates
     - This is already there? Not sure if this is something we even need to solve?
 - [ ] Validate infrastructure-as-code changes and deployment pipelines via dry runs
+
+
+## Examples
+
+### Lint, Build, Test, Publish a golang project
+### Pylint, Pytest, Coverage report
+### Build Jekyll and publish to netlify
+### Build Docusaurus and publish to S3 bucket
+### Run a docker compose of redis, postgres, django, and run API tests against it.
+### Schedule a midnight build and push status to telegram
+### Run trufflehog scan on repo every hour
+### Run lint --fix on pre-commit for python, go, JS in the same repo
+### Create sub-pipelines for python / js / go and run when changes are there in any folder
+### Set and use Secrets to publish messages to telegram
+### Send mail on scheduled pipe failures
+### Midnight auto-update dependencies and ensure tests are passing after update
+### Build and publish docker images
+### Run pipelines on this repo, when changes happen in upstream projects
+### Run pipelines on another repo, when changes affect downstream projects

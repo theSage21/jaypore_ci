@@ -1,3 +1,3 @@
-module github.com/exedev/git-jci
+module github.com/theSage21/jaypore_ci
 
-go 1.22.2
+go 1.22

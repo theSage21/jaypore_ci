@@ -37,8 +37,8 @@ func RefExists(ref string) bool {
 	return err == nil
 }
 
-// StoreTree stores a directory as a tree object and creates a commit under refs/jci/<commit>
-func StoreTree(dir string, commit string, message string) error {
+// StoreTree stores a directory as a tree object and creates a commit under refs/jci-runs/<commit>/<runID>
+func StoreTree(dir string, commit string, message string, runID string) error {
 	repoRoot, err := GetRepoRoot()
 	if err != nil {
 		return err
@@ -63,8 +63,8 @@ func StoreTree(dir string, commit string, message string) error {
 	}
 	commitID := strings.TrimSpace(string(commitOut))
 
-	// Update ref
-	ref := "refs/jci/" + commit
+	// Update ref: refs/jci-runs/<commit>/<runid>
+	ref := "refs/jci-runs/" + commit + "/" + runID
 	if _, err := git("update-ref", ref, commitID); err != nil {
 		return fmt.Errorf("git update-ref: %v", err)
 	}
@@ -141,4 +141,35 @@ func ListJCIRefs() ([]string, error) {
 		return nil, nil
 	}
 	return strings.Split(out, "\n"), nil
+}
+
+// ListJCIRunRefs returns all refs under refs/jci-runs/
+func ListJCIRunRefs() ([]string, error) {
+	out, err := git("for-each-ref", "--format=%(refname)", "refs/jci-runs/")
+	if err != nil {
+		return nil, err
+	}
+	if out == "" {
+		return nil, nil
+	}
+	return strings.Split(out, "\n"), nil
+}
+
+// ListAllJCIRefs returns all JCI refs (both single and multi-run)
+func ListAllJCIRefs() ([]string, error) {
+	var allRefs []string
+
+	// Get refs/jci/*
+	out, err := git("for-each-ref", "--format=%(refname)", "refs/jci/")
+	if err == nil && out != "" {
+		allRefs = append(allRefs, strings.Split(out, "\n")...)
+	}
+
+	// Get refs/jci-runs/*
+	out, err = git("for-each-ref", "--format=%(refname)", "refs/jci-runs/")
+	if err == nil && out != "" {
+		allRefs = append(allRefs, strings.Split(out, "\n")...)
+	}
+
+	return allRefs, nil
 }

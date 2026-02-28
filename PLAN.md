@@ -1,0 +1,4 @@
+- I want to refactor the APIs in the `jci web` command.
+- The UI should ask for a list of branches, and that should NOT return a complete list of commits.
+- A separate API should be used for a list of commits, which should be paginated by 100 commits per page.
+- The overall goal of this refactor is to retain the same web functionality but use multiple API calls on-demand so that we have a FAST user experience while browsing.

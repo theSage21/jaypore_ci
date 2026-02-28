@@ -212,11 +212,10 @@ func pruneRemote(opts *PruneOptions) error {
 
 	fmt.Printf("Fetching CI refs from %s...\n", remote)
 
-	// Get remote refs
-	out, err := git("ls-remote", remote, "refs/jci/*")
-	if err != nil {
-		return fmt.Errorf("failed to list remote refs: %v", err)
-	}
+	// Get remote refs (both jci and jci-runs)
+	out1, _ := git("ls-remote", remote, "refs/jci/*")
+	out2, _ := git("ls-remote", remote, "refs/jci-runs/*")
+	out := strings.TrimSpace(out1 + "\n" + out2)
 
 	if out == "" {
 		fmt.Println("No CI results on remote")
@@ -239,7 +238,7 @@ func pruneRemote(opts *PruneOptions) error {
 		}
 
 		refName := parts[1]
-		commit := strings.TrimPrefix(refName, "refs/jci/")
+		commit := extractCommitFromRef(refName)
 
 		info := RefInfo{
 			Ref:    refName,
@@ -313,7 +312,8 @@ func pruneRemote(opts *PruneOptions) error {
 	for i, info := range toPrune {
 		printProgress(i+1, len(toPrune), "Deleting")
 		// Push empty ref to delete
-		_, err := git("push", remote, ":refs/jci/"+info.Commit)
+		// Push empty ref to delete
+		_, err := git("push", remote, ":"+info.Ref)
 		if err != nil {
 			fmt.Printf("\n  Warning: failed to delete %s: %v\n", info.Commit[:12], err)
 			continue
@@ -400,4 +400,22 @@ func formatAge(d time.Duration) string {
 		return fmt.Sprintf("%dh", hours)
 	}
 	return "<1h"
+}
+
+// extractCommitFromRef extracts the commit hash from a JCI ref
+// refs/jci/<commit> -> <commit>
+// refs/jci-runs/<commit>/<runid> -> <commit>
+func extractCommitFromRef(ref string) string {
+	if strings.HasPrefix(ref, "refs/jci-runs/") {
+		// refs/jci-runs/<commit>/<runid>
+		parts := strings.Split(strings.TrimPrefix(ref, "refs/jci-runs/"), "/")
+		if len(parts) >= 1 {
+			return parts[0]
+		}
+	} else if strings.HasPrefix(ref, "refs/jci/") {
+		return strings.TrimPrefix(ref, "refs/jci/")
+	} else if strings.HasPrefix(ref, "jci/") {
+		return strings.TrimPrefix(ref, "jci/")
+	}
+	return ref
 }

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/exedev/git-jci/internal/jci"
+	"github.com/theSage21/jaypore_ci/internal/jci"
 )
 
 // version is set at build time via -ldflags "-X main.version=<version>".
@@ -32,6 +32,8 @@ func main() {
 		err = jci.Pull(args)
 	case "prune":
 		err = jci.Prune(args)
+	case "cron":
+		err = jci.Cron(args)
 	case "version", "--version", "-v":
 		fmt.Println("git-jci version " + version)
 		return
@@ -56,13 +58,15 @@ func printUsage() {
 Usage: git jci <command> [options]
 
 Commands:
-  run      Run CI for the current commit and store results
-  web      Start a web server to view CI results
-  push     Push CI results to remote
-  pull     Pull CI results from remote
-  prune    Remove old CI results
-  version  Print the version and exit
+  run [--multi]  Run CI for the current commit and store results
+  web            Start a web server to view CI results
+  push           Push CI results to remote
+  pull           Pull CI results from remote
+  prune          Remove old CI results
+  cron ls        List cron jobs for this repository
+  cron sync      Sync .jci/crontab with system cron
+  version        Print the version and exit
 
-CI results are stored in refs/jci/<commit> namespace.
-`, version)
+CI results are stored in refs/jci/<commit>.
+With --multi, results are stored in refs/jci-runs/<commit>/<runid>.`, version)
 }

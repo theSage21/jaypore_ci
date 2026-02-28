@@ -16,7 +16,13 @@ func Pull(args []string) error {
 	// Fetch all refs/jci/* from remote
 	_, err := git("fetch", remote, "refs/jci/*:refs/jci/*")
 	if err != nil {
-		return err
+		fmt.Printf("Warning: %v\n", err)
+	}
+
+	// Fetch all refs/jci-runs/* from remote
+	_, err = git("fetch", remote, "refs/jci-runs/*:refs/jci-runs/*")
+	if err != nil {
+		fmt.Printf("Warning: %v\n", err)
 	}
 
 	fmt.Println("Done")

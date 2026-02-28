@@ -1,6 +1,8 @@
 package jci
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"os"
 	"os/exec"
@@ -9,6 +11,7 @@ import (
 )
 
 // Run executes CI for the current commit
+// Each run gets a unique ID (timestamp+random suffix) stored in refs/jci-runs/<commit>/<runid>
 func Run(args []string) error {
 	// Get current commit
 	commit, err := GetCurrentCommit()
@@ -18,12 +21,9 @@ func Run(args []string) error {
 
 	fmt.Printf("Running CI for commit %s\n", commit[:12])
 
-	// Check if CI already ran for this commit
-	ref := "refs/jci/" + commit
-	if RefExists(ref) {
-		fmt.Printf("CI results already exist for %s\n", commit[:12])
-		return nil
-	}
+	// Generate unique run ID
+	runID := generateRunID()
+	fmt.Printf("Run ID: %s\n", runID)
 
 	repoRoot, err := GetRepoRoot()
 	if err != nil {
@@ -42,9 +42,20 @@ func Run(args []string) error {
 		return fmt.Errorf("failed to create output dir: %w", err)
 	}
 
+	// Set initial status to "running"
+	statusFile := filepath.Join(outputDir, "status.txt")
+	os.WriteFile(statusFile, []byte("running"), 0644)
+
 	// Run CI
 	err = runCI(repoRoot, outputDir, commit)
 	// Continue even if CI fails - we still want to store the results
+
+	// Update status based on result
+	if err != nil {
+		os.WriteFile(statusFile, []byte("err"), 0644)
+	} else {
+		os.WriteFile(statusFile, []byte("ok"), 0644)
+	}
 
 	// Generate index.html with results
 	if err := generateIndexHTML(outputDir, commit, err); err != nil {
@@ -52,14 +63,15 @@ func Run(args []string) error {
 	}
 
 	// Store results in git
-	msg := fmt.Sprintf("CI results for %s", commit[:12])
-	if storeErr := StoreTree(outputDir, commit, msg); storeErr != nil {
+	msg := fmt.Sprintf("CI results for %s (run %s)", commit[:12], runID)
+	if storeErr := StoreTree(outputDir, commit, msg, runID); storeErr != nil {
 		return fmt.Errorf("failed to store CI results: %w", storeErr)
 	}
 
 	// Clean up the output directory after storing in git
 	os.RemoveAll(outputDir)
 
+	ref := "refs/jci-runs/" + commit + "/" + runID
 	fmt.Printf("CI results stored at %s\n", ref)
 	if err != nil {
 		return fmt.Errorf("CI failed (results stored): %w", err)
@@ -121,11 +133,13 @@ func runCI(repoRoot string, outputDir string, commit string) error {
 func generateIndexHTML(outputDir string, commit string, ciErr error) error {
 	commitMsg, _ := git("log", "-1", "--format=%s", commit)
 
-	status := "success"
 	statusIcon := "✓ PASSED"
+	statusColor := "#1a7f37"
+	statusBg := "#dafbe1"
 	if ciErr != nil {
-		status = "failed"
 		statusIcon = "✗ FAILED"
+		statusColor = "#cf222e"
+		statusBg = "#ffebe9"
 	}
 
 	// Read output for standalone view
@@ -141,22 +155,25 @@ func generateIndexHTML(outputDir string, commit string, ciErr error) error {
     <meta charset="utf-8">
     <title>%s %s</title>
     <style>
-        body { font-family: monospace; font-size: 12px; background: #1a1a1a; color: #e0e0e0; padding: 8px; }
-        .header { margin-bottom: 8px; }
-        .%s { color: %s; font-weight: bold; }
-        pre { white-space: pre-wrap; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace; font-size: 13px; background: #f5f5f5; color: #24292f; padding: 16px; }
+        .header { margin-bottom: 12px; padding: 12px; background: #fff; border-radius: 8px; border: 1px solid #d0d7de; }
+        .status { display: inline-block; padding: 4px 10px; border-radius: 16px; font-weight: 600; font-size: 12px; background: %s; color: %s; }
+        .commit-info { margin-top: 8px; color: #57606a; font-size: 12px; }
+        .commit-hash { color: #0969da; font-family: monospace; }
+        pre { white-space: pre-wrap; background: #fff; padding: 16px; border-radius: 8px; border: 1px solid #d0d7de; font-family: "Monaco", "Menlo", monospace; font-size: 12px; line-height: 1.5; }
     </style>
 </head>
 <body>
     <div class="header">
-        <span class="%s">%s</span> %s %s
+        <span class="status">%s</span>
+        <div class="commit-info"><span class="commit-hash">%s</span> %s</div>
     </div>
     <pre>%s</pre>
 </body>
 </html>
 `, commit[:7], escapeHTML(commitMsg),
-		status, map[string]string{"success": "#3fb950", "failed": "#f85149"}[status],
-		status, statusIcon, commit[:7], escapeHTML(commitMsg),
+		statusBg, statusColor,
+		statusIcon, commit[:7], escapeHTML(commitMsg),
 		escapeHTML(outputContent))
 
 	indexPath := filepath.Join(outputDir, "index.html")
@@ -180,4 +197,13 @@ func escapeHTML(s string) string {
 		}
 	}
 	return result
+}
+
+// generateRunID creates a unique run identifier: <unix_timestamp>-<4_random_chars>
+func generateRunID() string {
+	timestamp := time.Now().Unix()
+	b := make([]byte, 2)
+	rand.Read(b)
+	randomSuffix := hex.EncodeToString(b)
+	return fmt.Sprintf("%d-%s", timestamp, randomSuffix)
 }

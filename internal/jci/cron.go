@@ -2,184 +2,303 @@ package jci
 
 import (
 	"bufio"
-	"crypto/sha1"
-	"encoding/hex"
-	"errors"
+	"bytes"
+	"crypto/sha256"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
+const cronMarkerPrefix = "# JCI:"
+
+// CronEntry represents a parsed crontab entry
+// Additional metadata (line number, command, raw text) is populated when
+// entries are loaded via the cron parser utilities.
+type CronEntry struct {
+	Schedule string // e.g., "0 * * * *"
+	Name     string // optional name/comment
+	Branch   string // branch to run on (default: current)
+	Line     int    // source line number (optional)
+	Command  string // parsed command (optional)
+	Raw      string // raw line text (optional)
+}
+
+// Cron handles cron subcommands
 func Cron(args []string) error {
 	if len(args) == 0 {
-		return errors.New("usage: git jci cron <ls|sync>")
-	}
-
-	repoRoot, err := GetRepoRoot()
-	if err != nil {
-		return err
+		return fmt.Errorf("usage: git jci cron <ls|sync>")
 	}
 
 	switch args[0] {
-	case "ls", "list":
-		return cronList(repoRoot)
+	case "ls":
+		return cronList()
 	case "sync":
-		return cronSync(repoRoot)
+		return cronSync()
 	default:
-		return fmt.Errorf("unknown cron subcommand: %s", args[0])
+		return fmt.Errorf("unknown cron command: %s (use ls or sync)", args[0])
 	}
 }
 
-func cronList(repoRoot string) error {
-	entries, err := LoadCronEntries(repoRoot)
+// cronList shows current cron jobs from .jci/crontab and system cron
+func cronList() error {
+	repoRoot, err := GetRepoRoot()
 	if err != nil {
-		return err
+		return fmt.Errorf("not in a git repository: %w", err)
+	}
+
+	repoID := getRepoID(repoRoot)
+
+	// Show .jci/crontab entries
+	crontabFile := filepath.Join(repoRoot, ".jci", "crontab")
+	entries, err := parseCrontab(crontabFile)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to parse .jci/crontab: %w", err)
+	}
+
+	fmt.Printf("Repository: %s\n", repoRoot)
+	fmt.Printf("Repo ID: %s\n\n", repoID[:12])
+
+	if len(entries) == 0 {
+		fmt.Println("No entries in .jci/crontab")
+	} else {
+		fmt.Println("Configured in .jci/crontab:")
+		for _, e := range entries {
+			branch := e.Branch
+			if branch == "" {
+				branch = "(current)"
+			}
+			name := e.Name
+			if name == "" {
+				name = "(unnamed)"
+			}
+			fmt.Printf("  %-20s %-15s %s\n", e.Schedule, branch, name)
+		}
+	}
+
+	// Show what's in system crontab
+	fmt.Println("\nInstalled in system cron:")
+	systemEntries, err := getSystemCronEntries(repoID)
+	if err != nil {
+		fmt.Printf("  (could not read system cron: %v)\n", err)
+	} else if len(systemEntries) == 0 {
+		fmt.Println("  (none)")
+	} else {
+		for _, line := range systemEntries {
+			fmt.Printf("  %s\n", line)
+		}
+	}
+
+	return nil
+}
+
+// cronSync synchronizes .jci/crontab with system cron
+func cronSync() error {
+	repoRoot, err := GetRepoRoot()
+	if err != nil {
+		return fmt.Errorf("not in a git repository: %w", err)
+	}
+
+	repoID := getRepoID(repoRoot)
+	marker := cronMarkerPrefix + repoID
+
+	// Parse .jci/crontab
+	crontabFile := filepath.Join(repoRoot, ".jci", "crontab")
+	entries, err := parseCrontab(crontabFile)
+	if err != nil {
+		if os.IsNotExist(err) {
+			entries = nil // No crontab file = remove all entries
+		} else {
+			return fmt.Errorf("failed to parse .jci/crontab: %w", err)
+		}
+	}
+
+	// Get current system crontab
+	currentCron, err := getCurrentCrontab()
+	if err != nil {
+		return fmt.Errorf("failed to read current crontab: %w", err)
+	}
+
+	// Remove old JCI entries for this repo
+	var newLines []string
+	for _, line := range strings.Split(currentCron, "\n") {
+		if !strings.Contains(line, marker) {
+			newLines = append(newLines, line)
+		}
+	}
+
+	// Find git-jci binary path
+	jciBinary, err := findJCIBinary()
+	if err != nil {
+		return fmt.Errorf("could not find git-jci binary: %w", err)
+	}
+
+	// Add new entries
+	for _, e := range entries {
+		cmd := fmt.Sprintf("cd %s && git fetch --quiet 2>/dev/null; ", shellEscape(repoRoot))
+		if e.Branch != "" {
+			cmd += fmt.Sprintf("git checkout --quiet %s 2>/dev/null && git pull --quiet 2>/dev/null; ", shellEscape(e.Branch))
+		}
+		cmd += fmt.Sprintf("%s run", jciBinary)
+
+		comment := e.Name
+		if comment == "" {
+			comment = "jci"
+		}
+
+		line := fmt.Sprintf("%s %s %s [%s]", e.Schedule, cmd, marker, comment)
+		newLines = append(newLines, line)
+	}
+
+	// Write new crontab
+	newCron := strings.Join(newLines, "\n")
+	// Clean up multiple empty lines
+	for strings.Contains(newCron, "\n\n\n") {
+		newCron = strings.ReplaceAll(newCron, "\n\n\n", "\n\n")
+	}
+	newCron = strings.TrimSpace(newCron) + "\n"
+
+	if err := installCrontab(newCron); err != nil {
+		return fmt.Errorf("failed to install crontab: %w", err)
 	}
 
 	if len(entries) == 0 {
-		fmt.Println("No cron jobs defined. Create .jci/crontab to add jobs.")
-		return nil
+		fmt.Printf("Removed all JCI cron entries for %s\n", repoRoot)
+	} else {
+		fmt.Printf("Synced %d cron entries for %s\n", len(entries), repoRoot)
 	}
 
-	fmt.Printf("%-10s %-17s %-10s %s\n", "ID", "SCHEDULE", "TYPE", "COMMAND")
-	for _, entry := range entries {
-		job := newCronJob(entry, repoRoot)
-		fmt.Printf("%-10s %-17s %-10s %s\n", job.ID[:8], job.Schedule, job.Type, job.Command)
-		if job.Type == CronJobBinary {
-			if _, err := os.Stat(job.BinaryPath); os.IsNotExist(err) {
-				fmt.Printf("  warning: binary %s does not exist\n", job.BinaryPath)
+	return nil
+}
+
+// parseCrontab parses a .jci/crontab file
+// Format:
+//
+//	# comment
+//	SCHEDULE [branch:BRANCH] [name:NAME]
+//	0 * * * *                    # every hour, current branch
+//	0 0 * * * branch:main        # daily at midnight, main branch
+//	*/15 * * * * name:quick-test # every 15 min
+func parseCrontab(path string) ([]CronEntry, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var entries []CronEntry
+	scanner := bufio.NewScanner(f)
+	scheduleRe := regexp.MustCompile(`^([*0-9,/-]+\s+[*0-9,/-]+\s+[*0-9,/-]+\s+[*0-9,/-]+\s+[*0-9,/-]+)\s*(.*)`)
+
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+
+		// Skip empty lines and comments
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+
+		matches := scheduleRe.FindStringSubmatch(line)
+		if matches == nil {
+			continue // Invalid line, skip
+		}
+
+		entry := CronEntry{
+			Schedule: matches[1],
+		}
+
+		// Parse options
+		opts := matches[2]
+		for _, part := range strings.Fields(opts) {
+			if strings.HasPrefix(part, "branch:") {
+				entry.Branch = strings.TrimPrefix(part, "branch:")
+			} else if strings.HasPrefix(part, "name:") {
+				entry.Name = strings.TrimPrefix(part, "name:")
 			}
 		}
+
+		entries = append(entries, entry)
 	}
-	return nil
+
+	return entries, scanner.Err()
 }
 
-func cronSync(repoRoot string) error {
-	entries, err := LoadCronEntries(repoRoot)
-	if err != nil {
-		return err
-	}
-
-	if len(entries) == 0 {
-		return errors.New("no cron jobs defined in .jci/crontab")
-	}
-
-	var jobs []CronJob
-	for _, entry := range entries {
-		jobs = append(jobs, newCronJob(entry, repoRoot))
-	}
-
-	block, err := buildCronBlock(repoRoot, jobs)
-	if err != nil {
-		return err
-	}
-
-	existing, err := readCrontab()
-	if err != nil {
-		return err
-	}
-
-	updated := applyCronBlock(existing, block, repoRoot)
-	if err := installCrontab(updated); err != nil {
-		return err
-	}
-
-	fmt.Printf("Synced %d cron job(s).\n", len(jobs))
-	return nil
+// getRepoID generates a unique ID for a repository based on its path
+func getRepoID(repoRoot string) string {
+	h := sha256.Sum256([]byte(repoRoot))
+	return fmt.Sprintf("%x", h)
 }
 
-func newCronJob(entry CronEntry, repoRoot string) CronJob {
-	jobType, binPath, binArgs := classifyCronCommand(entry.Command, repoRoot)
-	id := cronJobID(entry.Schedule, entry.Command)
-	logPath := filepath.Join(repoRoot, ".jci", fmt.Sprintf("cron-%s.log", id[:8]))
-	return CronJob{
-		ID:         id,
-		Schedule:   entry.Schedule,
-		Command:    entry.Command,
-		Type:       jobType,
-		BinaryPath: binPath,
-		BinaryArgs: binArgs,
-		Line:       entry.Line,
-		CronLog:    logPath,
-	}
-}
-
-func buildCronBlock(repoRoot string, jobs []CronJob) (string, error) {
-	if err := os.MkdirAll(filepath.Join(repoRoot, ".jci"), 0755); err != nil {
-		return "", fmt.Errorf("failed to create .jci directory: %w", err)
-	}
-
-	blockID := cronBlockMarker(repoRoot)
-	var lines []string
-	lines = append(lines, fmt.Sprintf("# BEGIN %s", blockID))
-
-	for _, job := range jobs {
-		line := fmt.Sprintf("%s %s", job.Schedule, job.shellCommand(repoRoot))
-		lines = append(lines, line)
-	}
-
-	lines = append(lines, fmt.Sprintf("# END %s", blockID))
-	return strings.Join(lines, "\n"), nil
-}
-
-func cronBlockMarker(repoRoot string) string {
-	hash := sha1.Sum([]byte(repoRoot))
-	return fmt.Sprintf("git-jci %s %s", repoRoot, hex.EncodeToString(hash[:8]))
-}
-
-func readCrontab() (string, error) {
-	if _, err := exec.LookPath("crontab"); err != nil {
-		return "", fmt.Errorf("crontab command not found: %w", err)
-	}
-
+// getCurrentCrontab returns the current user's crontab
+func getCurrentCrontab() (string, error) {
 	cmd := exec.Command("crontab", "-l")
-	out, err := cmd.CombinedOutput()
+	out, err := cmd.Output()
 	if err != nil {
-		if strings.Contains(string(out), "no crontab for") {
+		// No crontab for user is not an error
+		if strings.Contains(err.Error(), "no crontab") {
 			return "", nil
 		}
-		return "", fmt.Errorf("crontab -l: %v", err)
+		// Check stderr for "no crontab" message
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if strings.Contains(string(exitErr.Stderr), "no crontab") {
+				return "", nil
+			}
+		}
+		return "", err
 	}
 	return string(out), nil
 }
 
-func applyCronBlock(existing, block, repoRoot string) string {
-	begin := fmt.Sprintf("# BEGIN %s", cronBlockMarker(repoRoot))
-	end := fmt.Sprintf("# END %s", cronBlockMarker(repoRoot))
-
-	var result []string
-	scanner := bufio.NewScanner(strings.NewReader(existing))
-	skip := false
-	for scanner.Scan() {
-		line := scanner.Text()
-		trimmed := strings.TrimSpace(line)
-		if trimmed == begin {
-			skip = true
-			continue
-		}
-		if trimmed == end {
-			skip = false
-			continue
-		}
-		if !skip {
-			result = append(result, line)
-		}
-	}
-
-	if len(result) != 0 && strings.TrimSpace(result[len(result)-1]) != "" {
-		result = append(result, "")
-	}
-	result = append(result, block)
-	return strings.Join(result, "\n") + "\n"
-}
-
+// installCrontab installs a new crontab
 func installCrontab(content string) error {
 	cmd := exec.Command("crontab", "-")
 	cmd.Stdin = strings.NewReader(content)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return fmt.Errorf("failed to install crontab: %v (%s)", err, string(out))
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("%v: %s", err, stderr.String())
 	}
 	return nil
+}
+
+// getSystemCronEntries returns JCI entries for this repo from system cron
+func getSystemCronEntries(repoID string) ([]string, error) {
+	current, err := getCurrentCrontab()
+	if err != nil {
+		return nil, err
+	}
+
+	marker := cronMarkerPrefix + repoID
+	var entries []string
+	for _, line := range strings.Split(current, "\n") {
+		if strings.Contains(line, marker) {
+			entries = append(entries, line)
+		}
+	}
+	return entries, nil
+}
+
+// findJCIBinary finds the path to git-jci binary
+func findJCIBinary() (string, error) {
+	// First try to find ourselves
+	exe, err := os.Executable()
+	if err == nil {
+		return exe, nil
+	}
+
+	// Try PATH
+	path, err := exec.LookPath("git-jci")
+	if err == nil {
+		return path, nil
+	}
+
+	return "", fmt.Errorf("git-jci not found in PATH")
+}
+
+// shellEscape escapes a string for safe use in shell
+func shellEscape(s string) string {
+	// Simple escaping - wrap in single quotes and escape existing single quotes
+	return "'" + strings.ReplaceAll(s, "'", "'\"'\"'") + "'"
 }
