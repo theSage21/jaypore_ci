@@ -51,9 +51,12 @@ build_target() {
 }
 
 # ---------------------------------------------------------------------------
+echo "--- Step 1: Updating code with latest VERSION ---"
+scripts/sync_version.sh
+
 # Step 1: Build Docker image (sequential — other steps depend on it)
 # ---------------------------------------------------------------------------
-echo "--- Step 1: Building Docker image via scripts/build_image.sh ---"
+echo "--- Step 2: Building Docker image via scripts/build_image.sh ---"
 scripts/build_image.sh
 echo ""
 
@@ -67,7 +70,7 @@ echo ""
 #   Windows amd64       git-jci-windows-amd64.exe
 #   Windows arm64       git-jci-windows-arm64.exe
 # ---------------------------------------------------------------------------
-echo "--- Step 2: Building binaries in parallel ---"
+echo "--- Step 3: Building binaries in parallel ---"
 mkdir -p bin
 
 build_target linux  amd64 git-jci-linux-amd64
@@ -108,7 +111,7 @@ echo ""
 # ---------------------------------------------------------------------------
 # Step 3: Build site (sequential — needs the binaries to be present)
 # ---------------------------------------------------------------------------
-echo "--- Step 3: Building site inside jci container ---"
+echo "--- Step 4: Building site inside jci container ---"
 docker run --rm -it -v "$PWD:/tmp/Jaypore CI" jci "/tmp/Jaypore CI/scripts/build_site.sh"
 echo ""
 

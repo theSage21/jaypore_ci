@@ -27,6 +27,10 @@ GOARM="${GOARM:-7}"
 
 cd "${REPO_DIR}"
 
+# Read the version from the VERSION file at the repo root.
+VERSION="$(cat "${REPO_DIR}/VERSION" | tr -d '[:space:]')"
+echo "[${OUTPUT_BINARY_NAME}] Version: ${VERSION}"
+
 echo "[${OUTPUT_BINARY_NAME}] Downloading dependencies..."
 go mod download
 
@@ -40,7 +44,7 @@ GOARM="${GOARM}" \
 go build \
     -buildvcs=false \
     -tags "netgo osusergo" \
-    -ldflags "-s -w -extldflags '-static'" \
+    -ldflags "-s -w -X main.version=${VERSION} -extldflags '-static'" \
     -o "${OUTPUT_DIR}/${OUTPUT_BINARY_NAME}" \
     "${ENTRY_POINT}"
 

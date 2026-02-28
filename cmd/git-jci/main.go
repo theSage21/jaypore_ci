@@ -7,6 +7,10 @@ import (
 	"github.com/exedev/git-jci/internal/jci"
 )
 
+// version is set at build time via -ldflags "-X main.version=<version>".
+// It falls back to "dev" when built without the flag (e.g. go run).
+var version = "dev"
+
 func main() {
 	if len(os.Args) < 2 {
 		printUsage()
@@ -28,6 +32,9 @@ func main() {
 		err = jci.Pull(args)
 	case "prune":
 		err = jci.Prune(args)
+	case "version", "--version", "-v":
+		fmt.Println("git-jci version " + version)
+		return
 	case "help", "-h", "--help":
 		printUsage()
 		return
@@ -44,16 +51,18 @@ func main() {
 }
 
 func printUsage() {
-	fmt.Println(`git-jci - Local-first CI system stored in git
+	fmt.Printf(`git-jci %s - Local-first CI system stored in git
 
 Usage: git jci <command> [options]
 
 Commands:
-  run     Run CI for the current commit and store results
-  web     Start a web server to view CI results
-  push    Push CI results to remote
-  pull    Pull CI results from remote
-  prune   Remove old CI results
+  run      Run CI for the current commit and store results
+  web      Start a web server to view CI results
+  push     Push CI results to remote
+  pull     Pull CI results from remote
+  prune    Remove old CI results
+  version  Print the version and exit
 
-CI results are stored in refs/jci/<commit> namespace.`)
+CI results are stored in refs/jci/<commit> namespace.
+`, version)
 }
