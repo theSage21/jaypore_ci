@@ -144,18 +144,232 @@ part of the git repository.
 
 ## Examples
 
-### Lint, Build, Test, Publish a golang project
-### Pylint, Pytest, Coverage report
-### Build Jekyll and publish to netlify
-### Build Docusaurus and publish to S3 bucket
-### Run a docker compose of redis, postgres, django, and run API tests against it.
-### Schedule a midnight build and push status to telegram
-### Run trufflehog scan on repo every hour
-### Run lint --fix on pre-commit for python, go, JS in the same repo
-### Create sub-pipelines for python / js / go and run when changes are there in any folder
-### Set and use Secrets to publish messages to telegram
-### Send mail on scheduled pipe failures
-### Midnight auto-update dependencies and ensure tests are passing after update
-### Build and publish docker images
-### Run pipelines on this repo, when changes happen in upstream projects
-### Run pipelines on another repo, when changes affect downstream projects
+### 00 — Golang Lint, Build & Test
+
+```
+00-golang-lint-build-test/
+├── .jci/
+│   └── run.sh
+├── README.md
+├── main.go
+└── main_test.go
+```
+
+- [examples/00-golang-lint-build-test/.jci/run.sh](/releases/files/examples/00-golang-lint-build-test/.jci/run.sh)
+- [examples/00-golang-lint-build-test/README.md](/releases/files/examples/00-golang-lint-build-test/README.md)
+- [examples/00-golang-lint-build-test/main.go](/releases/files/examples/00-golang-lint-build-test/main.go)
+- [examples/00-golang-lint-build-test/main_test.go](/releases/files/examples/00-golang-lint-build-test/main_test.go)
+
+### Example 01 — Pylint + Pytest + Coverage
+
+```
+01-pylint-pytest-coverage/
+├── .jci/
+│   └── run.sh
+└── README.md
+```
+
+- [examples/01-pylint-pytest-coverage/.jci/run.sh](/releases/files/examples/01-pylint-pytest-coverage/.jci/run.sh)
+- [examples/01-pylint-pytest-coverage/README.md](/releases/files/examples/01-pylint-pytest-coverage/README.md)
+
+### 02 — Docker Compose API Tests
+
+```
+02-docker-compose-api-tests/
+├── .jci/
+│   └── run.sh
+├── Dockerfile
+├── README.md
+├── docker-compose.yml
+└── test_api.sh
+```
+
+- [examples/02-docker-compose-api-tests/.jci/run.sh](/releases/files/examples/02-docker-compose-api-tests/.jci/run.sh)
+- [examples/02-docker-compose-api-tests/Dockerfile](/releases/files/examples/02-docker-compose-api-tests/Dockerfile)
+- [examples/02-docker-compose-api-tests/README.md](/releases/files/examples/02-docker-compose-api-tests/README.md)
+- [examples/02-docker-compose-api-tests/docker-compose.yml](/releases/files/examples/02-docker-compose-api-tests/docker-compose.yml)
+- [examples/02-docker-compose-api-tests/test_api.sh](/releases/files/examples/02-docker-compose-api-tests/test_api.sh)
+
+### Midnight Build with Telegram Notifications
+
+```
+03-midnight-build-telegram/
+├── .jci/
+│   ├── crontab
+│   └── run.sh
+└── README.md
+```
+
+- [examples/03-midnight-build-telegram/.jci/crontab](/releases/files/examples/03-midnight-build-telegram/.jci/crontab)
+- [examples/03-midnight-build-telegram/.jci/run.sh](/releases/files/examples/03-midnight-build-telegram/.jci/run.sh)
+- [examples/03-midnight-build-telegram/README.md](/releases/files/examples/03-midnight-build-telegram/README.md)
+
+### TruffleHog Secret Scan
+
+```
+04-trufflehog-scan/
+├── .jci/
+│   ├── crontab
+│   └── run.sh
+└── README.md
+```
+
+- [examples/04-trufflehog-scan/.jci/crontab](/releases/files/examples/04-trufflehog-scan/.jci/crontab)
+- [examples/04-trufflehog-scan/.jci/run.sh](/releases/files/examples/04-trufflehog-scan/.jci/run.sh)
+- [examples/04-trufflehog-scan/README.md](/releases/files/examples/04-trufflehog-scan/README.md)
+
+### 05 — Lint & Fix on Pre-Commit
+
+```
+05-lint-fix-precommit/
+├── .jci/
+│   └── run.sh
+├── README.md
+└── install-hook.sh
+```
+
+- [examples/05-lint-fix-precommit/.jci/run.sh](/releases/files/examples/05-lint-fix-precommit/.jci/run.sh)
+- [examples/05-lint-fix-precommit/README.md](/releases/files/examples/05-lint-fix-precommit/README.md)
+- [examples/05-lint-fix-precommit/install-hook.sh](/releases/files/examples/05-lint-fix-precommit/install-hook.sh)
+
+### 06 — Sub-pipelines
+
+```
+06-sub-pipelines/
+├── .jci/
+│   └── run.sh
+├── README.md
+├── go-app/
+│   ├── go-app
+│   ├── go.mod
+│   ├── main.go
+│   └── main_test.go
+├── js-app/
+│   ├── index.js
+│   └── package.json
+└── python-app/
+    ├── app.py
+    └── test_app.py
+```
+
+- [examples/06-sub-pipelines/.jci/run.sh](/releases/files/examples/06-sub-pipelines/.jci/run.sh)
+- [examples/06-sub-pipelines/README.md](/releases/files/examples/06-sub-pipelines/README.md)
+- [examples/06-sub-pipelines/go-app/go-app](/releases/files/examples/06-sub-pipelines/go-app/go-app)
+- [examples/06-sub-pipelines/go-app/go.mod](/releases/files/examples/06-sub-pipelines/go-app/go.mod)
+- [examples/06-sub-pipelines/go-app/main.go](/releases/files/examples/06-sub-pipelines/go-app/main.go)
+- [examples/06-sub-pipelines/go-app/main_test.go](/releases/files/examples/06-sub-pipelines/go-app/main_test.go)
+- [examples/06-sub-pipelines/js-app/index.js](/releases/files/examples/06-sub-pipelines/js-app/index.js)
+- [examples/06-sub-pipelines/js-app/package.json](/releases/files/examples/06-sub-pipelines/js-app/package.json)
+- [examples/06-sub-pipelines/python-app/app.py](/releases/files/examples/06-sub-pipelines/python-app/app.py)
+- [examples/06-sub-pipelines/python-app/test_app.py](/releases/files/examples/06-sub-pipelines/python-app/test_app.py)
+
+### Example 07 — Secrets with SOPS + Telegram
+
+```
+07-secrets-telegram/
+├── .jci/
+│   └── run.sh
+├── README.md
+└── secrets.example.json
+```
+
+- [examples/07-secrets-telegram/.jci/run.sh](/releases/files/examples/07-secrets-telegram/.jci/run.sh)
+- [examples/07-secrets-telegram/README.md](/releases/files/examples/07-secrets-telegram/README.md)
+- [examples/07-secrets-telegram/secrets.example.json](/releases/files/examples/07-secrets-telegram/secrets.example.json)
+
+### 08 — Mail on failure
+
+```
+08-mail-on-failure/
+├── .jci/
+│   ├── crontab
+│   └── run.sh
+└── README.md
+```
+
+- [examples/08-mail-on-failure/.jci/crontab](/releases/files/examples/08-mail-on-failure/.jci/crontab)
+- [examples/08-mail-on-failure/.jci/run.sh](/releases/files/examples/08-mail-on-failure/.jci/run.sh)
+- [examples/08-mail-on-failure/README.md](/releases/files/examples/08-mail-on-failure/README.md)
+
+### Auto-Update Dependencies
+
+```
+09-auto-update-deps/
+├── .jci/
+│   ├── crontab
+│   └── run.sh
+└── README.md
+```
+
+- [examples/09-auto-update-deps/.jci/crontab](/releases/files/examples/09-auto-update-deps/.jci/crontab)
+- [examples/09-auto-update-deps/.jci/run.sh](/releases/files/examples/09-auto-update-deps/.jci/run.sh)
+- [examples/09-auto-update-deps/README.md](/releases/files/examples/09-auto-update-deps/README.md)
+
+### Example 10 — Build & Publish Docker Images
+
+```
+10-build-publish-docker/
+├── .jci/
+│   └── run.sh
+├── Dockerfile
+└── README.md
+```
+
+- [examples/10-build-publish-docker/.jci/run.sh](/releases/files/examples/10-build-publish-docker/.jci/run.sh)
+- [examples/10-build-publish-docker/Dockerfile](/releases/files/examples/10-build-publish-docker/Dockerfile)
+- [examples/10-build-publish-docker/README.md](/releases/files/examples/10-build-publish-docker/README.md)
+
+### 11 — Upstream Trigger
+
+```
+11-upstream-trigger/
+└── README.md
+```
+
+- [examples/11-upstream-trigger/README.md](/releases/files/examples/11-upstream-trigger/README.md)
+
+### 12 — Downstream Trigger
+
+```
+12-downstream-trigger/
+└── README.md
+```
+
+- [examples/12-downstream-trigger/README.md](/releases/files/examples/12-downstream-trigger/README.md)
+
+### 13 — Jekyll + Netlify
+
+```
+13-jekyll-netlify/
+├── .jci/
+│   └── run.sh
+├── README.md
+└── site/
+    ├── _config.yml
+    ├── _layouts/
+    │   └── default.html
+    └── index.md
+```
+
+- [examples/13-jekyll-netlify/.jci/run.sh](/releases/files/examples/13-jekyll-netlify/.jci/run.sh)
+- [examples/13-jekyll-netlify/README.md](/releases/files/examples/13-jekyll-netlify/README.md)
+- [examples/13-jekyll-netlify/site/_config.yml](/releases/files/examples/13-jekyll-netlify/site/_config.yml)
+- [examples/13-jekyll-netlify/site/_layouts/default.html](/releases/files/examples/13-jekyll-netlify/site/_layouts/default.html)
+- [examples/13-jekyll-netlify/site/index.md](/releases/files/examples/13-jekyll-netlify/site/index.md)
+
+### 14 — Build Docusaurus & Publish to S3
+
+```
+14-docusaurus-s3/
+├── .jci/
+│   └── run.sh
+├── README.md
+├── build.sh
+└── docs/
+    └── index.md
+```
+
+- [examples/14-docusaurus-s3/.jci/run.sh](/releases/files/examples/14-docusaurus-s3/.jci/run.sh)
+- [examples/14-docusaurus-s3/README.md](/releases/files/examples/14-docusaurus-s3/README.md)
+- [examples/14-docusaurus-s3/build.sh](/releases/files/examples/14-docusaurus-s3/build.sh)
+- [examples/14-docusaurus-s3/docs/index.md](/releases/files/examples/14-docusaurus-s3/docs/index.md)

@@ -1,0 +1,10 @@
+{
+  "name": "js-app",
+  "version": "0.1.0",
+  "description": "Minimal JS demo for the sub-pipeline example",
+  "main": "index.js",
+  "scripts": {
+    "test": "node -e \"const {add,greet}=require('./index');console.assert(add(2,3)===5);console.assert(greet()==='Hello, world!');console.log('All tests passed.')\""
+  },
+  "license": "MIT"
+}

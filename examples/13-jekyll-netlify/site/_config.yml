@@ -1,0 +1,4 @@
+title: Jekyll Netlify Example
+baseurl: ""
+url: ""
+markdown: kramdown
